@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478036607574",
+    "project_id": "tramut-520",
+    "storage_bucket": "tramut-520.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478036607574:android:10d4ed8857804f09c6f1f7",
+        "android_client_info": {
+          "package_name": "com.example.tramut"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqTzDcjPsljLjci-pQ5tiUMOfzqbSFEHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
