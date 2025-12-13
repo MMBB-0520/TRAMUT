@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.rooms.dao
+package com.example.tramut.rooms.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -7,7 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.example.myfacilitybookingsystem.rooms.entity.Users
+import com.example.tramut.rooms.entity.Users
+import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -36,6 +37,8 @@ interface UsersDAO {
     @Query("DELETE FROM users")
     suspend fun deleteAllUsers()
 
+    @Query("SELECT * FROM users WHERE email = :email")
+    suspend fun findByEmail(email: String): User?
     @Query("SELECT * FROM users WHERE loginId = :loginId")
     suspend fun getUserByLoginId(loginId: String): Users?
 

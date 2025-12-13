@@ -1,7 +1,7 @@
 package com.example.myfacilitybookingsystem.rooms.repo
 
-import com.example.myfacilitybookingsystem.rooms.dao.UsersDAO
-import com.example.myfacilitybookingsystem.rooms.entity.Users
+import com.example.tramut.rooms.dao.UsersDAO
+import com.example.tramut.rooms.entity.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +95,8 @@ class UsersRepo(
         auth.sendPasswordResetEmail(email).await()
         true
     }
+    suspend fun findByEmail(email: String) =
+        usersDao.findByEmail(email) != null
 
     // -----------------------------
     // 5️⃣ 检查用户是否存在

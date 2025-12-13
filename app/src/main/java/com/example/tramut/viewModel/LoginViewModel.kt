@@ -2,7 +2,7 @@ package com.example.tramut.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myfacilitybookingsystem.rooms.entity.Users
+import com.example.tramut.rooms.entity.Users
 import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-class UsersViewModel(
+class LoginViewModel(
     private val usersRepo: UsersRepo
 ) : ViewModel() {
 
@@ -137,11 +137,5 @@ class UsersViewModel(
         _currentUser.value = null
     }
 
-    /** 忘记密码：通过 loginId + IC 验证发送重置邮件 */
-    fun sendPasswordReset(loginId: String, inputIC: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val success = usersRepo.sendPasswordResetEmail(loginId, inputIC)
-            onResult(success)
-        }
-    }
+
 }
