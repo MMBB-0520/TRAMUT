@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelProvider
@@ -41,19 +46,20 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
-import com.example.tramut.viewModel.UsersViewModel
+import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
 
 
 class UsersViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(UsersViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return UsersViewModel(usersRepo) as T
+            return LoginViewModel(usersRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -72,7 +78,12 @@ enum class AppScreen {
     StaffScreen,
     AdminScreen,
 
-    ForgotPassword,
+    // Forgot Password Screens
+    ForgotPassword1,
+    ForgotPassword2,
+    ForgotPassword3,
+    ResetPwd,
+    PwdUpdated,
 
     // Details under Home tab
     AnnouncementDetail,
@@ -89,12 +100,42 @@ enum class AppScreen {
     AdminAddFacility,
     AdminManageUsers,
 
+    // Wei Qi Review
+    AdminViewReview,
+    AdminReviewDetail,
+
+    StudentViewReview,
+    StudentAddReview,
+
+    StaffViewReview,
+    StaffAddReview,
+
+
+    // Regina booking
+    CITCBooking,
+    LibraryBooking,
+    SportsBooking,
+
+    CITCTimetable,
+    LibraryTimetable,
+    SportsTimetable,
+
+    // KK check in
+    CheckInManual,
+    CheckInBarcode,
+    CheckInSuccess,
+
+    CheckOutManual,
+    CheckOutBarcode,
+    CheckOutSuccess,
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBarScreen(
-    currentScreen: AppScreen
+    currentScreen: AppScreen,
+    hasPopBack: () -> Unit
 ) {
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
@@ -162,6 +203,105 @@ fun TopBarScreen(
                 )
             )
         }
+        AppScreen.StudentBooking ->{
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = hasPopBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Facility Booking",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Blue,
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.CheckInManual,AppScreen.CheckInBarcode,AppScreen.CheckInSuccess -> {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = hasPopBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Check-In",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black,
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.CheckOutManual,AppScreen.CheckOutBarcode,AppScreen.CheckOutSuccess -> {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = hasPopBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Check-Out",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black,
+                    titleContentColor = Color.White
+                )
+            )
+        }
         else -> {}
     }
 }
@@ -180,14 +320,11 @@ fun FBSApp(
     // Repository
     val usersRepo = remember { UsersRepo(db.usersDao()) }
     // ViewModel
-    val usersViewModel: UsersViewModel = viewModel(
+    val usersViewModel: LoginViewModel = viewModel(
         factory = UsersViewModelFactory(usersRepo)
     )
 
     // Compose 状态
-    var studentId by remember { mutableStateOf("") }
-    var staffId by remember { mutableStateOf("") }
-    var adminId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
 
@@ -207,7 +344,10 @@ fun FBSApp(
     }
 
     Scaffold(
-        topBar = { TopBarScreen(currentScreen = currentScreen) },
+        topBar = { TopBarScreen(
+            currentScreen = currentScreen,
+            hasPopBack = {navController.popBackStack()}
+        ) },
         bottomBar = {
             val showBottomBar = currentScreen in listOf(
                 AppScreen.MainSystem,
@@ -260,6 +400,7 @@ fun FBSApp(
 
                 // Student Login Screen
                 composable(route = AppScreen.StudentLoginScreen.name) {
+                    var studentId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     StudentLoginScreen(
                         studentId = studentId,
@@ -283,7 +424,7 @@ fun FBSApp(
                             }
                         },
                         onForgotPassClick = {
-                            navController.navigate(AppScreen.ForgotPassword.name)
+                            navController.navigate(AppScreen.ForgotPassword1.name)
                         }
                     )
                 }
@@ -332,6 +473,7 @@ fun FBSApp(
                 }
                 // Staff Login Screen
                 composable(route = AppScreen.StaffLoginScreen.name) {
+                    var staffId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     StaffLoginScreen(
                         staffId = staffId,
@@ -355,7 +497,7 @@ fun FBSApp(
                             }
                         },
                         onForgotPassClick = {
-                            navController.navigate(AppScreen.ForgotPassword.name)
+                            navController.navigate(AppScreen.ForgotPassword1.name)
                         }
                     )
                 }
@@ -405,6 +547,7 @@ fun FBSApp(
 
                 // Admin Login Screen
                 composable(route = AppScreen.AdminLoginScreen.name) {
+                    var adminId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     AdminLoginScreen(
                         adminId = adminId,
@@ -426,7 +569,20 @@ fun FBSApp(
                 composable(route = AppScreen.AdminScreen.name) {
                 }
                 // Forgot Password Screen
-                composable(route = AppScreen.ForgotPassword.name) {
+                composable(route = AppScreen.ForgotPassword1.name) {
+                    var email by rememberSaveable { mutableStateOf("") }
+                    ForgetPasswordScreen1(
+                        emailInput = email,
+                        onEmailInputChange = {
+                            email = it
+
+                        },
+                        onCancelForgetPwdClick = {
+                            navController.navigate(AppScreen.MainSystem.name)}
+                        ,
+                        onRequestPwdResetClick = { 
+                        }
+                    )
                 }
             }
         }
