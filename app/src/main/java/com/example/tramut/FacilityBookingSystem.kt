@@ -1,24 +1,35 @@
 package com.example.myfacilitybookingsystem
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +53,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
@@ -53,6 +65,12 @@ import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
+import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
+import com.example.tramut.userInterface.studentTheme.BookSportScreen
+import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
+import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
+import com.google.firebase.firestore.FirebaseFirestore
+import java.util.UUID
 
 
 class UsersViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -110,16 +128,6 @@ enum class AppScreen {
     StaffViewReview,
     StaffAddReview,
 
-
-    // Regina booking
-    CITCBooking,
-    LibraryBooking,
-    SportsBooking,
-
-    CITCTimetable,
-    LibraryTimetable,
-    SportsTimetable,
-
     // KK check in
     CheckInManual,
     CheckInBarcode,
@@ -129,13 +137,28 @@ enum class AppScreen {
     CheckOutBarcode,
     CheckOutSuccess,
 
+    // Booking
+    CITCBooking,
+    LibraryBooking,
+    SportsBooking,
+
+    CITCTimetable,
+    LibraryTimetable,
+    SportsTimetable,
+    StudentBookingChart,
+    StudentBookingDetails,
+    StudentBookingFacility,
+    StudentBookingSport
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBarScreen(
     currentScreen: AppScreen,
-    hasPopBack: () -> Unit
+    hasPopBack: () -> Unit,
+    selectedTabIndex:Int,
+    onTabSelected:(Int) -> Unit
 ) {
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
@@ -209,7 +232,7 @@ fun TopBarScreen(
                     IconButton(onClick = hasPopBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = "Back",
                             tint = Color.White,
                             modifier = Modifier
                                 .padding(start = 8.dp)
@@ -218,10 +241,9 @@ fun TopBarScreen(
                     }
                 },
                 title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "Facility Booking",
@@ -232,6 +254,84 @@ fun TopBarScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Blue,
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.StudentBookingChart ->{
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable{hasPopBack()}
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Availability Chart", color = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D47A1),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.StudentBookingDetails ->{
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = hasPopBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White,
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentWidth(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Booking Information",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D47A1),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.StudentBookingSport ->{
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("New Booking", color = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D47A1),
                     titleContentColor = Color.White
                 )
             )
@@ -343,10 +443,14 @@ fun FBSApp(
         AppScreen.MainSystem
     }
 
+    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
+
     Scaffold(
         topBar = { TopBarScreen(
             currentScreen = currentScreen,
-            hasPopBack = {navController.popBackStack()}
+            hasPopBack = {navController.popBackStack()},
+            selectedTabIndex = selectedTabIndex,
+            onTabSelected = { selectedTabIndex = it }
         ) },
         bottomBar = {
             val showBottomBar = currentScreen in listOf(
@@ -580,13 +684,135 @@ fun FBSApp(
                         onCancelForgetPwdClick = {
                             navController.navigate(AppScreen.MainSystem.name)}
                         ,
-                        onRequestPwdResetClick = { 
+                        onRequestPwdResetClick = {
                         }
                     )
+                }
+
+                composable(route = AppScreen.StudentBooking.name) {
+
+                    FacilityBookScreen(
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { selectedTabIndex = it },
+                        navController = navController,
+                        userId = currentUser?.loginId ?: "",
+
+                        onCITCABClick = {
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Cyber Centre Discussion Room/")
+                        },
+                        onLibraryABClick = {
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Library Discussion Room/")
+                        },
+                        onSportsABClick = {
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Sports Facilities/")
+                        },
+
+                        onCITCTTClick = {
+                            navController.navigate(AppScreen.CITCTimetable.name)
+                        },
+                        onLibraryTTClick = {
+                            navController.navigate(AppScreen.LibraryTimetable.name)
+                        },
+                        onSportsTTClick = {
+                            navController.navigate(AppScreen.SportsTimetable.name)
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.SportsTimetable.name) {
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Sports Facilities",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                        }
+                    )
+                }
+
+                composable(
+                    route = "BookingInfo/{bookingId}"
+                ) { backStackEntry ->
+                    val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+                    var booking by remember { mutableStateOf<Booking?>(null) }
+
+                    LaunchedEffect(bookingId) {
+                        FirebaseFirestore.getInstance()
+                            .collection("sportBookings")
+                            .document(bookingId)
+                            .get()
+                            .addOnSuccessListener { doc ->
+                                if (doc.exists()) {
+                                    booking = Booking(
+                                        facility = doc.getString("facility") ?: "",
+                                        bookingNo = doc.getString("bookingId") ?: doc.id,
+                                        date = doc.getString("date") ?: "",
+                                        duration = doc.getString("duration") ?: "",
+                                        venue = doc.getString("venue") ?: "",
+                                        level = doc.getString("level") ?: "",
+                                        building = doc.getString("building") ?: "",
+                                        checkIn = doc.getString("checkIn") ?: "",
+                                        checkOut = doc.getString("checkOut") ?: "",
+                                        status = doc.getString("status") ?: "Booked"
+                                    )
+                                }
+                            }
+                    }
+
+                    booking?.let { BookingInfoScreen(it) }
+                }
+
+                composable(
+                    route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                ) { backStackEntry ->
+                    val venue = backStackEntry.arguments?.getString("venue") ?: ""
+                    val date = backStackEntry.arguments?.getString("date") ?: ""
+
+                    BookSportScreen(
+                        selectedVenueFromPrevious = venue,
+                        selectedDateFromPrevious = date,
+                        onSubmit = { venueType, date, startTime, endTime ->
+                            val bookingId = UUID.randomUUID().toString()
+                            val bookingData = hashMapOf(
+                                "bookingId" to bookingId,
+                                "facility" to "Sports Facilities",
+                                "venue" to venueType,
+                                "date" to date,
+                                "startTime" to startTime,
+                                "endTime" to endTime,
+                                "duration" to "$startTime - $endTime",
+                                "status" to "Booked",
+                                "timestamp" to System.currentTimeMillis()
+                            )
+
+                            FirebaseFirestore.getInstance()
+                                .collection("sportBookings")
+                                .document(bookingId)
+                                .set(bookingData)
+                                .addOnSuccessListener {
+                                    navController.navigate(AppScreen.StudentBookingDetails.name)
+                                }
+                                .addOnFailureListener {
+                                    Log.e("Firebase", "Failed to save booking", it)
+                                }
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.CITCBooking.name) {
+                    // CITC Booking Screen
+                }
+                composable(route = AppScreen.LibraryBooking.name) {
+                    // Library Booking Screen
+                }
+                composable(route = AppScreen.SportsBooking.name) {
+                    // Sports Booking Screen
+                }
+                composable(route = AppScreen.CITCTimetable.name) {
+                    // CITC Timetable
+                }
+                composable(route = AppScreen.LibraryTimetable.name) {
+                    // Library Timetable
                 }
             }
         }
     }
 }
-
-
