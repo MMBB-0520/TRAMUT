@@ -9,13 +9,7 @@ data class Facility(
     var name: String = "",
 
     @get:PropertyName("facility_type") @set:PropertyName("facility_type")
-    var department: String = "", // "Sport", "CITC", or "Library"
-
-    @get:PropertyName("facility_description") @set:PropertyName("facility_description")
-    var description: String = "",
-
-    @get:PropertyName("location") @set:PropertyName("location")
-    var location: String = "",
+    var department: String = "",
 
     @get:PropertyName("capacity") @set:PropertyName("capacity")
     var capacity: Int = 0,
@@ -27,5 +21,17 @@ data class Facility(
     var startTime: String = "08:00",
 
     @get:PropertyName("end_time") @set:PropertyName("end_time")
-    var endTime: String = "22:00"
+    var endTime: String = "22:00",
+
+    @get:PropertyName("special_closures") @set:PropertyName("special_closures")
+    var specialClosures: Map<String, List<Int>> = emptyMap()
+)
+
+data class Booking(
+    val id: String = "",
+    val facilityId: String = "",
+    val userId: String = "",
+    val date: String = "",
+    val timeSlot: Int = 0,
+    val status: String = "Confirmed"
 )

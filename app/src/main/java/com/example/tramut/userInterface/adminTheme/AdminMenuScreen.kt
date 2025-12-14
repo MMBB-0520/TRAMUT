@@ -2,7 +2,6 @@ package com.example.myfacilitybookingsystem.userInterface.adminTheme
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,9 +29,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.myfacilitybookingsystem.AppScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
-import com.example.myfacilitybookingsystem.ui.theme.Background
-import com.example.myfacilitybookingsystem.ui.theme.BorderGray
-import com.example.myfacilitybookingsystem.ui.theme.LogoutRed
+import com.example.tramut.ui.theme.Background
+// If BlueMain is not in your imports, uncomment the line below:
+// val BlueMain = Color(0xFF0066FF)
+import com.example.tramut.ui.theme.BlueMain
 
 @Composable
 fun AdminMainScreen(
@@ -45,97 +45,201 @@ fun AdminMainScreen(
 
     Scaffold(containerColor = Background) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp).verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(20.dp) // Updated padding to match Student Theme
+                .verticalScroll(scrollState)
         ) {
-            // 1. Admin Info
+
+            Spacer(modifier = Modifier.height(52.dp))
+
+            // 1. Admin Info Card (Blue Style)
             if (isLoading || adminData == null) {
-                Box(modifier = Modifier.fillMaxWidth().height(100.dp).background(Color.Black, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .background(Color.LightGray, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = BlueMain)
+                }
             } else {
-                AdminInfoCard(name = adminData.name.ifEmpty { "Admin" }, dept = adminData.department.ifEmpty { "General" }, email = adminData.email.ifEmpty { "" })
+                AdminProfileCard(
+                    name = adminData.name.ifEmpty { "Admin" },
+                    dept = adminData.department.ifEmpty { "General" },
+                    email = adminData.email.ifEmpty { "" }
+                )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(49.dp))
 
-            // 2. Check In/Out
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                ExpandedDashboardButton("Check In", Icons.Default.CheckCircle, {}, Modifier.weight(1f))
-                ExpandedDashboardButton("Check Out", Icons.AutoMirrored.Filled.ExitToApp, {}, Modifier.weight(1f))
-            }
+            // 2. Dashboard Buttons (Styled like MenuButton)
 
-            // 3. Menus
-            ExpandableDashboardMenu("Announcement", Icons.Default.Notifications, listOf("View Announcements" to { navController.navigate(AppScreen.ViewAn.name) }, "Post Announcement" to { navController.navigate(AppScreen.PostAn.name) }))
-            ExpandableDashboardMenu("Facility", Icons.Default.Build, listOf("Edit / Delete Facility" to { navController.navigate(AppScreen.EditFac.name) }, "Add New Facility" to { navController.navigate(AppScreen.AddFac.name) }))
-            DashboardButton("Reviews", Icons.Default.Star, { navController.navigate(AppScreen.AdminViewReview.name) })
+            // Check In
+            AdminMenuButton(
+                text = "Check In",
+                icon = Icons.Default.CheckCircle,
+                onClick = { navController.navigate(AppScreen.AdminCheckin.name) }
+            )
+            Spacer(modifier = Modifier.height(40.dp))
 
-            Spacer(modifier = Modifier.weight(1f))
+            // Check Out
+            AdminMenuButton(
+                text = "Check Out",
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                onClick = { navController.navigate(AppScreen.AdminCheckout.name) }
+            )
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // 4. Logout
-            LogoutButton {
+            // 3. Expandable Menus (Styled to match, logic preserved)
+
+            ExpandableAdminMenu(
+                title = "Announcement",
+                icon = Icons.Default.Notifications,
+                options = listOf(
+                    "View Announcements" to { navController.navigate(AppScreen.ViewAn.name) },
+                    "Post Announcement" to { navController.navigate(AppScreen.PostAn.name) }
+                )
+            )
+            Spacer(modifier = Modifier.height(40.dp))
+
+            ExpandableAdminMenu(
+                title = "Facility",
+                icon = Icons.Default.Build,
+                options = listOf(
+                    // 1. Existing: Edit
+                    "Edit / Delete Facility" to { navController.navigate(AppScreen.EditFac.name) },
+
+                    // 2. Existing: Add
+                    "Add New Facility" to { navController.navigate(AppScreen.AddFac.name) },
+
+                    // 3. NEW: Preview Timetable
+                    // We pass the admin's department to the route so the timetable filters correctly
+                    "Preview Timetable" to {
+                        val dept = adminData?.department ?: "General"
+                        navController.navigate("${AppScreen.ViewTimetable.name}/$dept")
+                    }
+                )
+            )
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Reviews
+            AdminMenuButton(
+                text = "Reviews",
+                icon = Icons.Default.Star,
+                onClick = { navController.navigate(AppScreen.AdminViewReview.name) }
+            )
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // 4. Logout (Red Style)
+            AdminLogoutButton {
                 viewModel.performLogout {
                     navController.navigate(AppScreen.AdminLoginScreen.name) { popUpTo(0) }
                 }
             }
+
+            Spacer(modifier = Modifier.height(20.dp)) // Extra bottom padding
         }
     }
 }
 
+// --- COMPONENTS ---
+
 @Composable
-fun AdminInfoCard(name: String, dept: String, email: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.Black), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(20.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(60.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, null, tint = Color.Black, modifier = Modifier.size(36.dp)) }
-            Spacer(modifier = Modifier.width(16.dp))
+fun AdminProfileCard(name: String, dept: String, email: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color= Color.Black, RoundedCornerShape(12.dp))
+            .padding(20.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(65.dp)
+                    .background(Color.LightGray, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+            }
+
+            Spacer(modifier = Modifier.width(18.dp))
+
             Column {
-                Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(dept, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = Color.LightGray)
-                Text(email, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(dept, color = Color.White, fontSize = 14.sp)
+                Text(email, color = Color.White, fontSize = 12.sp)
             }
         }
     }
 }
 
 @Composable
-fun DashboardButton(text: String, icon: ImageVector, onClick: () -> Unit) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, BorderGray), color = Color.White, modifier = Modifier.fillMaxWidth().height(60.dp)) {
-        Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = Color.Gray)
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Color.LightGray)
-        }
+fun AdminMenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.Gray)
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(text = text, fontSize = 14.sp, color = Color.Black)
+        Spacer(modifier = Modifier.weight(1f))
+
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Black)
     }
 }
 
 @Composable
-fun ExpandedDashboardButton(text: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, BorderGray), color = Color.White, modifier = modifier.height(60.dp)) {
-        Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Icon(icon, null, tint = Color.Gray)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-fun ExpandableDashboardMenu(title: String, icon: ImageVector, options: List<Pair<String, () -> Unit>>) {
+fun ExpandableAdminMenu(title: String, icon: ImageVector, options: List<Pair<String, () -> Unit>>) {
     var expanded by remember { mutableStateOf(false) }
     val rotationState by animateFloatAsState(if (expanded) 180f else 0f, label = "rotation")
-    Column(modifier = Modifier.fillMaxWidth().border(BorderStroke(1.dp, BorderGray), RoundedCornerShape(12.dp)).background(Color.White, RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp))) {
-        Row(modifier = Modifier.fillMaxWidth().height(60.dp).clickable { expanded = !expanded }.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = Color.Gray)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .background(Background)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .clickable { expanded = !expanded }
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = Color.Gray)
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+
+            Text(title, fontSize = 14.sp, color = Color.Black)
             Spacer(modifier = Modifier.weight(1f))
-            Icon(Icons.Default.ArrowDropDown, "Drop Down", modifier = Modifier.rotate(rotationState), tint = Color.Gray)
+
+            Icon(Icons.Default.ArrowDropDown, "Drop Down", modifier = Modifier.rotate(rotationState), tint = Color.Black)
         }
+
+        // Expanded Content (Logic preserved)
         AnimatedVisibility(visible = expanded) {
             Column {
-                HorizontalDivider(color = Color(0xFFF0F0F0))
+                HorizontalDivider(color = Color(0xFFE0E0E0))
                 options.forEach { (text, onClick) ->
-                    Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp, horizontal = 56.dp)) { Text(text, style = MaterialTheme.typography.bodyLarge, color = Color.DarkGray) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onClick() }
+                            .padding(vertical = 12.dp, horizontal = 56.dp) // Indented to align with text above
+                    ) {
+                        Text(text, style = MaterialTheme.typography.bodyMedium, color = Color.DarkGray)
+                    }
                     HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(start = 56.dp))
                 }
             }
@@ -144,10 +248,19 @@ fun ExpandableDashboardMenu(title: String, icon: ImageVector, options: List<Pair
 }
 
 @Composable
-fun LogoutButton(onClick: () -> Unit) {
-    Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = Color.White), border = BorderStroke(1.dp, BorderGray), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(56.dp)) {
-        Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = LogoutRed)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Logout", color = LogoutRed, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+fun AdminLogoutButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = "Logout", fontSize = 14.sp, color = Color.Red)
+        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.Black)
     }
 }

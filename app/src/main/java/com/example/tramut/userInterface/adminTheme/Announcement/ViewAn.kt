@@ -1,14 +1,20 @@
 package com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -23,13 +29,15 @@ fun AdminAnnouncementScreen(
     currentAdminDepartment: String,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToAdd: () -> Unit,
+    onNavigateToDetail: (String) -> Unit, // <--- 1. NEW PARAMETER
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val repository = remember { AnnouncementRepository() }
     val announcements = remember { mutableStateListOf<Announcement>() }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedAnnouncement by remember { mutableStateOf<Announcement?>(null) }
+
+    // REMOVED: selectedAnnouncement state (We don't need the dialog anymore)
 
     LaunchedEffect(currentAdminDepartment) {
         repository.getAnnouncementsFlow(currentAdminDepartment).collect { list ->
@@ -62,22 +70,26 @@ fun AdminAnnouncementScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No announcements found.", color = Color.Gray) }
         } else {
             LazyColumn(
-                modifier = Modifier.padding(padding).fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(items = announcements, key = { it.id }) { item ->
                     SwipeableAnnouncementItem(
                         item = item,
-                        onClick = { selectedAnnouncement = item },
+                        // 2. UPDATED CLICK: Navigate using the ID
+                        onClick = { onNavigateToDetail(item.id) },
                         onEdit = { onNavigateToEdit(item.id) },
                         onDelete = { scope.launch { repository.deleteAnnouncement(item.id) } }
                     )
                 }
+
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
             }
-        }
-        if (selectedAnnouncement != null) {
-            AnnouncementDetailDialog(announcement = selectedAnnouncement!!, onDismiss = { selectedAnnouncement = null })
         }
     }
 }

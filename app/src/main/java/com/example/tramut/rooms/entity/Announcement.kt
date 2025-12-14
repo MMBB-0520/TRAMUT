@@ -5,7 +5,6 @@ import com.google.firebase.firestore.PropertyName
 data class Announcement(
     val id: String = "",
 
-    // 2. Main Content
     @get:PropertyName("title") @set:PropertyName("title")
     var title: String = "",
 

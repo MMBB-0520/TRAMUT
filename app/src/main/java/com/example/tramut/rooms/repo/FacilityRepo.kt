@@ -1,6 +1,8 @@
 package com.example.myfacilitybookingsystem.rooms.repo
 
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
+// Make sure you have created this Booking data class (see below)
+import com.example.myfacilitybookingsystem.rooms.entity.Booking
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -10,20 +12,31 @@ import kotlinx.coroutines.tasks.await
 class FacilityRepository {
 
     private val db = FirebaseFirestore.getInstance()
-    private val collection = db.collection("facilities")
+    private val facilitiesCollection = db.collection("facilities")
+    private val bookingsCollection = db.collection("bookings")
 
-    // 1. GET LIST (Real-time Flow)
+    fun getFacilityById(facilityId: String, onResult: (Facility?) -> Unit) {
+        facilitiesCollection.document(facilityId).get()
+            .addOnSuccessListener {
+                // We manually set the ID because it's the document key, not a field inside
+                val facility = it.toObject(Facility::class.java)?.copy(id = it.id)
+                onResult(facility)
+            }
+            .addOnFailureListener { onResult(null) }
+    }
+
     fun getFacilitiesFlow(department: String): Flow<List<Facility>> = callbackFlow {
-        val listener = collection
-            .whereEqualTo("department", department)
+        // Querying "facility_type" because that is how you saved it in updateFacility
+        val listener = facilitiesCollection
+            .whereEqualTo("facility_type", department)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {
-                    val list = snapshot.documents.map { doc ->
-                        doc.toObject(Facility::class.java)!!.copy(id = doc.id)
+                    val list = snapshot.documents.mapNotNull { doc ->
+                        doc.toObject(Facility::class.java)?.copy(id = doc.id)
                     }
                     trySend(list)
                 }
@@ -31,39 +44,65 @@ class FacilityRepository {
         awaitClose { listener.remove() }
     }
 
-    // 2. ADD
     suspend fun addFacility(facility: Facility): Result<Unit> {
         return try {
-            collection.add(facility).await()
+            facilitiesCollection.add(facility).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // 3. UPDATE
     suspend fun updateFacility(facility: Facility): Result<Unit> {
         return try {
-            val updates = hashMapOf<String, Any>(
+            val updates = mapOf(
                 "facility_name" to facility.name,
+                "facility_type" to facility.department,
+                "facility_status" to facility.status,
                 "capacity" to facility.capacity,
-                "description" to facility.description,
-                "status" to facility.status
+                "start_time" to facility.startTime,
+                "end_time" to facility.endTime
             )
-            collection.document(facility.id).update(updates).await()
+
+            facilitiesCollection.document(facility.id).update(updates).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    // 4. DELETE
     suspend fun deleteFacility(docId: String): Result<Unit> {
         return try {
-            collection.document(docId).delete().await()
+            facilitiesCollection.document(docId).delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+    fun getBookings(facilityId: String, date: String, onResult: (List<Booking>) -> Unit) {
+        bookingsCollection
+            .whereEqualTo("facilityId", facilityId)
+            .whereEqualTo("date", date)
+            .get()
+            .addOnSuccessListener { documents ->
+                val bookings = documents.mapNotNull { it.toObject(Booking::class.java) }
+                onResult(bookings)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    suspend fun saveBooking(booking: Booking): Boolean {
+        return try {
+            bookingsCollection
+                .document(booking.id)
+                .set(booking)
+                .await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }

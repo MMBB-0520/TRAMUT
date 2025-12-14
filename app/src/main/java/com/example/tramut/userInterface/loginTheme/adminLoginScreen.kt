@@ -21,10 +21,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myfacilitybookingsystem.R
-import com.example.myfacilitybookingsystem.ui.theme.Background
-import com.example.myfacilitybookingsystem.ui.theme.ErrorRed
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
+import com.example.tramut.R
+import com.example.tramut.ui.theme.Background
+import com.example.tramut.ui.theme.ErrorRed
 
 @Composable
 fun AdminLoginScreen(
@@ -39,7 +39,7 @@ fun AdminLoginScreen(
     // FIX: Only show Red X if error exists. No green check while typing.
     val idValidationState = if (isError) false else null
 
-    AdminLoginForm(
+    AdminLoginScreen(
         adminId = adminId,
         onAdminIdChange = { adminId = it },
         idValid = idValidationState,
@@ -65,7 +65,7 @@ fun AdminLoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminLoginForm(
+fun AdminLoginScreen(
     adminId: String,
     onAdminIdChange: (String) -> Unit,
     idValid: Boolean?,
@@ -111,7 +111,7 @@ fun AdminLoginForm(
             onValueChange = onPasswordChange,
             leadingIcon = { Icon(Icons.Outlined.Lock, "Lock Icon", tint = Color.Black) },
             trailingIcon = {
-                val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibilityoff
+                val iconRes = if (showPassword) com.example.tramut.R.drawable.ic_visibility else com.example.tramut.R.drawable.ic_visibility_off
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(painter = painterResource(id = iconRes), contentDescription = "Toggle", modifier = Modifier.size(28.dp))
                 }

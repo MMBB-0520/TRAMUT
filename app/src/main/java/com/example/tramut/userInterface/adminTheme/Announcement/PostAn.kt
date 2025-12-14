@@ -3,8 +3,10 @@ package com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcemen
 import androidx.compose.ui.unit.sp
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.widget.DatePicker
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +28,7 @@ import java.util.Calendar
 import com.example.myfacilitybookingsystem.viewModel.AnnouncementViewModel
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.* // For LabeledInput, TransparentTextField, etc.
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostAnnouncementScreen(
@@ -37,13 +40,14 @@ fun PostAnnouncementScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var isVenueExpanded by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(Unit) { viewModel.resetState() }
 
     val venueOptions = when (adminDepartment) {
         "Sport" -> listOf("All Sport Facilities", "Badminton Court", "Squash Court", "Gym")
-        "Library" -> listOf("All Library Rooms", "Discussion Room", "Study Cube")
-        else -> listOf("General", "Auditorium", "Meeting Room")
+        "Library" -> listOf("All Library Rooms", "Discussion Room", "Discussion Room with PC", "Discussion Room (with LCD Projector & Whiteboard)","Individual Study Room")
+        else -> listOf("All Discussion Room","Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector(2 PCs)","Discussion Room with Projector(2 PCs)[HDMI]")
     }
 
     fun showDatePicker(onDateSelected: (String) -> Unit) {
@@ -61,7 +65,16 @@ fun PostAnnouncementScreen(
         },
         containerColor = Color(0xFFEEEEF2)
     ) { padding ->
-        Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(24.dp)) {
+
+        Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(20.dp)
+                    .imePadding(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             LabeledInput("Facility / Department") { StaticInputText(text = adminDepartment) }
             Spacer(Modifier.height(16.dp))
 
