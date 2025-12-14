@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.myfacilitybookingsystem.AppDatabase
 import com.example.myfacilitybookingsystem.FBSApp
+import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.TRAMUTTheme
 import com.google.firebase.FirebaseApp
@@ -27,12 +29,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         FirebaseApp.initializeApp(this)
+        val db = AppDatabase.getInstance(this)
+        val usersRepo = UsersRepo(db.usersDao())
         setContent {
             TRAMUTTheme {
                 FBSApp(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Background)
+                        .background(Background),
+                    usersRepo = usersRepo
                 )
             }
         }

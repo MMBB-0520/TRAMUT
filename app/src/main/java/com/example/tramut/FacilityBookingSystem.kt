@@ -8,22 +8,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -133,8 +126,11 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     selectedTabIndex:Int,
-    onTabSelected:(Int) -> Unit
+    onTabSelected:(Int) -> Unit,
+    isStaff: Boolean = false
 ) {
+    val containerColor = if (isStaff) StaffRed else StudentBlue
+
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
             TopAppBar(
@@ -152,7 +148,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = StudentBlue,
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -174,7 +170,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = StaffRed,
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -228,7 +224,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Blue,
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -252,7 +248,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -282,31 +278,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.StudentBookingSport ->{
-            TopAppBar(
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                },
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("New Booking", color = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -321,6 +293,7 @@ fun TopBarScreen(
 fun FBSApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    usersRepo: UsersRepo
 ) {
     val context = LocalContext.current
 
@@ -358,11 +331,18 @@ fun FBSApp(
     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
-        topBar = { TopBarScreen(
+        topBar = {
+            val isStaffScreen = when {
+                currentUser?.role == "Staff" -> true
+                currentScreen == AppScreen.StaffLoginScreen -> true
+                else -> false
+            }
+            TopBarScreen(
             currentScreen = currentScreen,
             hasPopBack = {navController.popBackStack()},
             selectedTabIndex = selectedTabIndex,
-            onTabSelected = { selectedTabIndex = it }
+            onTabSelected = { selectedTabIndex = it },
+                isStaff = isStaffScreen
         ) },
         bottomBar = {
             val showBottomBar = currentScreen in listOf(
@@ -624,8 +604,7 @@ fun FBSApp(
                     )
                 }
 
-                composable(
-                    route = "BookingInfo/{bookingId}"
+                composable(route = "BookingInfo/{bookingId}"
                 ) { backStackEntry ->
                     val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
                     var booking by remember { mutableStateOf<Booking?>(null) }
@@ -656,16 +635,23 @@ fun FBSApp(
                     booking?.let { BookingInfoScreen(it) }
                 }
 
-                composable(
-                    route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
                     val date = backStackEntry.arguments?.getString("date") ?: ""
+                    val facilityType = when {
+                        venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
+                        venue.contains("Library", ignoreCase = true) -> "Library"
+                        else -> "Sports"
+                    }
+
+                    val isStaffUser = currentUser?.role == "Staff" || staffId.isNotEmpty()
 
                     BookSportScreen(
-                        selectedVenueFromPrevious = venue,
+                        facilityType = facilityType,
                         selectedDateFromPrevious = date,
-                        onSubmit = { venueType, date, startTime, endTime ->
+                        onBackFacilityPage = { navController.popBackStack() },
+                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
                             val bookingId = UUID.randomUUID().toString()
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
@@ -675,12 +661,14 @@ fun FBSApp(
                                 "startTime" to startTime,
                                 "endTime" to endTime,
                                 "duration" to "$startTime - $endTime",
+                                "pax" to pax,
+                                "members" to members.map {it.first to it.second},
                                 "status" to "Booked",
                                 "timestamp" to System.currentTimeMillis()
                             )
 
                             FirebaseFirestore.getInstance()
-                                .collection("sportBookings")
+                                .collection("bookings")
                                 .document(bookingId)
                                 .set(bookingData)
                                 .addOnSuccessListener {
@@ -689,7 +677,9 @@ fun FBSApp(
                                 .addOnFailureListener {
                                     Log.e("Firebase", "Failed to save booking", it)
                                 }
-                        }
+                        },
+                        isStaff = isStaffUser,
+                        userRepository = usersRepo
                     )
                 }
 
