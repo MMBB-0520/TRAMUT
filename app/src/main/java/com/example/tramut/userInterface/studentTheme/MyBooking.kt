@@ -36,7 +36,7 @@ fun MyBookingScreen(userId: String,navController: NavHostController) {
                         building = doc.getString("building") ?: "",
                         checkIn = doc.getString("checkIn") ?: "",
                         checkOut = doc.getString("checkOut") ?: "",
-                        status = doc.getString("status") ?: "Booked"
+                        status = doc.getString("status") ?: "Booked",
                     )
                 }
                 isLoading = false
