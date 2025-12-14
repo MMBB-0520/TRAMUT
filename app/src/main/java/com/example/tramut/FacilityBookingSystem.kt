@@ -46,6 +46,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.myfacilitybookingsystem.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
@@ -611,7 +612,7 @@ fun FBSApp(
 
                     LaunchedEffect(bookingId) {
                         FirebaseFirestore.getInstance()
-                            .collection("sportBookings")
+                            .collection("bookings")
                             .document(bookingId)
                             .get()
                             .addOnSuccessListener { doc ->
@@ -650,12 +651,17 @@ fun FBSApp(
                     BookSportScreen(
                         facilityType = facilityType,
                         selectedDateFromPrevious = date,
-                        onBackFacilityPage = { navController.popBackStack() },
+                        onBackFacilityPage = { navController.navigate(AppScreen.StudentBooking.name) {
+                            popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                        },
                         onSubmit = { venueType, date, startTime, endTime, pax, members ->
                             val bookingId = UUID.randomUUID().toString()
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
-                                "facility" to "Sports Facilities",
+                                "userId" to currentUser?.loginId,
+                                "facility" to facilityType,
                                 "venue" to venueType,
                                 "date" to date,
                                 "startTime" to startTime,
@@ -672,7 +678,9 @@ fun FBSApp(
                                 .document(bookingId)
                                 .set(bookingData)
                                 .addOnSuccessListener {
-                                    navController.navigate(AppScreen.StudentBookingDetails.name)
+                                    navController.navigate("BookingInfo/$bookingId") {
+                                        launchSingleTop = true
+                                    }
                                 }
                                 .addOnFailureListener {
                                     Log.e("Firebase", "Failed to save booking", it)
@@ -680,6 +688,13 @@ fun FBSApp(
                         },
                         isStaff = isStaffUser,
                         userRepository = usersRepo
+                    )
+                }
+
+                composable(route = AppScreen.StudentBookingDetail.name) {
+                    MyBookingScreen(
+                        navController = navController,
+                        userId = currentUser?.loginId ?: ""
                     )
                 }
 

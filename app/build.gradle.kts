@@ -8,9 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.tramut"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.tramut"
@@ -44,7 +42,7 @@ android {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0" )as Any)
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
@@ -53,6 +51,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation("androidx.room:room-runtime:2.6.1")
+    implementation(libs.firebase.database)
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 
