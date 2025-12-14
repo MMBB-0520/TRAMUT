@@ -1,13 +1,13 @@
 package com.example.myfacilitybookingsystem.rooms.repo
 
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
-// Make sure you have created this Booking data class (see below)
-import com.example.myfacilitybookingsystem.rooms.entity.Booking
+import com.example.tramut.rooms.entity.Booking
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlin.jvm.java
 
 class FacilityRepository {
 
@@ -79,9 +79,9 @@ class FacilityRepository {
             Result.failure(e)
         }
     }
-    fun getBookings(facilityId: String, date: String, onResult: (List<Booking>) -> Unit) {
+    fun getBookings(facilityName: String, date: String, onResult: (List<Booking>) -> Unit) {
         bookingsCollection
-            .whereEqualTo("facilityId", facilityId)
+            .whereEqualTo("facility", facilityName)
             .whereEqualTo("date", date)
             .get()
             .addOnSuccessListener { documents ->
@@ -96,7 +96,7 @@ class FacilityRepository {
     suspend fun saveBooking(booking: Booking): Boolean {
         return try {
             bookingsCollection
-                .document(booking.id)
+                .document(booking.bookingId)
                 .set(booking)
                 .await()
             true

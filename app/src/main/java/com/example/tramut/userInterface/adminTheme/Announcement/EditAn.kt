@@ -1,6 +1,8 @@
 package com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.viewModel.AnnouncementViewModel
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditAnnouncementScreen(
