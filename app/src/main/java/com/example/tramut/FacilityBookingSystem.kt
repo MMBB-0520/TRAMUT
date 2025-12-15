@@ -116,7 +116,12 @@ enum class AppScreen {
     StudentBookingChart,
     StudentBookingDetails,
     StudentBookingFacility,
-    StudentBookingSport
+    StudentBookingSport,
+
+    //Check-In Screen
+    CheckInBarcode,
+    CheckInManual,
+    CheckInSuccess,
 
 }
 
