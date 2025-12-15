@@ -1,5 +1,6 @@
-package com.example.myfacilitybookingsystem.rooms.repo
+package com.example.tramut.rooms.repo
 
+import android.util.Log
 import com.example.tramut.rooms.dao.UsersDAO
 import com.example.tramut.rooms.entity.Users
 import com.google.firebase.auth.FirebaseAuth
@@ -62,7 +63,7 @@ class UsersRepo(
                 loginId = loginId,
                 username = doc.getString("username") ?: "",
                 email = doc.getString("email") ?: "",
-                userIC = doc.getString("userIC") ?: "",
+                userIC = doc.getString("IC") ?: "",
                 role = doc.getString("role") ?: ""
             )
         }
@@ -76,7 +77,7 @@ class UsersRepo(
                 mapOf(
                     "username" to user.username,
                     "email" to user.email,
-                    "userIC" to user.userIC,
+                    "IC" to user.userIC,
                     "role" to user.role
                 )
             ).await()
@@ -84,19 +85,26 @@ class UsersRepo(
     }
 
     // -----------------------------
-    // 4️⃣ 忘记密码（用 loginId + IC 验证）
+    // 4️⃣ 忘记密码（用 email + IC 验证）
     // -----------------------------
-    suspend fun sendPasswordResetEmail(loginId: String, inputIC: String): Boolean = withContext(Dispatchers.IO) {
-        val doc = firestore.collection("users").document(loginId).get().await()
-        if (!doc.exists()) return@withContext false
-        val storedIC = doc.getString("userIC") ?: return@withContext false
-        if (storedIC != inputIC) return@withContext false
-        val email = doc.getString("email") ?: return@withContext false
+    suspend fun sendPasswordResetEmail(email: String, inputIC: String): Boolean = withContext(Dispatchers.IO) {
+        val snapshot = firestore.collection("users")
+            .whereEqualTo("email", email)
+            .whereEqualTo("IC", inputIC)
+            .limit(1)
+            .get()
+            .await()
+
+        if (snapshot.isEmpty) return@withContext false
+
         auth.sendPasswordResetEmail(email).await()
         true
     }
-    suspend fun findByEmail(email: String) =
-        usersDao.findByEmail(email) != null
+    suspend fun resetPassword(oobCode: String, newPassword: String): Boolean = withContext(Dispatchers.IO) {
+        auth.confirmPasswordReset(oobCode, newPassword)
+        true
+    }
+
 
     // -----------------------------
     // 5️⃣ 检查用户是否存在

@@ -1,9 +1,8 @@
 package com.example.tramut.viewModel
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.tramut.rooms.repo.UsersRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,39 +14,61 @@ class ForgotPwdViewModel (
     private val _emailError = MutableStateFlow<String?>(null)
     val emailError: StateFlow<String?> = _emailError
 
-    private val _isChecking = MutableStateFlow<Boolean?>(false)
-    val isChecking: StateFlow<Boolean?> = _isChecking
-    private val EmailRegex =
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
+    private val emailRegex =
         Regex("^[a-zA-Z0-9._%+-]+@(student\\.tarc\\.edu\\.my|tarc\\.edu\\.my)$")
 
+    fun hasMinLength(pwd: String): Boolean = pwd.length >= 8
+    fun hasLowerCase(pwd: String): Boolean = pwd.any { it.isLowerCase() }
+    fun hasUpperCase(pwd: String): Boolean = pwd.any { it.isUpperCase() }
+    fun hasNumberOrSpecial(pwd: String): Boolean =
+        pwd.any { it.isDigit() || !it.isLetterOrDigit() }
 
-    suspend fun checkEmailValidAndExists(email: String): Boolean {
-        // Step 1: 格式验证
-        if (!EmailRegex.matches(email)) {
-            _emailError.value = "Invalid TARC email format"
-            return false
+    fun requestPasswordReset(
+        email: String,
+        ic: String,
+        onSuccess: () -> Unit
+    ) {
+        if (email.isBlank()) {
+            _emailError.value = null
+            return
         }
 
-        _isChecking.value = true
-        val user = usersRepo.findByEmail(email)
-        _isChecking.value = false
+        if (!emailRegex.matches(email)) {
+            _emailError.value = "Invalid TARUMT email format"
+            return
+        }
 
-        return if (user != null) {
-            _emailError.value = null
-            true
-        } else {
-            _emailError.value = "Email not found"
-            false
+
+        viewModelScope.launch {
+            val success = usersRepo.sendPasswordResetEmail(email, ic)
+
+
+            if (!success) {
+                _emailError.value =
+                    "Please make sure your registered email and IC Number are correct."
+            } else {
+                _emailError.value = null
+                onSuccess()
+            }
         }
     }
 
 
+    fun resetPassword(oobCode: String, newPassword: String, onSuccess: () -> Unit) {
 
-    /** 忘记密码：通过 loginId + IC 验证发送重置邮件 */
-    fun sendPasswordReset(loginId: String, inputIC: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val success = usersRepo.sendPasswordResetEmail(loginId, inputIC)
-            onResult(success)
+            val success = usersRepo.resetPassword(oobCode, newPassword)
+
+            if (!success) {
+                _errorMessage.value = "Failed to reset password"
+            } else {
+                _errorMessage.value = null
+                onSuccess()
+            }
+
+
         }
     }
 }

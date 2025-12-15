@@ -33,6 +33,9 @@ import com.example.tramut.ui.theme.Background
 @Composable
 fun ForgetPasswordScreen1 (
     emailInput: String,
+    errorMessage: String?,
+    icInput: String,
+    onIcInputChange: (String) -> Unit = {},
     onEmailInputChange: (String) -> Unit = {},
     onCancelForgetPwdClick: () -> Unit = {},
     onRequestPwdResetClick: () -> Unit = {}
@@ -55,7 +58,7 @@ fun ForgetPasswordScreen1 (
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Forget Password",
+            text = " Retrieve Password",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )
@@ -68,22 +71,15 @@ fun ForgetPasswordScreen1 (
             color = Color.Gray
         )
 
-        Spacer(modifier = Modifier.height(42.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
-        Text(
-            text = "Email",
-            fontSize = 14.sp,
-            color = Color.Black
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
 
         OutlinedTextField(
             value = emailInput,
             onValueChange = onEmailInputChange,
             placeholder = {
                 Text(
-                text = "Enter your email",
+                text = "Registered Email",
                     fontSize = 15.sp,
                     color = Color.Gray
                 ) },
@@ -97,10 +93,31 @@ fun ForgetPasswordScreen1 (
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(15.dp))
+
+        OutlinedTextField(
+            value = icInput,
+            onValueChange = onIcInputChange,
+            placeholder = {
+                Text(
+                    text = "NRIC",
+                    fontSize = 15.sp,
+                    color = Color.Gray
+                ) },
+            modifier = Modifier
+                .fillMaxWidth()
+            ,shape = RoundedCornerShape(10.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Black
+            ),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = errorMessage ?: "Please enter your registered email",
+            text = errorMessage ?: "",
             fontSize = 13.sp,
             color = if (errorMessage != null) Color.Red else Color.Gray
         )
@@ -109,7 +126,7 @@ fun ForgetPasswordScreen1 (
 
         Button(
             onClick = onRequestPwdResetClick,
-            enabled = emailInput.isNotEmpty(),
+            enabled = emailInput.isNotBlank() && icInput.isNotBlank(),
             modifier = Modifier
                 .width(287.dp)
                 .height(43.dp)
@@ -151,6 +168,9 @@ fun ForgetPasswordScreen1 (
 fun PreviewForgetPasswordScreen() {
     ForgetPasswordScreen1(
         emailInput = "",
+        icInput = "",
+        errorMessage = null,
+        onIcInputChange = {},
         onEmailInputChange = {},
         onCancelForgetPwdClick = {},
         onRequestPwdResetClick = {}
