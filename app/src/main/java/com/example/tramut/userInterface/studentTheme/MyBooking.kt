@@ -21,14 +21,28 @@ fun MyBookingScreen(
     navController: NavController,
     userId: String
 ) {
+    // check if user O
+    Log.d("MyBookingScreen", "User ID received: $userId")
+
+    if (userId.isBlank()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     var bookingList by remember { mutableStateOf<List<Booking>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(userId) {
-        FirebaseFirestore.getInstance()
+    DisposableEffect(userId) {
+        val listener = FirebaseFirestore.getInstance()
             .collection("bookings")
             .whereEqualTo("userId", userId)
             .addSnapshotListener { snapshot, error ->
+
                 isLoading = false
 
                 if (error != null) {
@@ -44,6 +58,11 @@ fun MyBookingScreen(
                     }
                 }
             }
+
+        // CLEAN UP WHEN SCREEN LEAVES
+        onDispose {
+            listener.remove()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
