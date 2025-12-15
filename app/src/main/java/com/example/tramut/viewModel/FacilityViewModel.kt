@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
-import com.example.tramut.rooms.entity.Booking
 import com.example.myfacilitybookingsystem.rooms.repo.FacilityRepository
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
@@ -27,6 +26,8 @@ class FacilityViewModel : ViewModel() {
     var formStartTime = mutableStateOf("08:00")
     var formEndTime = mutableStateOf("22:00")
 
+
+
     // Error/Success Message for UI
     var operationStatus = mutableStateOf<String?>(null)
 
@@ -47,8 +48,11 @@ class FacilityViewModel : ViewModel() {
         if (facility == null) return
 
         formName.value = facility.name
-        formCategory.value = facility.roomCode // Ensure category is loaded
-        formCapacity.value = if (facility.capacity > 0) facility.capacity.toString() else ""
+
+        formCategory.value = facility.category
+
+        formCapacity.value = facility.capacity.joinToString(", ")
+
         formStatus.value = facility.status
         formStartTime.value = facility.startTime
         formEndTime.value = facility.endTime
@@ -72,6 +76,14 @@ class FacilityViewModel : ViewModel() {
         specialClosures: Map<String, List<Int>>,
         onResult: (Boolean, String?) -> Unit
     ) {
+        val capacityListToSave = formCapacity.value
+            .split(',', ' ')
+            .mapNotNull { it.trim().toLongOrNull() }
+            .distinct()
+            .toList()
+
+        val finalCapacity = if (capacityListToSave.isEmpty()) listOf(1L) else capacityListToSave
+
         val facilityData = hashMapOf(
             "name" to formName.value,
             "category" to formCategory.value,
@@ -79,7 +91,7 @@ class FacilityViewModel : ViewModel() {
             "startTime" to formStartTime.value,
             "endTime" to formEndTime.value,
             "status" to "Available",
-            "capacity" to (formCapacity.value.toIntOrNull() ?: 1),
+            "capacity" to finalCapacity,
             "specialClosures" to specialClosures
         )
 
@@ -94,19 +106,28 @@ class FacilityViewModel : ViewModel() {
             }
     }
 
-    // 5. UPDATE FACILITY (FIXED - NO _uiState)
+    // 5. UPDATE FACILITY
     fun updateFacility(
         docId: String,
         department: String,
+        dailyBreakHours: List<Int>,
         specialClosures: Map<String, List<Int>>?,
-        onResult: (Boolean, String?) -> Unit // Changed to Callback
+        onResult: (Boolean, String?) -> Unit
     ) {
+        val capacityListToSave = formCapacity.value
+            .split(',', ' ')
+            .mapNotNull { it.trim().toLongOrNull() }
+            .distinct()
+            .toList()
+
+        val finalCapacity = if (capacityListToSave.isEmpty()) listOf(1L) else capacityListToSave
+
         val updatedData = mapOf(
             "name" to formName.value,
             "category" to formCategory.value,
             "department" to department,
-            "capacity" to (formCapacity.value.toIntOrNull() ?: 0),
-            "status" to formStatus.value,
+            "capacity" to finalCapacity,
+            "dailyBreakHours" to dailyBreakHours,
             "startTime" to formStartTime.value,
             "endTime" to formEndTime.value,
             "specialClosures" to (specialClosures ?: emptyMap())
