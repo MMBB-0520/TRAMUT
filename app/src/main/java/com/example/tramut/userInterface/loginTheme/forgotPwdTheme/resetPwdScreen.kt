@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.loginTheme.forgotPwdTheme
 
+import android.R.attr.textStyle
 import android.icu.text.CaseMap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -247,6 +248,8 @@ fun SmallPasswordField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             textStyle = TextStyle(
                 fontSize = 16.sp, // 字体稍微增大，更易读

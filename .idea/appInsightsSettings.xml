@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.tramut" />
+                  <option name="mobileSdkAppId" value="1:478036607574:android:10d4ed8857804f09c6f1f7" />
+                  <option name="projectId" value="tramut-520" />
+                  <option name="projectNumber" value="478036607574" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

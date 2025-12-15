@@ -1,5 +1,6 @@
 package com.example.tramut.viewModel
 
+import android.util.Log.e
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tramut.rooms.entity.Users
@@ -44,6 +45,12 @@ class LoginViewModel(
     private val _showLoginError = MutableStateFlow(false)
     val showLoginError: StateFlow<Boolean> = _showLoginError
 
+
+    private val _isStudentLoggedIn  = MutableStateFlow(false)
+    val isStudentLoggedIn  : StateFlow<Boolean> = _isStudentLoggedIn
+
+    private val _isStaffLoggedIn   = MutableStateFlow(false)
+    val isStaffLoggedIn  : StateFlow<Boolean> = _isStaffLoggedIn
 
 
 
@@ -95,13 +102,7 @@ class LoginViewModel(
             }
         }
     }
-    /** 获取单个用户信息 */
-    fun getUserByLoginId(loginId: String, onSuccess: (Users?) -> Unit) {
-        viewModelScope.launch {
-            val user = usersRepo.getUserByLoginId(loginId)
-            onSuccess(user)
-        }
-    }
+
 
     /** 登录 */
     fun login(loginId: String, password: String, role: String, onResult: (Boolean) -> Unit) {
@@ -118,14 +119,21 @@ class LoginViewModel(
             try {
                 auth.signInWithEmailAndPassword(user.email, password).await()
                 _currentUser.value = user
-                if (role == "Student") _studentLoginError.value = false
-                else _staffLoginError.value = false
-
+                if (role == "Student") {
+                    _isStudentLoggedIn.value = true
+                    _studentLoginError.value = false
+                }
+                else{
+                    _isStaffLoggedIn.value = true
+                    _staffLoginError.value = false
+                }
                 usersRepo.syncFromFirebase()
                 onResult(true)
             } catch (e: Exception) {
-                if (role == "Student") _studentLoginError.value = true
-                else _staffLoginError.value = true
+                if (role == "Student")
+                    _studentLoginError.value = true
+                else
+                    _staffLoginError.value = true
                 onResult(false)
             }
         }
@@ -135,6 +143,8 @@ class LoginViewModel(
     fun logout() {
         auth.signOut()
         _currentUser.value = null
+        _isStudentLoggedIn.value = false
+        _isStaffLoggedIn.value = false
     }
 
 

@@ -59,7 +59,7 @@ import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
-import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen2
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdatedScreen
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
@@ -466,6 +466,8 @@ fun FBSApp(
     val staffLoginError by loginViewModel.staffLoginError.collectAsState()
     val showLoginError by loginViewModel.showLoginError.collectAsState()
     val currentUser by loginViewModel.currentUser.collectAsState()
+    val isStudentLoggedIn by loginViewModel.isStudentLoggedIn.collectAsState()
+    val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
 
@@ -491,27 +493,42 @@ fun FBSApp(
         },
         bottomBar = {
             val showBottomBar = currentScreen in listOf(
-                AppScreen.MainSystem,
                 AppScreen.HomeScreen,
                 AppScreen.StudentLoginScreen,
                 AppScreen.StaffLoginScreen,
-                AppScreen.AdminLoginScreen
+                AppScreen.AdminLoginScreen,
+                AppScreen.StudentScreen,
+                AppScreen.StaffScreen,
+                AppScreen.AdminScreen
             )
 
             if (showBottomBar) {
                 bottomChooseBar(
                     selectedIndex = when (currentScreen) {
-                        AppScreen.MainSystem, AppScreen.HomeScreen -> 0
-                        AppScreen.StudentLoginScreen -> 1
-                        AppScreen.StaffLoginScreen -> 2
+                        AppScreen.HomeScreen -> 0
+                        AppScreen.StudentLoginScreen, AppScreen.StudentScreen -> 1
+                        AppScreen.StaffLoginScreen, AppScreen.StaffScreen -> 2
                         AppScreen.AdminLoginScreen -> 3
                         else -> 0
                     },
                     onItemSelected = { index ->
                         when (index) {
                             0 -> navController.navigate(AppScreen.HomeScreen.name)
-                            1 -> navController.navigate(AppScreen.StudentLoginScreen.name)
-                            2 -> navController.navigate(AppScreen.StaffLoginScreen.name)
+                            1 -> {
+                                if (isStudentLoggedIn) {
+                                    navController.navigate(AppScreen.StudentScreen.name)
+                                } else {
+                                    navController.navigate(AppScreen.StudentLoginScreen.name)
+                                }
+                            }
+
+                            2 -> {
+                                if (isStaffLoggedIn) {
+                                    navController.navigate(AppScreen.StaffScreen.name)
+                                } else {
+                                    navController.navigate(AppScreen.StaffLoginScreen.name)
+                                }
+                            }
                             3 -> navController.navigate(AppScreen.AdminLoginScreen.name)
                         }
                     }
@@ -728,11 +745,15 @@ fun FBSApp(
                         },
                         onRequestPwdResetClick = {
                             forgotPwdViewModel.requestPasswordReset(email, ic) {
-                                navController.navigate("${AppScreen.ResetPwd.name}?oobCode={oobCode}")
+                                navController.navigate("${AppScreen.ResetPwd.name}?oobCode={oobCode}") {
+                                    popUpTo(AppScreen.MainSystem.name)
+                                    { inclusive = true }
+                                }
                             }
                         }
                     )
                 }
+
 
 //                composable(route = AppScreen.ForgotPassword2.name) {
 //
@@ -757,8 +778,8 @@ fun FBSApp(
                     route = "${AppScreen.ResetPwd.name}?oobCode={oobCode}",
                     arguments = listOf(navArgument("oobCode") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    var newPassword by mutableStateOf("")
-                    var confirmPassword by mutableStateOf("")
+                    var newPassword by rememberSaveable { mutableStateOf("") }
+                    var confirmPassword by rememberSaveable { mutableStateOf("") }
 
                     val oobCode = backStackEntry.arguments?.getString("oobCode")
                     if (oobCode == null) {
@@ -788,14 +809,30 @@ fun FBSApp(
                         onSubmitClick = {
                             // 调用 ViewModel 方法重置密码
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
-                                navController.navigate(AppScreen.MainSystem.name)
+                                navController.navigate(AppScreen.PwdUpdated.name)
                             }
                         },
                         onCancelClick = {
-                            navController.navigate(AppScreen.MainSystem.name)
+                            navController.navigate(AppScreen.HomeScreen.name)
                         }
                     )
+                }
 
+                composable(route = AppScreen.PwdUpdated.name){
+                    PasswordUpdatedScreen(
+                        onStudentLoginClick = {
+                            navController.navigate(AppScreen.StudentLoginScreen.name){
+                                popUpTo(AppScreen.PwdUpdated.name)
+                                { inclusive = true }
+                            }
+                        },
+                        onStaffLoginClick = {
+                            navController.navigate(AppScreen.StaffLoginScreen.name){
+                                popUpTo(AppScreen.PwdUpdated.name)
+                                { inclusive = true }
+                            }
+                        }
+                    )
                 }
 
 

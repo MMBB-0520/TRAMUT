@@ -1,10 +1,12 @@
 package com.example.tramut.rooms.repo
 
 import android.util.Log
+import android.util.Log.e
 import com.example.tramut.rooms.dao.UsersDAO
 import com.example.tramut.rooms.entity.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -12,7 +14,7 @@ import kotlinx.coroutines.withContext
 
 class UsersRepo(
     private val usersDao: UsersDAO
-){
+) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -25,7 +27,8 @@ class UsersRepo(
     suspend fun delete(user: Users) = usersDao.deleteUser(user)
     suspend fun deleteAll() = usersDao.deleteAllUsers()
     suspend fun getUserByLoginId(loginId: String) = usersDao.getUserByLoginId(loginId)
-    suspend fun getUserByLoginIdAndRole(loginId: String, role: String) = usersDao.getUserByLoginIdAndRole(loginId, role)
+    suspend fun getUserByLoginIdAndRole(loginId: String, role: String) =
+        usersDao.getUserByLoginIdAndRole(loginId, role)
 
 
     // -----------------------------
@@ -87,23 +90,34 @@ class UsersRepo(
     // -----------------------------
     // 4️⃣ 忘记密码（用 email + IC 验证）
     // -----------------------------
-    suspend fun sendPasswordResetEmail(email: String, inputIC: String): Boolean = withContext(Dispatchers.IO) {
-        val snapshot = firestore.collection("users")
-            .whereEqualTo("email", email)
-            .whereEqualTo("IC", inputIC)
-            .limit(1)
-            .get()
-            .await()
 
-        if (snapshot.isEmpty) return@withContext false
+    suspend fun sendPasswordResetEmail(email: String, inputIC: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val snapshot = firestore.collection("users")
+                .whereEqualTo("email", email)
+                .whereEqualTo("IC", inputIC)
+                .limit(1)
+                .get()
+                .await()
 
-        auth.sendPasswordResetEmail(email).await()
-        true
-    }
-    suspend fun resetPassword(oobCode: String, newPassword: String): Boolean = withContext(Dispatchers.IO) {
-        auth.confirmPasswordReset(oobCode, newPassword)
-        true
-    }
+            if (snapshot.isEmpty) return@withContext false
+
+            auth.sendPasswordResetEmail(email).await()
+            true
+        }
+
+    suspend fun resetPassword(oobCode: String, newPassword: String): Boolean =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                // ✅ 使用 .await() 确保协程等待 Firebase 操作完成
+                auth.confirmPasswordReset(oobCode, newPassword).await()
+                true
+            } catch (e: Exception) {
+                Log.e("UsersRepo", "Reset failed", e)
+                // ❌ 如果发生错误（例如网络问题、oobCode无效/过期），则返回 false
+                false
+            }
+        }
 
 
     // -----------------------------
@@ -115,4 +129,5 @@ class UsersRepo(
 
     suspend fun checkStaffExists(loginId: String) =
         usersDao.getUserByLoginIdAndRole(loginId, "Staff") != null
+
 }

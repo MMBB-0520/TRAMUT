@@ -58,7 +58,7 @@ fun ForgetPasswordScreen1 (
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = " Retrieve Password",
+            text = "Retrieve Password",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )

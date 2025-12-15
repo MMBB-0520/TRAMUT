@@ -40,6 +40,10 @@ interface UsersDAO {
     @Query("SELECT * FROM users WHERE loginId = :loginId")
     suspend fun getUserByLoginId(loginId: String): Users?
 
+    @Query("SELECT * FROM users WHERE email = :email AND IC = :ic")
+    suspend fun getUserByEmailAndIC(email: String, ic: String): Users?
+
+
     @Query("SELECT * FROM users WHERE loginId = :loginId AND role = :role")
     suspend fun getUserByLoginIdAndRole(loginId: String, role: String): Users?
 
