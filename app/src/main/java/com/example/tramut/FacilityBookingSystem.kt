@@ -56,6 +56,16 @@ import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.AdminMainScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AdminAnnouncementScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AnnouncementDetailScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.EditAnnouncementScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.PostAnnouncementScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
+import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.myfacilitybookingsystem.userInterface.loginTheme.AdminLoginScreen
+import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
+import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
@@ -129,27 +139,17 @@ enum class AppScreen {
     StaffApprove,
 
     // Admin Screens
-    AdminAddFacility,
-    AdminManageUsers,
-
-    // Wei Qi Review
+    AdminMenuScreen,
+    AdminCheckin,
+    AdminCheckout,
+    ViewAn,
+    PostAn,
+    ViewAnDetail,
+    EditAn,
+    AddFac,
+    EditFac,
+    ViewTimetable,
     AdminViewReview,
-    AdminReviewDetail,
-
-    StudentViewReview,
-    StudentAddReview,
-
-    StaffViewReview,
-    StaffAddReview,
-
-    // KK check in
-    CheckInManual,
-    CheckInBarcode,
-    CheckInSuccess,
-
-    CheckOutManual,
-    CheckOutBarcode,
-    CheckOutSuccess,
 
     // Booking
     CITCBooking,
@@ -350,72 +350,6 @@ fun TopBarScreen(
                 )
             )
         }
-        AppScreen.CheckInManual,AppScreen.CheckInBarcode,AppScreen.CheckInSuccess -> {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = hasPopBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-
-                        )
-                    }
-                },
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            text = "Check-In",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.CheckOutManual,AppScreen.CheckOutBarcode,AppScreen.CheckOutSuccess -> {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = hasPopBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-
-                        )
-                    }
-                },
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            text = "Check-Out",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
-                    titleContentColor = Color.White
-                )
-            )
-        }
         else -> {}
     }
 }
@@ -427,6 +361,7 @@ fun FBSApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startIntent: Intent?
+    usersRepo: UsersRepo
 ) {
     LaunchedEffect(startIntent) {
         val data = startIntent?.data
@@ -454,6 +389,11 @@ fun FBSApp(
     val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
+
+    val adminsViewModel: AdminsViewModel = viewModel()
+    val adminUser = adminsViewModel.adminUser.value
+    val currentAdminDept = adminUser?.department ?: "General"
+    val currentAdminLoginId = adminUser?.login_id ?: ""
 
     // Compose 状态
     var password by remember { mutableStateOf("") }
@@ -703,28 +643,104 @@ fun FBSApp(
 
                 }
 
-                // Admin Login Screen
+                // 1. ADMIN LOGIN
                 composable(route = AppScreen.AdminLoginScreen.name) {
                     var adminId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     AdminLoginScreen(
-                        adminId = adminId,
-                        onAdminIdChange = { adminId = it },
-                        password = pwd,
-                        onPasswordChange = { pwd = it },
-                        idValid = idValid,
-                        showLoginError = showLoginError,
-                        onLoginClick = {
-                            navController.navigate(AppScreen.AdminScreen.name) {
-                                popUpTo(AppScreen.AdminLoginScreen.name) {
-                                    inclusive = true
-                                }
+                        viewModel = adminsViewModel,
+                        onLoginSuccess = {
+                            navController.navigate(AppScreen.AdminMenuScreen.name) {
+                                popUpTo(AppScreen.AdminLoginScreen.name) { inclusive = true }
                             }
                         }
                     )
                 }
-                // Admin Main Screen
-                composable(route = AppScreen.AdminScreen.name) {
+
+                // 2. ADMIN DASHBOARD
+                composable(route = AppScreen.AdminMenuScreen.name) {
+                    AdminMainScreen(
+                        navController = navController,
+                        viewModel = adminsViewModel
+                    )
+                }
+
+                // 3. ANNOUNCEMENTS LIST
+                composable(route = AppScreen.ViewAn.name) {
+                    AdminAnnouncementScreen(
+                        currentAdminDepartment = currentAdminDept,
+                        onNavigateToEdit = { docId -> navController.navigate("${AppScreen.EditAn.name}/$docId") },
+                        onNavigateToAdd = { navController.navigate(AppScreen.PostAn.name) },
+                        onNavigateToDetail = { id ->
+                            navController.navigate("${AppScreen.ViewAnDetail.name}/$id")
+                        },
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(
+                    route = "${AppScreen.ViewAnDetail.name}/{anId}", // This /{anId} is crucial
+                    arguments = listOf(navArgument("anId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val anId = backStackEntry.arguments?.getString("anId") ?: ""
+                    AnnouncementDetailScreen(
+                        navController = navController,
+                        announcementId = anId
+                    )
+                }
+
+                // 4. POST ANNOUNCEMENT
+                composable(route = AppScreen.PostAn.name) {
+                    PostAnnouncementScreen(
+                        adminDepartment = currentAdminDept,
+                        adminId = currentAdminLoginId,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                // 5. EDIT ANNOUNCEMENT (Dynamic ID)
+                composable(
+                    route = "${AppScreen.EditAn.name}/{announcementId}",
+                    arguments = listOf(navArgument("announcementId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val id = backStackEntry.arguments?.getString("announcementId") ?: ""
+                    EditAnnouncementScreen(
+                        announcementId = id,
+                        adminDepartment = currentAdminDept,
+                        onUpdateSuccess = { navController.popBackStack() },
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+
+                // 6. ADD FACILITY
+                composable(route = AppScreen.AddFac.name) {
+                    AdminAddFacilityScreen(
+                        adminDepartment = currentAdminDept,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                // 7. EDIT FACILITY
+                composable(route = AppScreen.EditFac.name) {
+                    EditFacilityScreen(
+                        adminDepartment = currentAdminDept,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                // 8. preview tt
+                composable(
+                    route = "${AppScreen.ViewTimetable.name}/{departmentName}",
+                    arguments = listOf(navArgument("departmentName") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport"
+
+                    // Pass to 'initialDepartment'
+                    TimetableScreen(
+                        initialDepartment = departmentName,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
                 }
                 // Forgot Password Screen
                 composable(route = AppScreen.ForgotPassword1.name) {
@@ -907,16 +923,23 @@ fun FBSApp(
                     booking?.let { BookingInfoScreen(it) }
                 }
 
-                composable(
-                    route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
                     val date = backStackEntry.arguments?.getString("date") ?: ""
+                    val facilityType = when {
+                        venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
+                        venue.contains("Library", ignoreCase = true) -> "Library"
+                        else -> "Sports"
+                    }
+
+                    val isStaffUser = currentUser?.role == "Staff" || staffId.isNotEmpty()
 
                     BookSportScreen(
-                        selectedVenueFromPrevious = venue,
+                        facilityType = facilityType,
                         selectedDateFromPrevious = date,
-                        onSubmit = { venueType, date, startTime, endTime ->
+                        onBackFacilityPage = { navController.popBackStack() },
+                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
                             val bookingId = UUID.randomUUID().toString()
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
@@ -926,12 +949,14 @@ fun FBSApp(
                                 "startTime" to startTime,
                                 "endTime" to endTime,
                                 "duration" to "$startTime - $endTime",
+                                "pax" to pax,
+                                "members" to members.map {it.first to it.second},
                                 "status" to "Booked",
                                 "timestamp" to System.currentTimeMillis()
                             )
 
                             FirebaseFirestore.getInstance()
-                                .collection("sportBookings")
+                                .collection("bookings")
                                 .document(bookingId)
                                 .set(bookingData)
                                 .addOnSuccessListener {
@@ -940,8 +965,27 @@ fun FBSApp(
                                 .addOnFailureListener {
                                     Log.e("Firebase", "Failed to save booking", it)
                                 }
-                        }
+                        },
+                        isStaff = isStaffUser,
+                        userRepository = usersRepo
                     )
+                }
+
+
+                composable(route = AppScreen.CITCBooking.name) {
+                    // CITC Booking Screen
+                }
+                composable(route = AppScreen.LibraryBooking.name) {
+                    // Library Booking Screen
+                }
+                composable(route = AppScreen.SportsBooking.name) {
+                    // Sports Booking Screen
+                }
+                composable(route = AppScreen.CITCTimetable.name) {
+                    // CITC Timetable
+                }
+                composable(route = AppScreen.LibraryTimetable.name) {
+                    // Library Timetable
                 }
             }
         }
