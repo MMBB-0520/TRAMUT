@@ -26,9 +26,9 @@ class FacilityRepository {
     }
 
     fun getFacilitiesFlow(department: String): Flow<List<Facility>> = callbackFlow {
-        // Querying "facility_type" because that is how you saved it in updateFacility
+
         val listener = facilitiesCollection
-            .whereEqualTo("facility_type", department)
+            .whereEqualTo("department", department)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
@@ -55,13 +55,18 @@ class FacilityRepository {
 
     suspend fun updateFacility(facility: Facility): Result<Unit> {
         return try {
+
             val updates = mapOf(
                 "facility_name" to facility.name,
-                "facility_type" to facility.department,
-                "facility_status" to facility.status,
+                "category" to facility.category,
+                "department" to facility.department,
+                "status" to facility.status,
                 "capacity" to facility.capacity,
-                "start_time" to facility.startTime,
-                "end_time" to facility.endTime
+                "startTime" to facility.startTime,
+                "endTime" to facility.endTime,
+                "dailyBreakHours" to facility.dailyBreakHours,
+                "specialClosures" to facility.specialClosures,
+                "duration" to facility.bookedSlots
             )
 
             facilitiesCollection.document(facility.id).update(updates).await()
