@@ -1,8 +1,9 @@
 package com.example.tramut.userInterface
 
+import android.R.attr.rowHeight
 import android.app.DatePickerDialog
 import android.os.Build
-import android.util.Log // Required for debugging
+import android.util.Log
 import android.widget.DatePicker
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -44,68 +45,42 @@ fun TimetableScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // 1. Category Options List
+    // 1. Category Options List (Remains the same)
     val categoryOptions = remember(initialDepartment) {
         val optionsList = when (initialDepartment) {
-            "Sport Facilities" -> listOf(
-                "All Sport Facilities",
-                "Badminton",
-                "Squash",
-                "Gym",
-                "Guest/Karaoke Room",
-                "Swimming Pool",
-                "Snooker",
-                "Pickleball",
-                "Table Tennis",
-                "Tennis",
-                "Futsal"
-            )
-
-            "Library" -> listOf(
-                "All Library Rooms",
-                "Discussion Room",
-                "Discussion Room with PC",
-                "Individual Study Room"
-            )
-
-            "CITC" -> listOf(
-                "All CITC Facilities",
-                "Discussion Room (1 PC)",
-                "Discussion Room (2 PCs)",
-                "Discussion Room with Projector (2 PCs)",
-                "Discussion Room with Projector (2 PCs)[HDMI]"
-            )
+            "Sport Facilities" -> listOf("All Sport Facilities", "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
+            "Library" -> listOf("All Library Rooms", "Discussion Room", "Discussion Room with PC", "Individual Study Room")
+            "CITC" -> listOf("All CITC Facilities", "Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
             else -> listOf("All $initialDepartment Facilities")
         }
-
-        Log.d("TimetableScreen", "Initial Department: $initialDepartment")
-        Log.d("TimetableScreen", "Category Options List: $optionsList (Size: ${optionsList.size})")
-
         optionsList
     }
 
     // 2. STATE HOLDER
-    // This variable was missing or misplaced in your prior attempt, which is crucial.
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
 
-    // FIX for Dropdown Menu Issue: Reset selectedCategory when navigating between departments
+    // FIX 1: Reset selectedCategory when navigating between departments
     LaunchedEffect(categoryOptions) {
         selectedCategory = categoryOptions.first()
     }
 
+    // FIX 2: LOAD DATA LOGIC (Triggers the consolidated fetchTimetableData)
+    // Removed uiState.selectedDate as a key, as its update is handled inside the VM and doesn't require re-fetching facilities.
+    LaunchedEffect(selectedCategory) {
+        val facilityQuery = if (selectedCategory.startsWith("All")) {
+            initialDepartment
+        } else {
+            selectedCategory
+        }
+        val isCategoryQuery = !selectedCategory.startsWith("All")
 
-    // 3. LOAD DATA LOGIC (Reacts to both category and date changes)
-    LaunchedEffect(selectedCategory, uiState.selectedDate) {
-        // If the 'All' option is selected, load by department name.
-        if (selectedCategory.startsWith("All")) {
-            viewModel.loadFacilities(initialDepartment, isCategory = false)
-        }
-        // Otherwise, load by the specific category name.
-        else {
-            viewModel.loadFacilities(selectedCategory, isCategory = true)
-        }
-        // Ensure bookings are re-fetched whenever the facility list or date changes.
-        viewModel.loadBookingsForDate(uiState.selectedDate)
+        // Call the consolidated fetch function.
+        // We pass uiState.selectedDate, which ensures the first fetch uses the date initialized in the VM.
+        viewModel.fetchTimetableData(
+            identifier = facilityQuery,
+            isCategory = isCategoryQuery,
+            date = uiState.selectedDate // Use the date initialized in the VM
+        )
     }
 
     Scaffold(
@@ -134,7 +109,7 @@ fun TimetableScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    // Pass the full categoryOptions list
+                    // Category Dropdown
                     DepartmentDropdownLineStyle(
                         currentSelection = selectedCategory,
                         options = categoryOptions,
@@ -143,8 +118,10 @@ fun TimetableScreen(
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
+                    // Date Picker
                     AdminDatePickerLineStyle(
                         currentDate = uiState.selectedDate,
+                        // FIX: Changed onDateSelected to call the VM's updateDate, which handles booking refresh
                         onDateSelected = { newDate -> viewModel.updateDate(newDate) }
                     )
                 }
@@ -156,7 +133,15 @@ fun TimetableScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
                 }
-            } else {
+            } else if (uiState.errorMessage != null) {
+                Box(
+                    Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                ) {
+                    Text("Error: ${uiState.errorMessage}",
+                        color = Color.Red)
+                }
+            }
+            else {
                 Column(modifier = Modifier.weight(1f)) {
                     TimetableGrid(
                         facilities = uiState.facilitiesList,
@@ -186,7 +171,7 @@ fun TimetableScreen(
     }
 }
 
-// --- HELPER COMPONENT: THE GRID ---
+// --- HELPER COMPONENT: The Grid (Unchanged) ---
 @Composable
 fun TimetableGrid(
     facilities: List<Facility>,
@@ -237,7 +222,7 @@ fun TimetableGrid(
         Column(
             modifier = Modifier
                 .verticalScroll(verticalScroll)
-                .fillMaxHeight() // Ensures the grid takes available vertical space
+                .fillMaxHeight()
         ) {
             facilities.forEach { facility ->
                 Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
@@ -263,6 +248,7 @@ fun TimetableGrid(
 
                     // Status Cells
                     (8..22).forEach { hour ->
+                        // Calling getSlotStatus with the current facility and hour
                         val status = viewModel.getSlotStatus(facility, hour)
                         val cellColor = when (status) {
                             "Available" -> Color(0xFF4CAF50) // Green
@@ -285,7 +271,7 @@ fun TimetableGrid(
     }
 }
 
-// --- DROPDOWN COMPONENT ---
+// --- DROPDOWN COMPONENT (Unchanged) ---
 @Composable
 fun DepartmentDropdownLineStyle(
     currentSelection: String,
@@ -349,15 +335,14 @@ fun DepartmentDropdownLineStyle(
     }
 }
 
+// --- DATE PICKER COMPONENT (Unchanged) ---
 @Composable
 fun AdminDatePickerLineStyle(currentDate: String, onDateSelected: (String) -> Unit) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
     val parts = currentDate.split("-")
 
-    // Set calendar to the current date string
     if (parts.size == 3) {
-        // Month is 0-indexed in Calendar
         try {
             calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
         } catch (e: NumberFormatException) {
@@ -365,11 +350,9 @@ fun AdminDatePickerLineStyle(currentDate: String, onDateSelected: (String) -> Un
         }
     }
 
-
     val datePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, year: Int, month: Int, day: Int ->
-            // DatePickerDialog month is 0-indexed, so we add 1 for the String format
             onDateSelected(String.format("%d-%02d-%02d", year, month + 1, day))
         },
         calendar.get(Calendar.YEAR),
@@ -405,7 +388,7 @@ fun AdminDatePickerLineStyle(currentDate: String, onDateSelected: (String) -> Un
     }
 }
 
-// --- LEGEND COMPONENT ---
+// --- LEGEND COMPONENT (Unchanged) ---
 @Composable
 fun LegendItem(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
