@@ -49,13 +49,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.checkincompose.BarcodeScannerScreen
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
-import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
-import com.example.tramut.viewModel.UsersViewModel
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.AdminMainScreen
@@ -459,7 +456,7 @@ fun FBSApp(
                 AppScreen.AdminLoginScreen,
                 AppScreen.StudentScreen,
                 AppScreen.StaffScreen,
-                AppScreen.AdminScreen
+                AppScreen.AdminScreen,
                 AppScreen.AdminLoginScreen,
                 AppScreen.StudentScreen,
                 AppScreen.StaffScreen,
@@ -1018,7 +1015,6 @@ fun FBSApp(
                             navController.navigate("${AppScreen.CheckOutManual.name}/$scannedId")
                         },
                         onManualInputClicked = {
-                            // Navigate to Manual Entry, passing the bookingId
                             navController.navigate("${AppScreen.CheckOutManual.name}/_empty_")
                         },
                         onBackClicked = {

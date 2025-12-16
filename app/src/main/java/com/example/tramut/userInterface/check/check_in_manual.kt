@@ -44,7 +44,6 @@ sealed class EntryUiState {
     data class Error(val message: String) : EntryUiState()
 }
 
-// --- 2. VIEWMODEL (LOGIC FOR BOTH) ---
 class EntryViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
@@ -56,12 +55,11 @@ class EntryViewModel : ViewModel() {
         return sdf.format(Date())
     }
 
-    // NEW FUNCTION: Fetch Booking from Firestore by ID (mimicking repository access)
+    // Helper: Fetch Booking from Firestore
     private suspend fun getBookingFromDb(id: String): Booking? {
         return try {
             val doc = bookingsCollection.document(id).get().await()
             if (doc.exists()) {
-                // Assuming Booking data class fields match Firestore document fields
                 doc.toObject(Booking::class.java)?.copy(bookingId = doc.id)
             } else {
                 null
@@ -75,10 +73,10 @@ class EntryViewModel : ViewModel() {
     fun performCheckIn(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
-            delay(1000)
+            // Artificial delay for UX (optional)
+            delay(500)
 
-            // val booking = bookingsCollection.getBooking(bookingId) // Removed erroneous line
-            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
+            val booking = getBookingFromDb(bookingId)
 
             if (booking == null) {
                 _uiState.value = EntryUiState.Error("Booking not found.")
@@ -95,10 +93,20 @@ class EntryViewModel : ViewModel() {
             if (isAuthorized(booking, enteredId)) {
                 val checkInTime = getCurrentTime()
 
-                //save to db code
-                // repository.updateCheckIn(bookingId, checkInTime, status = "Checked In")
-                println("Saving Check-In Time to DB: $checkInTime")
-                _uiState.value = EntryUiState.Success
+                // --- UPDATE FIRESTORE (Repository Logic) ---
+                try {
+                    bookingsCollection.document(bookingId).update(
+                        mapOf(
+                            "status" to "Checked In",
+                            "checkIn" to checkInTime,
+                        )
+                    ).await()
+
+                    println("Saved Check-In Time to DB: $checkInTime")
+                    _uiState.value = EntryUiState.Success
+                } catch (e: Exception) {
+                    _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
+                }
             } else {
                 _uiState.value = EntryUiState.Error("ID $enteredId is not authorized for this booking.")
             }
@@ -108,10 +116,9 @@ class EntryViewModel : ViewModel() {
     fun performCheckOut(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
-            delay(1000)
+            delay(500)
 
-            //val booking = repository.getBooking(bookingId)
-            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
+            val booking = getBookingFromDb(bookingId)
 
             if (booking == null) {
                 _uiState.value = EntryUiState.Error("Booking not found.")
@@ -122,24 +129,37 @@ class EntryViewModel : ViewModel() {
             if (isAuthorized(booking, enteredId)) {
                 val checkOutTime = getCurrentTime()
 
-                // save to db here
-                // repository.updateCheckOut(bookingId, checkOutTime, status = "Completed")
-                println("Saving Check-Out Time to DB: $checkOutTime")
-                _uiState.value = EntryUiState.Success
+                // UPDATE FIRESTORE (Repository Logic)
+                try {
+                    bookingsCollection.document(bookingId).update(
+                        mapOf(
+                            "status" to "Completed",
+                            "checkOut" to checkOutTime
+                        )
+                    ).await()
+
+                    println("Saved Check-Out Time to DB: $checkOutTime")
+                    _uiState.value = EntryUiState.Success
+                } catch (e: Exception) {
+                    _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
+                }
             } else {
                 _uiState.value = EntryUiState.Error("ID $enteredId is not authorized to check out.")
             }
         }
     }
 
-    // Helper: Check if User is Booker or Member
+    // Check if User is Booker or Member
     private fun isAuthorized(booking: Booking, id: String): Boolean {
+        // Admin override can be added here if needed (e.g. if id == "ADMIN")
         return booking.userId == id || booking.members.any { it.first == id }
     }
 
-    // Helper: Check 15-min expiry
+    //Check 15-min expiry
     private fun isBookingExpired(booking: Booking): Boolean {
         if (booking.status.equals("Cancelled", ignoreCase = true)) return true
+        if (booking.status.equals("Completed", ignoreCase = true)) return true
+
         return try {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
             val bookingDateTimeStr = "${booking.date} ${booking.startTime}"
@@ -157,15 +177,13 @@ class EntryViewModel : ViewModel() {
     fun resetState() {
         _uiState.value = EntryUiState.Idle
     }
-
 }
 
-// --- 3. UI IMPLEMENTATION (UNIFIED SCREEN) ---
-
+// check-in manual entry screen
 @Composable
 fun ManualEntryScreen(
     bookingId: String,
-    isCheckIn: Boolean = true, // Toggle this for Check-Out
+    isCheckIn: Boolean = true,
     initialId: String = "",
     onSuccess: (String) -> Unit,
     onBackClicked: () -> Unit = {},
@@ -174,10 +192,10 @@ fun ManualEntryScreen(
     var studentId by remember { mutableStateOf(initialId) }
     val uiState by viewModel.uiState.collectAsState()
 
-    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4
+    // Validation: simple length check
+    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4 && studentId.length <= 7
     val isLoading = uiState is EntryUiState.Loading
 
-    // Text & Strings based on Mode
     val screenTitle = if (isCheckIn) "Check-In" else "Check-Out"
     val successMessage = if (isCheckIn) "Check-In Successful" else "Check-Out Successful"
 
@@ -210,11 +228,11 @@ fun ManualEntryScreen(
             OutlinedTextField(
                 value = studentId,
                 onValueChange = {
-                    if (it.length <= 10) {
-                        studentId = it.filter { char -> char.isDigit() }
+                    if (it.length <= 15) { // Limit length
+                        studentId = it
                     }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text), // Changed to Text to allow alphanumeric IDs if needed
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLoading,
@@ -273,8 +291,7 @@ fun ManualEntryScreen(
     }
 }
 
-// --- 4. HELPER COMPONENTS ---
-
+//topbar for checkin and check out
 @Composable
 fun CheckInTopBar(title: String, onBackClicked: () -> Unit) {
     Box(
@@ -296,9 +313,7 @@ fun CheckInTopBar(title: String, onBackClicked: () -> Unit) {
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     tint = Color.White,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }
@@ -312,20 +327,6 @@ fun PreviewManualCheckIn() {
         ManualEntryScreen(
             bookingId = "dummy",
             isCheckIn = true,
-            initialId = "1234",
-            onSuccess = {},
-            onBackClicked = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Mode: Check-Out")
-@Composable
-fun PreviewManualCheckOut() {
-    TRAMUTTheme {
-        ManualEntryScreen(
-            bookingId = "dummy",
-            isCheckIn = false,
             initialId = "1234",
             onSuccess = {},
             onBackClicked = {}
