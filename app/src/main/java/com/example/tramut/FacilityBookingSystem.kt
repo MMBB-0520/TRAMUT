@@ -375,7 +375,8 @@ fun TopBarScreen(
 @Composable
 fun FBSApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    usersRepo: UsersRepo
 ) {
     val context = LocalContext.current
 
@@ -784,29 +785,28 @@ fun FBSApp(
                     booking?.let { BookingInfoScreen(it) }
                 }
 
-                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(
+                    route = AppScreen.StudentBookingSport.name + "/{venue}",
+                    arguments = listOf(
+                        navArgument("venue") { type = NavType.StringType }
+                    )
                 ) { backStackEntry ->
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
-                    val date = backStackEntry.arguments?.getString("date") ?: ""
                     val facilityType = when {
                         venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
                         venue.contains("Library", ignoreCase = true) -> "Library"
                         else -> "Sports"
                     }
 
-                    val isStaffUser = currentUser?.role == "Staff" || staffId.isNotEmpty()
-
                     BookSportScreen(
                         facilityType = facilityType,
-                        selectedDateFromPrevious = date,
+                        selectedDateFromPrevious = "",
                         onBackFacilityPage = {
-                            navController.navigate(AppScreen.StudentBooking.name) {
-                                popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
-                                launchSingleTop = true
-                            }
+                            navController.popBackStack()
                         },
                         onSubmit = { venueType, date, startTime, endTime, pax, members ->
                             val bookingId = UUID.randomUUID().toString()
+
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
                                 "userId" to currentUser?.loginId,
@@ -828,21 +828,16 @@ fun FBSApp(
                                 .set(bookingData)
                                 .addOnSuccessListener {
                                     navController.navigate(AppScreen.StudentBooking.name) {
-                                        // Clear the back stack so user can't go back to booking form
                                         popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
                                         launchSingleTop = true
                                     }
                                 }
-                                .addOnFailureListener {
-                                    Log.e("Firebase", "Failed to save booking", it)
-                                }
                         },
-                        isStaff = isStaffUser,
+                        isStaff = currentUser?.role == "Staff",
                         userRepository = usersRepo
                     )
                 }
-
-                composable(
+                    composable(
                     route = "${AppScreen.StudentMyBooking.name}/{userId}",
                     arguments = listOf(navArgument("userId") { type = NavType.StringType })
                 ) {
@@ -863,6 +858,7 @@ fun FBSApp(
                 composable(route = AppScreen.SportsBooking.name) {
                     // Sports Booking Screen
                 }
+
                 composable(route = AppScreen.CITCTimetable.name) {
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",

@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Background),
+                    usersRepo = usersRepo
                 )
             }
         }
