@@ -1,6 +1,5 @@
 package com.example.tramut.userInterface.loginTheme
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -97,7 +96,7 @@ fun StaffLoginScreen(
                         contentDescription = "Invalid",
                         tint = Color.Red
                     )
-                    null -> {} // 不显示
+                    null -> {}
                 }
             },
             singleLine = true,

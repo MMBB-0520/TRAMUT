@@ -1,14 +1,11 @@
 package com.example.tramut.rooms.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Update
 import com.example.tramut.rooms.entity.Users
-import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -19,18 +16,6 @@ interface UsersDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUsers(users: List<Users>)
 
-    @Update
-    suspend fun updateUser(user: Users)
-
-    @Update
-    suspend fun updateUsers(users: List<Users>)
-
-    @Delete
-    suspend fun deleteUser(user: Users)
-
-    @Delete
-    suspend fun deleteUsers(users: List<Users>)
-
     @Query("SELECT * FROM users")
     fun getAllUsers(): Flow<List<Users>>
 
@@ -39,10 +24,6 @@ interface UsersDAO {
 
     @Query("SELECT * FROM users WHERE loginId = :loginId")
     suspend fun getUserByLoginId(loginId: String): Users?
-
-    @Query("SELECT * FROM users WHERE email = :email AND IC = :ic")
-    suspend fun getUserByEmailAndIC(email: String, ic: String): Users?
-
 
     @Query("SELECT * FROM users WHERE loginId = :loginId AND role = :role")
     suspend fun getUserByLoginIdAndRole(loginId: String, role: String): Users?

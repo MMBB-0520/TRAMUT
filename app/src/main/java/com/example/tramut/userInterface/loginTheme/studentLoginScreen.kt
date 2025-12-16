@@ -44,6 +44,7 @@ import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.BlueMain
 import com.example.tramut.ui.theme.ErrorRed
 import com.example.tramut.ui.theme.ForgotBlue
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentLoginScreen(
@@ -96,7 +97,7 @@ fun StudentLoginScreen(
                         contentDescription = "Invalid",
                         tint = Color.Red
                     )
-                    null -> {} // 不显示
+                    null -> {}
                 }
             },
             singleLine = true,

@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.userInterface.loginTheme
+package com.example.tramut.userInterface.loginTheme
 
 import android.widget.Toast
 import androidx.compose.foundation.Image

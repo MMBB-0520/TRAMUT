@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.rooms.repo
+package com.example.tramut.rooms.repo
 
 import com.example.myfacilitybookingsystem.rooms.entity.AdminUser
 import com.google.firebase.auth.FirebaseAuth
