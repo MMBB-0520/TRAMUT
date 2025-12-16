@@ -46,9 +46,8 @@ fun AdminAnnouncementScreen(
     var showDeleteSuccessDialog by remember { mutableStateOf(false) }
 
 
-    // Filters announcements by the current admin's department
     LaunchedEffect(currentAdminDepartment) {
-        repository.getAnnouncementsFlow(currentAdminDepartment).collect { list ->
+        repository.getAdminAnnouncementsFlow(currentAdminDepartment).collect { list ->
             announcements.clear()
             announcements.addAll(list)
             isLoading = false

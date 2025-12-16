@@ -1,6 +1,7 @@
 package com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility
 
 import android.app.DatePickerDialog
+import android.util.Log
 import android.widget.DatePicker
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -473,34 +474,31 @@ fun AdminAddFacilityScreen(
                             } else {
                                 if (closureStartDate.isNotEmpty() && closureEndDate.isNotEmpty()) {
                                     try {
+                                        // Use Locale.US to ensure date format is consistent (yyyy-MM-dd)
                                         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                                         val start = sdf.parse(closureStartDate)
                                         val end = sdf.parse(closureEndDate)
+
                                         if (start != null && end != null && !start.after(end)) {
-                                            val cal = Calendar.getInstance(); cal.time = start
+                                            val cal = Calendar.getInstance()
+                                            cal.time = start
+
                                             while (!cal.time.after(end)) {
-                                                specialClosuresMap[sdf.format(cal.time)] =
-                                                    (8..22).toList()
+                                                val dateKey = sdf.format(cal.time)
+                                                // Save the full range of operational hours (8 to 22)
+                                                specialClosuresMap[dateKey] = (8..22).toList()
                                                 cal.add(Calendar.DATE, 1)
                                             }
-                                            closureStartDate = ""; closureEndDate = ""
-                                            Toast.makeText(
-                                                context,
-                                                "Added Range Closure",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else Toast.makeText(
-                                            context,
-                                            "Invalid Date Range",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+
+                                            // Reset fields
+                                            closureStartDate = ""
+                                            closureEndDate = ""
+                                            Toast.makeText(context, "Range added to list", Toast.LENGTH_SHORT).show()
+                                        }
                                     } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "Error parsing dates",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Log.e("AddFacility", "Error: ${e.message}")
                                     }
+
                                 } else Toast.makeText(
                                     context,
                                     "Select Start & End dates",

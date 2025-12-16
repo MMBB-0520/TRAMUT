@@ -445,8 +445,8 @@ fun FBSApp(
             ) {
                 composable(route = AppScreen.HomeScreen.name) {
                     HomeScreen(
-                        onAnnouncementClick = {
-                            navController.navigate(AppScreen.AnnouncementDetail.name)
+                        onAnnouncementClick = { announcementId ->
+                            navController.navigate("${AppScreen.ViewAnDetail.name}/$announcementId")
                         }
                     )
                 }
@@ -635,13 +635,13 @@ fun FBSApp(
                 }
 
                 composable(
-                    route = "${AppScreen.ViewAnDetail.name}/{anId}", // This /{anId} is crucial
+                    route = "${AppScreen.ViewAnDetail.name}/{anId}",
                     arguments = listOf(navArgument("anId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val anId = backStackEntry.arguments?.getString("anId") ?: ""
                     AnnouncementDetailScreen(
-                        navController = navController,
-                        announcementId = anId
+                        announcementId = anId,
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 
@@ -667,6 +667,7 @@ fun FBSApp(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
 
 
                 // 6. ADD FACILITY
