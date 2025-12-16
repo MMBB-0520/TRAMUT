@@ -82,10 +82,14 @@ import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
+import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -168,7 +172,15 @@ enum class AppScreen {
     StudentBookingDetails,
     StudentBookingFacility,
     StudentBookingSport,
-    StudentAvailabilityChart
+    StudentAvailabilityChart,
+
+    CheckOutManual,
+    CheckOutScanner,
+    CheckInManual,
+    CheckInScanner,
+    CheckInConfirmation,
+    CheckOutConfirmation
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1097,6 +1109,119 @@ fun FBSApp(
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                        }
+                    )
+                }
+
+                composable(
+                    route = AppScreen.CheckInScanner.name
+                ) { backStackEntry ->
+                    BarcodeScannerScreen(
+                        onScanSuccess = { scannedId ->
+                            // Handle the scan logic here or pass to a VM
+                            // For now, we assume scan is valid and move to success
+                            navController.navigate("${AppScreen.CheckInManual.name}/$scannedId")
+                        },
+                        onManualInputClicked = {
+                            // Navigate to Manual Entry, passing the bookingId
+                            navController.navigate("${AppScreen.CheckInManual.name}/empty")
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                // 2. Manual Entry Screen
+                composable(
+                    route = "${AppScreen.CheckInManual.name}/{bookingId}"
+                ) { backStackEntry ->
+                    // If the ID is "empty", we pass an empty string to the screen
+                    val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
+                    val bookingId = if (arg == "empty") "" else arg
+
+                    ManualEntryScreen(
+                        bookingId = bookingId,
+                        isCheckIn = true,
+                        initialId = bookingId,
+                        onSuccess = {
+                            navController.navigate(AppScreen.CheckInSuccess.name) {
+                                popUpTo(AppScreen.CheckInScanner.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                // 3. Success Confirmation Screen
+                composable(route = AppScreen.CheckInSuccess.name) {
+                    CheckInConfirmationScreen(
+                        onOkClicked = {
+                            // Navigate back to Home or Booking List
+                            navController.navigate(AppScreen.AdminMenuScreen.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
+                            navController.navigate(AppScreen.AdminMenuScreen.name)
+                        }
+                    )
+                }
+
+                composable(
+                    route = AppScreen.CheckOutScanner.name
+                ) { backStackEntry ->
+                    CheckOutBarcodeScannerScreen(
+                        onScanSuccess = { scannedId ->
+
+                            navController.navigate("${AppScreen.CheckOutManual.name}/$scannedId")
+                        },
+                        onManualInputClicked = {
+                            // Navigate to Manual Entry, passing the bookingId
+                            navController.navigate("${AppScreen.CheckOutManual.name}/empty")
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(
+                    route = "${AppScreen.CheckOutManual.name}/{bookingId}"
+                ) { backStackEntry ->
+                    // If the ID is "empty", we pass an empty string to the screen
+                    val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
+                    val bookingId = if (arg == "empty") "" else arg
+
+                    CheckOutManualEntryScreen(
+                        bookingId = bookingId,
+                        isCheckIn = false,
+                        initialId = bookingId,
+                        onSuccess = {
+                            navController.navigate(AppScreen.CheckOutSuccess.name) {
+                                popUpTo(AppScreen.CheckOutScanner.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.CheckOutSuccess.name) {
+                    CheckOutConfirmationScreen(
+                        onOkClicked = {
+                            // Navigate back to Home or Booking List
+                            navController.navigate(AppScreen.AdminMenuScreen.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
+                            navController.navigate(AppScreen.AdminMenuScreen.name)
                         }
                     )
                 }
