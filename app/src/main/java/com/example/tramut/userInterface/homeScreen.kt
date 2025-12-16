@@ -156,6 +156,7 @@ fun HomeScreen(
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
         )
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (isLoading) {
             Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
