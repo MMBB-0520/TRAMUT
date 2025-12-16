@@ -4,7 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myfacilitybookingsystem.rooms.entity.AdminUser
-import com.example.myfacilitybookingsystem.rooms.repo.AdminRepository
+import com.example.tramut.rooms.repo.AdminRepository
 import kotlinx.coroutines.launch
 
 class AdminsViewModel : ViewModel() {

@@ -33,6 +33,7 @@ import com.example.tramut.ui.theme.Background
 // If BlueMain is not in your imports, uncomment the line below:
 // val BlueMain = Color(0xFF0066FF)
 import com.example.tramut.ui.theme.BlueMain
+import com.example.tramut.ui.theme.StaffRed
 
 @Composable
 fun AdminMainScreen(
@@ -160,10 +161,15 @@ fun AdminProfileCard(name: String, dept: String, email: String) {
             Box(
                 modifier = Modifier
                     .size(65.dp)
-                    .background(Color.LightGray, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                    .background(Color.LightGray, CircleShape)
+            ){
+                Text(
+                    text = (name).take(1).uppercase(),
+                    color = StaffRed,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 30.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
 
             Spacer(modifier = Modifier.width(18.dp))

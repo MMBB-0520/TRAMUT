@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,7 +52,6 @@ fun StudentMenuScreen(
     ) {
         Spacer(modifier = Modifier.height(52.dp))
 
-        // Profile Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -60,12 +60,19 @@ fun StudentMenuScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
 
-                // Profile Picture Placeholder
                 Box(
                     modifier = Modifier
                         .size(65.dp)
                         .background(Color.LightGray, CircleShape)
-                )
+                ){
+                    Text(
+                        text = (name).take(1).uppercase(),
+                        color = BlueMain,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
                 Spacer(modifier = Modifier.width(18.dp))
 
@@ -73,9 +80,11 @@ fun StudentMenuScreen(
                     Text(name,
                         color = Color.White,
                         fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(1.dp))
                     Text(studentId,
                         color = Color.White,
                         fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(1.dp))
                     Text(email,
                         color = Color.White,
                         fontSize = 12.sp)
@@ -84,8 +93,6 @@ fun StudentMenuScreen(
         }
 
         Spacer(modifier = Modifier.height(49.dp))
-
-        // ----- Buttons -----
 
         MenuButton("My Booking", onClick = onMyBookingClick)
         Spacer(modifier = Modifier.height(40.dp))
@@ -98,8 +105,6 @@ fun StudentMenuScreen(
 
         MenuButton("Settings", onClick = onSettingsClick)
         Spacer(modifier = Modifier.height(40.dp))
-
-        // ----- Logout -----
 
         LogoutButton(onClick = onLogoutClick)
     }

@@ -1,5 +1,6 @@
-package com.example.myfacilitybookingsystem
+package com.example.tramut
 
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -47,7 +49,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.checkincompose.BarcodeScannerScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.AdminMainScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AdminAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AnnouncementDetailScreen
@@ -55,37 +57,55 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.PostAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
-import com.example.myfacilitybookingsystem.userInterface.loginTheme.AdminLoginScreen
-import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
-import com.example.tramut.AppDatabase
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.repo.UsersRepo
+import com.example.tramut.ui.theme.StaffRed
+import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
+import com.example.tramut.userInterface.check.CheckInConfirmationScreen
+import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
+import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
+import com.example.tramut.userInterface.check.CheckOutManualEntryScreen
+import com.example.tramut.userInterface.check.ManualEntryScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen3
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdatedScreen
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
-import com.example.tramut.viewModel.UsersViewModel
-import com.example.tramut.ui.theme.StaffRed
-import com.example.tramut.ui.theme.StudentBlue
+import com.example.tramut.viewModel.ForgotPwdViewModel
+import com.example.tramut.viewModel.LoginViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import kotlin.jvm.java
 
 
-class UsersViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(UsersViewModel::class.java)) {
+class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return UsersViewModel(usersRepo) as T
+            return LoginViewModel(usersRepo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+class ForgotPwdViewModelFactory(
+    private val usersRepo: UsersRepo
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ForgotPwdViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ForgotPwdViewModel(usersRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -103,9 +123,13 @@ enum class AppScreen {
 
     StudentScreen,
     StaffScreen,
-    AdminMenuScreen,
 
-    ForgotPassword,
+    // Forgot Password Screens
+    ForgotPassword1,
+    ForgotPassword2,
+    ForgotPassword3,
+    ResetPwd,
+    PwdUpdated,
 
     // Details under Home tab
     AnnouncementDetail,
@@ -119,6 +143,7 @@ enum class AppScreen {
     StaffApprove,
 
     // Admin Screens
+    AdminMenuScreen,
     AdminCheckin,
     AdminCheckout,
     ViewAn,
@@ -176,7 +201,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
+                    containerColor = StudentBlue,
                     titleContentColor = Color.White
                 )
             )
@@ -198,7 +223,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
+                    containerColor = StaffRed,
                     titleContentColor = Color.White
                 )
             )
@@ -380,18 +405,23 @@ fun TopBarScreen(
 @Composable
 fun FBSApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
-    usersRepo: UsersRepo
+    navController: NavHostController = rememberNavController()
 ) {
+
     val context = LocalContext.current
 
     // App Database
     val db = remember { AppDatabase.getInstance(context) }
+
     // Repository
     val usersRepo = remember { UsersRepo(db.usersDao()) }
+
     // ViewModel
-    val usersViewModel: UsersViewModel = viewModel(
-        factory = UsersViewModelFactory(usersRepo)
+    val loginViewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(usersRepo)
+    )
+    val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
+        factory = ForgotPwdViewModelFactory(usersRepo)
     )
 
     val adminsViewModel: AdminsViewModel = viewModel()
@@ -399,18 +429,18 @@ fun FBSApp(
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
-    // Compose 状态
-    var studentId by remember { mutableStateOf("") }
-    var staffId by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val studentIdValid by usersViewModel.studentIdValid.collectAsState()
-    val staffIdValid by usersViewModel.staffIdValid.collectAsState()
-    val idValid by usersViewModel.idValid.collectAsState()
-    val studentLoginError by usersViewModel.studentLoginError.collectAsState()
-    val staffLoginError by usersViewModel.staffLoginError.collectAsState()
-    val showLoginError by usersViewModel.showLoginError.collectAsState()
-    val currentUser by usersViewModel.currentUser.collectAsState()
+
+    val studentIdValid by loginViewModel.studentIdValid.collectAsState()
+    val staffIdValid by loginViewModel.staffIdValid.collectAsState()
+    val studentLoginError by loginViewModel.studentLoginError.collectAsState()
+    val staffLoginError by loginViewModel.staffLoginError.collectAsState()
+    val currentUser by loginViewModel.currentUser.collectAsState()
+    val isStudentLoggedIn by loginViewModel.isStudentLoggedIn.collectAsState()
+    val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
+    val emailError by forgotPwdViewModel.emailError.collectAsState()
+    val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
@@ -419,42 +449,53 @@ fun FBSApp(
         AppScreen.MainSystem
     }
 
+    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
+
     Scaffold(
         topBar = {
-            val isStaffScreen = when {
-                currentUser?.role == "Staff" -> true
-                currentScreen == AppScreen.StaffLoginScreen -> true
-                else -> false
-            }
             TopBarScreen(
                 currentScreen = currentScreen,
-                hasPopBack = { navController.popBackStack() },
-                isStaff = isStaffScreen
+                hasPopBack = { navController.popBackStack() }
             )
         },
         bottomBar = {
             val showBottomBar = currentScreen in listOf(
-                AppScreen.MainSystem,
                 AppScreen.HomeScreen,
                 AppScreen.StudentLoginScreen,
                 AppScreen.StaffLoginScreen,
-                AppScreen.AdminLoginScreen
+                AppScreen.AdminLoginScreen,
+                AppScreen.StudentScreen,
+                AppScreen.StaffScreen,
+
             )
 
             if (showBottomBar) {
                 bottomChooseBar(
                     selectedIndex = when (currentScreen) {
-                        AppScreen.MainSystem, AppScreen.HomeScreen -> 0
-                        AppScreen.StudentLoginScreen -> 1
-                        AppScreen.StaffLoginScreen -> 2
+                        AppScreen.HomeScreen -> 0
+                        AppScreen.StudentLoginScreen, AppScreen.StudentScreen -> 1
+                        AppScreen.StaffLoginScreen, AppScreen.StaffScreen -> 2
                         AppScreen.AdminLoginScreen -> 3
                         else -> 0
                     },
                     onItemSelected = { index ->
                         when (index) {
                             0 -> navController.navigate(AppScreen.HomeScreen.name)
-                            1 -> navController.navigate(AppScreen.StudentLoginScreen.name)
-                            2 -> navController.navigate(AppScreen.StaffLoginScreen.name)
+                            1 -> {
+                                if (isStudentLoggedIn) {
+                                    navController.navigate(AppScreen.StudentScreen.name)
+                                } else {
+                                    navController.navigate(AppScreen.StudentLoginScreen.name)
+                                }
+                            }
+
+                            2 -> {
+                                if (isStaffLoggedIn) {
+                                    navController.navigate(AppScreen.StaffScreen.name)
+                                } else {
+                                    navController.navigate(AppScreen.StaffLoginScreen.name)
+                                }
+                            }
                             3 -> navController.navigate(AppScreen.AdminLoginScreen.name)
                         }
                     }
@@ -476,34 +517,39 @@ fun FBSApp(
             ) {
                 composable(route = AppScreen.HomeScreen.name) {
                     HomeScreen(
-                        onAnnouncementClick = {
-                            navController.navigate(AppScreen.AnnouncementDetail.name)
+                        onAnnouncementClick = { announcementId ->
+                            navController.navigate("${AppScreen.ViewAnDetail.name}/$announcementId")
                         }
                     )
                 }
 
                 // Student Login Screen
                 composable(route = AppScreen.StudentLoginScreen.name) {
+                    var studentId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     StudentLoginScreen(
-                        studentId = studentId,
+                        studentId = studentId.take(7),
                         onStudIdChange = {
                             studentId = it
-                            usersViewModel.checkStudentId(it) // <- 分开
+                            loginViewModel.checkStudentId(it)
                         },
-                        idValid = studentIdValid,// <- 分开
+                        idValid = studentIdValid,
                         password = pwd,
                         onPasswordChange = { pwd = it },
-                        showLoginError = studentLoginError,// <- 分开
+                        showLoginError = studentLoginError,
                         onLoginClick = {
-                            usersViewModel.login(studentId, pwd, "Student") { success ->
+                            loginViewModel.login(studentId, pwd, "Student") { success ->
                                 if (success) {
-                                    navController.navigate(AppScreen.StudentScreen.name)
+                                    navController.navigate(AppScreen.StudentScreen.name) {
+                                        popUpTo(AppScreen.StudentLoginScreen.name) {
+                                            inclusive = true
+                                        }
+                                    }
                                 }
                             }
                         },
                         onForgotPassClick = {
-                            navController.navigate(AppScreen.ForgotPassword.name)
+                            navController.navigate(AppScreen.ForgotPassword1.name)
                         }
                     )
                 }
@@ -520,7 +566,7 @@ fun FBSApp(
                             confirmButton = {
                                 TextButton(onClick = {
                                     logOutConfirm = false
-                                    usersViewModel.logout()
+                                    loginViewModel.logout()
                                     navController.navigate(AppScreen.MainSystem.name)
                                 }) { Text("Yes") }
                             },
@@ -537,7 +583,7 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate("${AppScreen.StudentMyBooking.name}/$studentId")
+                            navController.navigate(AppScreen.StudentBookingDetail.name)
                         },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
@@ -552,19 +598,20 @@ fun FBSApp(
                 }
                 // Staff Login Screen
                 composable(route = AppScreen.StaffLoginScreen.name) {
+                    var staffId by rememberSaveable { mutableStateOf("") }
                     var pwd by remember { mutableStateOf(password) }
                     StaffLoginScreen(
-                        staffId = staffId,
+                        staffId = staffId.take(4),
                         onStaffIdChange = {
                             staffId = it
-                            usersViewModel.checkStaffId(it) // <- 分开
+                            loginViewModel.checkStaffId(it)
                         },
                         idValid = staffIdValid,
                         password = pwd,
                         onPasswordChange = { pwd = it },
-                        showLoginError = staffLoginError, // <- 分开
+                        showLoginError = staffLoginError,
                         onLoginClick = {
-                            usersViewModel.login(staffId, pwd, "Staff") { success ->
+                            loginViewModel.login(staffId, pwd, "Staff") { success ->
                                 if (success) {
                                     navController.navigate(AppScreen.StaffScreen.name) {
                                         popUpTo(AppScreen.StaffLoginScreen.name) {
@@ -575,7 +622,7 @@ fun FBSApp(
                             }
                         },
                         onForgotPassClick = {
-                            navController.navigate(AppScreen.ForgotPassword.name)
+                            navController.navigate(AppScreen.ForgotPassword1.name)
                         }
                     )
                 }
@@ -591,7 +638,7 @@ fun FBSApp(
                             confirmButton = {
                                 TextButton(onClick = {
                                     logOutConfirm = false
-                                    usersViewModel.logout()
+                                    loginViewModel.logout()
                                     navController.navigate(AppScreen.MainSystem.name)
                                 }) { Text("Yes") }
                             },
@@ -608,11 +655,8 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            currentUser?.loginId?.let {
-                                navController.navigate("${AppScreen.StudentMyBooking.name}/${currentUser!!.loginId}")
-                            }
-                        }
-                        ,
+                            navController.navigate(AppScreen.StudentBookingDetail.name)
+                        },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
@@ -628,6 +672,8 @@ fun FBSApp(
 
                 // 1. ADMIN LOGIN
                 composable(route = AppScreen.AdminLoginScreen.name) {
+                    var adminId by rememberSaveable { mutableStateOf("") }
+                    var pwd by remember { mutableStateOf(password) }
                     AdminLoginScreen(
                         viewModel = adminsViewModel,
                         onLoginSuccess = {
@@ -642,7 +688,12 @@ fun FBSApp(
                 composable(route = AppScreen.AdminMenuScreen.name) {
                     AdminMainScreen(
                         navController = navController,
-                        viewModel = adminsViewModel
+                        viewModel = adminsViewModel,
+                        onClick = {
+                            navController.navigate(AppScreen.CheckInScanner.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        }
                     )
                 }
 
@@ -660,13 +711,13 @@ fun FBSApp(
                 }
 
                 composable(
-                    route = "${AppScreen.ViewAnDetail.name}/{anId}", // This /{anId} is crucial
+                    route = "${AppScreen.ViewAnDetail.name}/{anId}",
                     arguments = listOf(navArgument("anId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val anId = backStackEntry.arguments?.getString("anId") ?: ""
                     AnnouncementDetailScreen(
-                        navController = navController,
-                        announcementId = anId
+                        announcementId = anId,
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 
@@ -692,6 +743,7 @@ fun FBSApp(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
 
 
                 // 6. ADD FACILITY
@@ -723,6 +775,133 @@ fun FBSApp(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                // Forgot Password Screen
+                composable(route = AppScreen.ForgotPassword1.name) {
+                    var email by rememberSaveable { mutableStateOf("") }
+                    var ic by rememberSaveable { mutableStateOf("") }
+                    ForgetPasswordScreen1(
+                        emailInput = email,
+                        icInput = ic,
+                        errorMessage = emailError,
+                        onEmailInputChange = {
+                            email = it
+                        },
+                        onIcInputChange = {
+                            ic = it
+                        },
+                        onCancelForgetPwdClick = {
+                            navController.navigate(AppScreen.MainSystem.name)
+                        },
+                        onRequestPwdResetClick = {
+                            forgotPwdViewModel.requestPasswordReset(email, ic) {
+                                navController.navigate(AppScreen.ForgotPassword3.name) {
+                                    popUpTo(AppScreen.ForgotPassword1.name)
+                                    { inclusive = true }
+                                }
+                            }
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.ForgotPassword3.name) {
+                    var oobCode by rememberSaveable { mutableStateOf("") }
+
+                    ForgetPasswordScreen3(
+                        email = lastRequestedEmail,
+                        oobCode = oobCode,
+                        onOobCodeChange = {
+                            oobCode =it
+                                          },
+                        onResendCodeClick = {
+                            forgotPwdViewModel.resendResetEmail()
+                        },
+                        onContinueResetClick = {
+                            navController.navigate("${AppScreen.ResetPwd.name}?oobCode=${Uri.encode(oobCode)}") {
+                                popUpTo(AppScreen.ForgotPassword3.name)
+                                { inclusive = true }
+                            }},
+                        onChangeEmailClick = {
+                            navController.navigate(AppScreen.ForgotPassword1.name) {
+                                popUpTo(AppScreen.ForgotPassword3.name)
+                                { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+
+                composable(
+                    route = "${AppScreen.ResetPwd.name}?oobCode={oobCode}",
+                    arguments = listOf(
+                        navArgument("oobCode") {
+                            type = NavType.StringType
+                            nullable = false
+                        }
+                    )
+                ) { backStackEntry ->
+                    var newPassword by rememberSaveable { mutableStateOf("") }
+                    var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+                    val oobCode = backStackEntry.arguments?.getString("oobCode")
+                    if (oobCode == null) {
+                        Text("Invalid or expired reset link")
+                        return@composable
+                    }
+
+                    val ruleMinLength = forgotPwdViewModel.hasMinLength(newPassword)
+                    val ruleLower = forgotPwdViewModel.hasLowerCase(newPassword)
+                    val ruleUpper = forgotPwdViewModel.hasUpperCase(newPassword)
+                    val ruleNumberSpecial = forgotPwdViewModel.hasNumberOrSpecial(newPassword)
+
+
+                    ResetPasswordScreen(
+                        newPassword = newPassword,
+                        onNewPasswordChange = {
+                            newPassword = it
+                                              },
+                        ruleMinLength = ruleMinLength,
+                        ruleLower = ruleLower,
+                        ruleUpper = ruleUpper,
+                        ruleNumberSpecial = ruleNumberSpecial,
+                        confirmPassword = confirmPassword,
+                        onConfirmPasswordChange = {
+                            confirmPassword = it
+                                                  },
+                        onSubmitClick = {
+                            forgotPwdViewModel.resetPassword(oobCode, newPassword) {
+                                navController.navigate(AppScreen.PwdUpdated.name){
+                                    popUpTo(AppScreen.ResetPwd.name)
+                                    { inclusive = true }
+                                }
+                            }
+                        },
+                        onCancelClick = {
+                            navController.navigate(AppScreen.HomeScreen.name){
+                                popUpTo(AppScreen.ResetPwd.name)
+                                { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.PwdUpdated.name){
+                    PasswordUpdatedScreen(
+                        onStudentLoginClick = {
+                            navController.navigate(AppScreen.StudentLoginScreen.name){
+                                popUpTo(AppScreen.PwdUpdated.name)
+                                { inclusive = true }
+                            }
+                        },
+                        onStaffLoginClick = {
+                            navController.navigate(AppScreen.StaffLoginScreen.name){
+                                popUpTo(AppScreen.PwdUpdated.name)
+                                { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
 
                 composable(route = AppScreen.StudentBooking.name) {
                     var selectedTabIndex by rememberSaveable { mutableStateOf(0) }

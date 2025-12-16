@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,7 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,13 +31,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tramut.R
 import com.example.tramut.ui.theme.Background
+import com.example.tramut.ui.theme.GrayText
+import kotlinx.coroutines.delay
 
 
 @Composable
 fun ForgetPasswordScreen3 (
+    email: String?,
+    oobCode: String,
+    onOobCodeChange: (String) -> Unit,
     onResendCodeClick: () -> Unit,
+    onContinueResetClick: () -> Unit,
     onChangeEmailClick: () -> Unit
 ) {
+
+    var timeLeft by remember { mutableStateOf(120) }
+
+    LaunchedEffect(timeLeft) {
+        if (timeLeft > 0) {
+            delay(1000)
+            timeLeft--
+        }
+    }
+
+    val canResend = timeLeft == 0
 
     Column(
         modifier = Modifier
@@ -57,29 +81,74 @@ fun ForgetPasswordScreen3 (
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "You will receive an email with a verification code to reset your password. Please check your inbox.",
+            text = "You will receive an email with a verification code to reset your password. Please check your inbox.\n\nEnter oobCode sent to $email",
             fontSize = 13.sp,
-            color = Color.Gray
+            color = GrayText
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextField(
+            value = oobCode,
+            onValueChange = onOobCodeChange,
+            placeholder = {
+                Text(
+                    text = "oobCode",
+                    fontSize = 15.sp,
+                    color = Color.Gray
+                )
+                          },
+            modifier = Modifier
+                .fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = if (canResend)
+                "Resend"
+            else
+                "Resend ($timeLeft s)",
+            color = if (canResend)
+                Color(0xFF1976D2)
+            else
+                Color.Gray,
+            fontSize = 14.sp,
+            modifier = Modifier
+                .align(Alignment.End)
+                .clickable(
+                    enabled = canResend
+                ) {
+                    onResendCodeClick()
+                }
         )
 
 
         Spacer(modifier = Modifier.height(50.dp))
 
         Button(
-            onClick = onResendCodeClick,
+            onClick = onContinueResetClick,
             modifier = Modifier
                 .width(287.dp)
                 .height(43.dp)
                 .align(Alignment.CenterHorizontally),
+            enabled = oobCode.isNotEmpty(),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
             Text(
-                text = "Resend Verification Code",
+                text = "Continue Reset Password",
                 color = Color.White,
                 fontSize = 14.sp
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "*Please make sure the verification code is entered correctly. ",
+            fontSize = 12.sp,
+            color = GrayText
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
         Text(
@@ -97,7 +166,11 @@ fun ForgetPasswordScreen3 (
 @Composable
 fun FGPW3() {
     ForgetPasswordScreen3(
+        email = "",
+        oobCode = "",
+        onOobCodeChange = {},
         onResendCodeClick = {},
+        onContinueResetClick = {},
         onChangeEmailClick = {}
     )
 }

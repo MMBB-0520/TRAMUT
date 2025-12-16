@@ -1,7 +1,5 @@
 package com.example.tramut.userInterface.loginTheme.forgotPwdTheme
 
-import android.R.attr.textStyle
-import android.icu.text.CaseMap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import com.example.tramut.R
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.GrayText
-import com.google.common.base.Strings
 
 @Composable
 fun ResetPasswordScreen (
@@ -112,7 +108,6 @@ fun ResetPasswordScreen (
                 .padding(bottom = 4.dp)
         )
 
-// New Password 字段的 isError
         SmallPasswordField(
             value = newPassword,
             onValueChange = onNewPasswordChange,
@@ -129,23 +124,14 @@ fun ResetPasswordScreen (
                 .padding(bottom = 4.dp)
         )
 
-// Confirm Password 字段的 isError
-
         SmallPasswordField(
             value = confirmPassword,
             onValueChange = onConfirmPasswordChange,
-            // 如果输入了但与新密码不匹配
             isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-
-//                Icon(
-//                    imageVector = Icons.Default.Refresh,
-//                    contentDescription = null,
-//                    tint = Color.Red
-//                )
 
         if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
             Text(
@@ -222,27 +208,25 @@ fun PasswordRule(
 fun SmallPasswordField(
     value: String,
     onValueChange: (String) -> Unit,
-    isError: Boolean // 用于控制边框颜色
+    isError: Boolean
 ) {
-    // 确定边框颜色
     val borderColor = when {
         isError -> Color.Red
-        value.isNotEmpty() -> Color.Black // 键入时保持黑色
-        else -> Color.Black // 默认颜色
+        value.isNotEmpty() -> Color.Black
+        else -> Color.Black
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp) // 增加高度以改善用户体验
+            .height(40.dp)
             .border(
                 width = 1.dp,
                 color = borderColor,
                 shape = RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 12.dp),
-        // 将内容垂直居中
-        contentAlignment = Alignment.CenterStart // 文本从左侧开始
+        contentAlignment = Alignment.CenterStart
     ) {
         BasicTextField(
             value = value,
@@ -252,12 +236,9 @@ fun SmallPasswordField(
                 .fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             textStyle = TextStyle(
-                fontSize = 16.sp, // 字体稍微增大，更易读
+                fontSize = 16.sp, 
                 color = Color.Black
-            ),
-            // Important:
-            // 1. 移除 fillMaxSize()，让 BasicTextField 根据内容大小自适应 (在 Box 中垂直居中)
-            // 2. 移除 Modifier 上的 padding，将其放在 Box 上方以包含边框
+            )
         )
     }
 }
