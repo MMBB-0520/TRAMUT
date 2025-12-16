@@ -13,13 +13,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookingInfoScreen(booking: Booking) {
+fun BookingInfoScreen(
+    booking: Booking,
+    navController: NavHostController,
+    viewModel: MyBookingViewModel = viewModel()
+) {
     var showCancelDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
+
+    // 监听UI状态变化
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is MyBookingViewModel.BookingUIState.Loading -> {
+            }
+            is MyBookingViewModel.BookingUIState.Success -> {
+                showCancelDialog = false
+                showSuccessDialog = true
+                // 重置状态，避免重复触发
+                viewModel.resetUIState()
+            }
+            is MyBookingViewModel.BookingUIState.Error -> {
+                showCancelDialog = false
+                val error = (uiState as MyBookingViewModel.BookingUIState.Error)
+                errorMessage = error.message
+                // 重置状态
+                viewModel.resetUIState()
+            }
+            else -> {}
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -57,18 +88,40 @@ fun BookingInfoScreen(booking: Booking) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 只在状态是有效时显示取消按钮
+        val canCancel = booking.status.equals("Booked", ignoreCase = true) ||
+                booking.status.equals("Valid", ignoreCase = true) ||
+                booking.status.equals("confirmed", ignoreCase = true)
 
-        Button(
-            onClick = { showCancelDialog = true },
-            modifier = Modifier
-                .padding(10.dp)
-                .fillMaxWidth()
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
-            shape = RoundedCornerShape(4.dp)
-        ) {
-            Text("CANCEL BOOKING", color = Color.White, fontSize = 20.sp)
+        if (canCancel) {
+            when (uiState) {
+                is MyBookingViewModel.BookingUIState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp)
+                            .height(50.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                else -> {
+                    Button(
+                        onClick = { showCancelDialog = true },
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("CANCEL BOOKING", color = Color.White, fontSize = 20.sp)
+                    }
+                }
+            }
         }
+
     }
 
     if (showCancelDialog) {
@@ -91,21 +144,14 @@ fun BookingInfoScreen(booking: Booking) {
     }
 
     if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { showSuccessDialog = false },
-            title = {
-                Text(
-                    "Cancelled successfully",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+        SuccessCancelDialog(
+            onOk = {
+                showSuccessDialog = false
+                navController.popBackStack()
             },
-            confirmButton = {
-                Button(
-                    onClick = { showSuccessDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) { Text("OK", color = Color.White) }
+            onDismiss = {
+                showSuccessDialog = false
+                navController.popBackStack()
             }
         )
     }

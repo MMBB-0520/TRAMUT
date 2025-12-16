@@ -153,14 +153,21 @@ fun AvailabilityChartScreen(
                 .padding(16.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
+            // --- 关键改动: 检查 selectedVenue 是否为空 ---
+            val isVenueSelected = selectedVenue.isNotEmpty()
+
             Button(
-                onClick = { onBookNow(selectedVenue, selectedDate) },
+                onClick = {
+                    onBookNow(selectedVenue, selectedDate)
+                },
+                enabled = true,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0D47A1)
                 )
             ) {
                 Text("Book Now")
             }
+
         }
 
         Spacer(modifier = Modifier.height(10.dp))

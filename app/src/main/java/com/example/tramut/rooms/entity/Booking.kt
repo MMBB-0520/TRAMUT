@@ -21,12 +21,12 @@ data class Booking(
 
     val members: List<Pair<String, String>> = emptyList(),
     val userName: String = "",
-    val bookingNo: String,
-    val date: String,
-    val duration: String,
-    val building: String,
-    val level: String,
-    val checkIn: String,
-    val checkOut: String,
-    val status: String,
+    val bookingNo: String = "",
+    val date: String = "",
+    val duration: String = "",
+    val building: String = "",
+    val level: String = "",
+    val checkIn: String = "",
+    val checkOut: String = "",
+    val status: String = ""
 )
