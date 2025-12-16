@@ -27,7 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontStyle
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.tramut.rooms.repo.MembersValidationResult
+import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import kotlinx.coroutines.delay
@@ -745,22 +746,24 @@ fun BookSportScreen(
                                 isVerifying = false
 
                                 when (result) {
-                                    is com.example.myfacilitybookingsystem.rooms.repo.MembersValidationResult.Success -> {
+                                    is MembersValidationResult.Success -> {
                                         validationSuccess = true
                                         showSuccessDialog = true
                                     }
-                                    is com.example.myfacilitybookingsystem.rooms.repo.MembersValidationResult.DuplicatesFound -> {
+                                    is MembersValidationResult.DuplicatesFound -> {
                                         validationErrorMessage = "Duplicate student IDs found: ${result.duplicates.joinToString(", ")}"
                                         showValidationError = true
                                     }
-                                    is com.example.myfacilitybookingsystem.rooms.repo.MembersValidationResult.InvalidIds -> {
+                                    is MembersValidationResult.InvalidIds -> {
                                         validationErrorMessage = "Invalid student IDs: ${result.invalidIds.joinToString(", ")}"
                                         showValidationError = true
                                     }
-                                    is com.example.myfacilitybookingsystem.rooms.repo.MembersValidationResult.Error -> {
+                                    is MembersValidationResult.Error -> {
                                         validationErrorMessage = result.errorMessage
                                         showValidationError = true
                                     }
+
+                                    else -> {}
                                 }
                             }
                         } else {

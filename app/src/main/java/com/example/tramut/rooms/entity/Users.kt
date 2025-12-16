@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.rooms.entity
+package com.example.tramut.rooms.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

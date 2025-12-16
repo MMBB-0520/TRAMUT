@@ -1,9 +1,10 @@
 package com.example.tramut.viewModel
 
+import android.util.Log.e
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myfacilitybookingsystem.rooms.entity.Users
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.tramut.rooms.entity.Users
+import com.example.tramut.rooms.repo.UsersRepo
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-class UsersViewModel(
+class LoginViewModel(
     private val usersRepo: UsersRepo
 ) : ViewModel() {
 
@@ -44,6 +45,12 @@ class UsersViewModel(
     private val _showLoginError = MutableStateFlow(false)
     val showLoginError: StateFlow<Boolean> = _showLoginError
 
+
+    private val _isStudentLoggedIn  = MutableStateFlow(false)
+    val isStudentLoggedIn  : StateFlow<Boolean> = _isStudentLoggedIn
+
+    private val _isStaffLoggedIn   = MutableStateFlow(false)
+    val isStaffLoggedIn  : StateFlow<Boolean> = _isStaffLoggedIn
 
 
 
@@ -95,13 +102,7 @@ class UsersViewModel(
             }
         }
     }
-    /** 获取单个用户信息 */
-    fun getUserByLoginId(loginId: String, onSuccess: (Users?) -> Unit) {
-        viewModelScope.launch {
-            val user = usersRepo.getUserByLoginId(loginId)
-            onSuccess(user)
-        }
-    }
+
 
     /** 登录 */
     fun login(loginId: String, password: String, role: String, onResult: (Boolean) -> Unit) {
@@ -118,14 +119,21 @@ class UsersViewModel(
             try {
                 auth.signInWithEmailAndPassword(user.email, password).await()
                 _currentUser.value = user
-                if (role == "Student") _studentLoginError.value = false
-                else _staffLoginError.value = false
-
+                if (role == "Student") {
+                    _isStudentLoggedIn.value = true
+                    _studentLoginError.value = false
+                }
+                else{
+                    _isStaffLoggedIn.value = true
+                    _staffLoginError.value = false
+                }
                 usersRepo.syncFromFirebase()
                 onResult(true)
             } catch (e: Exception) {
-                if (role == "Student") _studentLoginError.value = true
-                else _staffLoginError.value = true
+                if (role == "Student")
+                    _studentLoginError.value = true
+                else
+                    _staffLoginError.value = true
                 onResult(false)
             }
         }
@@ -135,13 +143,9 @@ class UsersViewModel(
     fun logout() {
         auth.signOut()
         _currentUser.value = null
+        _isStudentLoggedIn.value = false
+        _isStaffLoggedIn.value = false
     }
 
-    /** 忘记密码：通过 loginId + IC 验证发送重置邮件 */
-    fun sendPasswordReset(loginId: String, inputIC: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            val success = usersRepo.sendPasswordResetEmail(loginId, inputIC)
-            onResult(success)
-        }
-    }
+
 }

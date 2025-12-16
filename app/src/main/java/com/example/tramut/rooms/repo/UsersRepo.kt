@@ -1,15 +1,8 @@
-package com.example.myfacilitybookingsystem.rooms.repo
+package com.example.tramut.rooms.repo
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
-import com.example.myfacilitybookingsystem.rooms.dao.UsersDAO
-import com.example.myfacilitybookingsystem.rooms.entity.Users
+import android.util.Log
+import com.example.tramut.rooms.dao.UsersDAO
+import com.example.tramut.rooms.entity.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +12,7 @@ import kotlinx.coroutines.withContext
 
 class UsersRepo(
     private val usersDao: UsersDAO
-){
+) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -32,7 +25,8 @@ class UsersRepo(
     suspend fun delete(user: Users) = usersDao.deleteUser(user)
     suspend fun deleteAll() = usersDao.deleteAllUsers()
     suspend fun getUserByLoginId(loginId: String) = usersDao.getUserByLoginId(loginId)
-    suspend fun getUserByLoginIdAndRole(loginId: String, role: String) = usersDao.getUserByLoginIdAndRole(loginId, role)
+    suspend fun getUserByLoginIdAndRole(loginId: String, role: String) =
+        usersDao.getUserByLoginIdAndRole(loginId, role)
 
 
     // -----------------------------
@@ -70,7 +64,7 @@ class UsersRepo(
                 loginId = loginId,
                 username = doc.getString("username") ?: "",
                 email = doc.getString("email") ?: "",
-                userIC = doc.getString("userIC") ?: "",
+                userIC = doc.getString("IC") ?: "",
                 role = doc.getString("role") ?: ""
             )
         }
@@ -84,7 +78,7 @@ class UsersRepo(
                 mapOf(
                     "username" to user.username,
                     "email" to user.email,
-                    "userIC" to user.userIC,
+                    "IC" to user.userIC,
                     "role" to user.role
                 )
             ).await()
@@ -92,17 +86,42 @@ class UsersRepo(
     }
 
     // -----------------------------
-    // 4️⃣ 忘记密码（用 loginId + IC 验证）
+    // 4️⃣ 忘记密码（用 email + IC 验证）
     // -----------------------------
-    suspend fun sendPasswordResetEmail(loginId: String, inputIC: String): Boolean = withContext(Dispatchers.IO) {
-        val doc = firestore.collection("users").document(loginId).get().await()
-        if (!doc.exists()) return@withContext false
-        val storedIC = doc.getString("userIC") ?: return@withContext false
-        if (storedIC != inputIC) return@withContext false
-        val email = doc.getString("email") ?: return@withContext false
-        auth.sendPasswordResetEmail(email).await()
-        true
-    }
+
+    suspend fun sendPasswordResetEmail(email: String, inputIC: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val snapshot = firestore.collection("users")
+                .whereEqualTo("email", email)
+                .whereEqualTo("IC", inputIC)
+                .limit(1)
+                .get()
+                .await()
+
+            if (snapshot.isEmpty) return@withContext false
+
+            auth.sendPasswordResetEmail(email).await()
+            true
+        }
+
+    suspend fun resetPassword(oobCode: String, newPassword: String): Boolean =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                // ✅ 使用 .await() 确保协程等待 Firebase 操作完成
+                auth.confirmPasswordReset(oobCode, newPassword).await()
+                true
+            } catch (e: Exception) {
+                Log.e("UsersRepo", "Reset failed", e)
+                // ❌ 如果发生错误（例如网络问题、oobCode无效/过期），则返回 false
+                false
+            }
+        }
+
+    suspend fun resendPassword(email: String): Boolean =
+        withContext(Dispatchers.IO) {
+            auth.sendPasswordResetEmail(email)
+            true
+        }
 
     // -----------------------------
     // 5️⃣ 检查用户是否存在
@@ -283,4 +302,5 @@ sealed class MembersValidationResult {
     data class DuplicatesFound(val duplicates: List<String>) : MembersValidationResult()
     data class InvalidIds(val invalidIds: List<String>, val errorMessage: String) : MembersValidationResult()
     data class Error(val errorMessage: String) : MembersValidationResult()
+
 }
