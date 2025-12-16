@@ -498,7 +498,6 @@ fun AdminAddFacilityScreen(
                                     } catch (e: Exception) {
                                         Log.e("AddFacility", "Error: ${e.message}")
                                     }
-
                                 } else Toast.makeText(
                                     context,
                                     "Select Start & End dates",
