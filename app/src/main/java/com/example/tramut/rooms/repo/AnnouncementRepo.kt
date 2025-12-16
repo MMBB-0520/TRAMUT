@@ -32,6 +32,31 @@ class AnnouncementRepository {
         awaitClose { listener.remove() }
     }
 
+    fun getAdminAnnouncementsFlow(department: String): Flow<List<Announcement>> = callbackFlow {
+
+        // We KNOW the department is mandatory here, so we apply the filter directly.
+        val query = collection
+            .whereEqualTo("department", department) // **CRUCIAL: Filters by the admin's department**
+            .orderBy("created_date_str")            // Orders the results
+            .limit(50)                              // Limits the results
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                // Log the error
+                close(error)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                val list = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Announcement::class.java)?.copy(id = doc.id)
+                }
+                trySend(list)
+            }
+        }
+        awaitClose { listener.remove() }
+    }
+
     suspend fun getAnnouncementById(id: String): Announcement? {
         return try {
             val snapshot = collection.document(id).get().await()

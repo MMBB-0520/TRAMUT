@@ -73,10 +73,13 @@ fun SwipeableAnnouncementItem(
     }
 }
 
+
 @Composable
 fun AnnouncementCard(item: Announcement, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, BorderGray),
@@ -99,9 +102,13 @@ fun AnnouncementDetailDialog(announcement: Announcement, onDismiss: () -> Unit) 
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 500.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState())) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(announcement.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, "Close") }
@@ -120,9 +127,9 @@ fun AnnouncementDetailDialog(announcement: Announcement, onDismiss: () -> Unit) 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementDetailScreen(
-    navController: NavController,
     announcementId: String,
-    viewModel: AnnouncementViewModel = viewModel()
+    viewModel: AnnouncementViewModel = viewModel(),
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -137,12 +144,13 @@ fun AnnouncementDetailScreen(
                 title = { Text("Announcement Detail", color = Color.White, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Black),
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                 }
             )
         },
+
         containerColor = Color(0xFFEEEEF2) // Light gray background
     ) { padding ->
         Box(
