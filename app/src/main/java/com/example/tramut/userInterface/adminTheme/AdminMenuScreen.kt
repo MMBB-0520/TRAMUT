@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.myfacilitybookingsystem.AppScreen
+import com.example.tramut.AppScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.ui.theme.Background
 // If BlueMain is not in your imports, uncomment the line below:

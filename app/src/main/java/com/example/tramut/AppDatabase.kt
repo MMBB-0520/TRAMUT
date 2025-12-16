@@ -1,12 +1,12 @@
-package com.example.myfacilitybookingsystem
+package com.example.tramut
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.myfacilitybookingsystem.rooms.dao.UsersDAO
-import com.example.myfacilitybookingsystem.rooms.entity.Users
+import com.example.tramut.rooms.dao.UsersDAO
+import com.example.tramut.rooms.entity.Users
 import kotlin.jvm.java
 
 @Database(
@@ -26,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).addCallback(object : RoomDatabase.Callback() {
+                ).addCallback(object : Callback() {
                     override fun onOpen(db: SupportSQLiteDatabase) {
                         super.onOpen(db)
                         db.execSQL("PRAGMA foreign_keys=ON;")

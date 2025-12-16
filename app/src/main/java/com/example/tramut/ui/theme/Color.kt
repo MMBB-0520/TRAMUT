@@ -22,3 +22,4 @@ val DateTextGray = Color(0xFF514444)   // 日期文字
 val LogoutRed = Color(0xFFDF1F1F)      // Logout 红色
 val CheckGreen = Color(0xFF34C759)     // ID 正确
 val ErrorRed = Color(0xFFEC221F)       // ID 错误
+val GrayText = Color(0xFF898888)        // 灰色文字
