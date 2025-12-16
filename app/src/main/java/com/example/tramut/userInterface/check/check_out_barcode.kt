@@ -1,4 +1,4 @@
-package com.example.checkincompose
+package com.example.tramut.userInterface.check
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -8,11 +8,23 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,11 +36,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tramut.userInterface.check.CheckInTopBar
+import com.example.checkincompose.BarcodeScannerViewModel
+import com.example.checkincompose.ScannerOverlay
 
 
 @Composable
-fun BarcodeScannerScreen(
+fun CheckOutBarcodeScannerScreen(
     onScanSuccess: (String) -> Unit,
     onManualInputClicked: () -> Unit,
     onBackClicked: () -> Unit = {},
@@ -68,7 +81,7 @@ fun BarcodeScannerScreen(
 
     Scaffold(
         topBar = {
-            CheckInTopBar(title = "Check-In", onBackClicked = onBackClicked)
+            CheckInTopBar(title = "Check-Out", onBackClicked = onBackClicked)
         }
     ) { paddingValues ->
 
@@ -131,22 +144,3 @@ fun BarcodeScannerScreen(
     }
 }
 
-@Composable
-fun ScannerOverlay() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        // Simple visual guide box with thick rounded corners
-        Box(
-            modifier = Modifier
-                .size(280.dp)
-                .border(
-                    width = 4.dp, // Thicker border
-                    color = Color.Black,
-                    shape = RoundedCornerShape(24.dp)
-                )
-        )
-
-    }
-}

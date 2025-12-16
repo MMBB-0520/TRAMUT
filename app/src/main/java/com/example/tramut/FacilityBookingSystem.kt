@@ -47,6 +47,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.example.checkincompose.BarcodeScannerScreen
 import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.userInterface.HomeScreen
@@ -66,6 +67,11 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.Edi
 import com.example.myfacilitybookingsystem.userInterface.loginTheme.AdminLoginScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.check.CheckInConfirmationScreen
+import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
+import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
+import com.example.tramut.userInterface.check.CheckOutManualEntryScreen
+import com.example.tramut.userInterface.check.ManualEntryScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
@@ -139,9 +145,13 @@ enum class AppScreen {
     StudentBookingSport,
 
     //Check-In Screen
-    CheckInBarcode,
+    CheckInScanner,
     CheckInManual,
     CheckInSuccess,
+
+    CheckOutScanner,
+    CheckOutManual,
+    CheckOutSuccess
 
 }
 
@@ -394,7 +404,10 @@ fun FBSApp(
                 AppScreen.HomeScreen,
                 AppScreen.StudentLoginScreen,
                 AppScreen.StaffLoginScreen,
-                AppScreen.AdminLoginScreen
+                AppScreen.AdminLoginScreen,
+                AppScreen.StudentScreen,
+                AppScreen.StaffScreen,
+                AppScreen.AdminMenuScreen
             )
 
             if (showBottomBar) {
@@ -599,7 +612,12 @@ fun FBSApp(
                 composable(route = AppScreen.AdminMenuScreen.name) {
                     AdminMainScreen(
                         navController = navController,
-                        viewModel = adminsViewModel
+                        viewModel = adminsViewModel,
+                        onClick = {
+                            navController.navigate(AppScreen.CheckInScanner.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        }
                     )
                 }
 
@@ -815,6 +833,119 @@ fun FBSApp(
                 }
                 composable(route = AppScreen.LibraryTimetable.name) {
                     // Library Timetable
+                }
+
+                composable(
+                    route = AppScreen.CheckInScanner.name
+                ) { backStackEntry ->
+                    BarcodeScannerScreen(
+                        onScanSuccess = { scannedId ->
+                            // Handle the scan logic here or pass to a VM
+                            // For now, we assume scan is valid and move to success
+                            navController.navigate("${AppScreen.CheckInManual.name}/$scannedId")
+                        },
+                        onManualInputClicked = {
+                            // Navigate to Manual Entry, passing the bookingId
+                            navController.navigate("${AppScreen.CheckInManual.name}/_empty_")
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                // 2. Manual Entry Screen
+                composable(
+                    route = "${AppScreen.CheckInManual.name}/{bookingId}"
+                ) { backStackEntry ->
+                    // If the ID is "_empty_", we pass an empty string to the screen
+                    val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
+                    val bookingId = if (arg == "_empty_") "" else arg
+
+                    ManualEntryScreen(
+                        bookingId = bookingId,
+                        isCheckIn = true,
+                        initialId = bookingId,
+                        onSuccess = {
+                            navController.navigate(AppScreen.CheckInSuccess.name) {
+                                popUpTo(AppScreen.CheckInScanner.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                // 3. Success Confirmation Screen
+                composable(route = AppScreen.CheckInSuccess.name) {
+                    CheckInConfirmationScreen(
+                        onOkClicked = {
+                            // Navigate back to Home or Booking List
+                            navController.navigate(AppScreen.AdminMenuScreen.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
+                            navController.navigate(AppScreen.AdminMenuScreen.name)
+                        }
+                    )
+                }
+
+                composable(
+                    route = AppScreen.CheckOutScanner.name
+                ) { backStackEntry ->
+                    CheckOutBarcodeScannerScreen(
+                        onScanSuccess = { scannedId ->
+
+                            navController.navigate("${AppScreen.CheckOutManual.name}/$scannedId")
+                        },
+                        onManualInputClicked = {
+                            // Navigate to Manual Entry, passing the bookingId
+                            navController.navigate("${AppScreen.CheckOutManual.name}/_empty_")
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(
+                    route = "${AppScreen.CheckOutManual.name}/{bookingId}"
+                ) { backStackEntry ->
+                    // If the ID is "_empty_", we pass an empty string to the screen
+                    val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
+                    val bookingId = if (arg == "_empty_") "" else arg
+
+                    CheckOutManualEntryScreen(
+                        bookingId = bookingId,
+                        isCheckIn = false,
+                        initialId = bookingId,
+                        onSuccess = {
+                            navController.navigate(AppScreen.CheckOutSuccess.name) {
+                                popUpTo(AppScreen.CheckOutScanner.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.CheckOutSuccess.name) {
+                    CheckOutConfirmationScreen(
+                        onOkClicked = {
+                            // Navigate back to Home or Booking List
+                            navController.navigate(AppScreen.AdminMenuScreen.name) {
+                                popUpTo(AppScreen.AdminMenuScreen.name) { inclusive = true }
+                            }
+                        },
+                        onBackClicked = {
+                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
+                            navController.navigate(AppScreen.AdminMenuScreen.name)
+                        }
+                    )
                 }
             }
         }

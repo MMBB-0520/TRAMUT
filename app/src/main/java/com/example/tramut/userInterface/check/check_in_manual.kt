@@ -23,11 +23,13 @@ import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.ErrorRed
 import com.example.tramut.ui.theme.TRAMUTTheme
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -35,7 +37,6 @@ import java.util.Locale
 
 val DarkHeader = Color(0xFF000000)
 
-// --- 1. STATE DEFINITION ---
 sealed class EntryUiState {
     object Idle : EntryUiState()
     object Loading : EntryUiState()
@@ -45,7 +46,9 @@ sealed class EntryUiState {
 
 // --- 2. VIEWMODEL (LOGIC FOR BOTH) ---
 class EntryViewModel : ViewModel() {
+    private val db = FirebaseFirestore.getInstance()
     private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
+    private val bookingsCollection = db.collection("bookings")
     val uiState: StateFlow<EntryUiState> = _uiState.asStateFlow()
 
     private fun getCurrentTime(): String {
@@ -53,12 +56,29 @@ class EntryViewModel : ViewModel() {
         return sdf.format(Date())
     }
 
+    // NEW FUNCTION: Fetch Booking from Firestore by ID (mimicking repository access)
+    private suspend fun getBookingFromDb(id: String): Booking? {
+        return try {
+            val doc = bookingsCollection.document(id).get().await()
+            if (doc.exists()) {
+                // Assuming Booking data class fields match Firestore document fields
+                doc.toObject(Booking::class.java)?.copy(bookingId = doc.id)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     fun performCheckIn(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
             delay(1000)
-            // val booking = repository.getBooking(bookingId)
-            val booking = mockGetBookingFromDb(bookingId)
+
+            // val booking = bookingsCollection.getBooking(bookingId) // Removed erroneous line
+            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
 
             if (booking == null) {
                 _uiState.value = EntryUiState.Error("Booking not found.")
@@ -91,7 +111,7 @@ class EntryViewModel : ViewModel() {
             delay(1000)
 
             //val booking = repository.getBooking(bookingId)
-            val booking = mockGetBookingFromDb(bookingId)
+            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
 
             if (booking == null) {
                 _uiState.value = EntryUiState.Error("Booking not found.")
@@ -138,31 +158,10 @@ class EntryViewModel : ViewModel() {
         _uiState.value = EntryUiState.Idle
     }
 
-    // Mock DB
-    private fun mockGetBookingFromDb(id: String): Booking {
-        return Booking(
-            bookingId = id,
-            userId = "1234",
-            bookingNo = "BK-001",
-            date = "2023-12-15", // Ensure this matches testing date
-            startTime = "09:00",
-            duration = "2 Hours",
-            building = "CIT",
-            level = "1",
-            checkIn = "",
-            checkOut = "",
-            status = "Booked",
-            members = listOf(Pair("5678", "Member Name"))
-        )
-    }
 }
 
 // --- 3. UI IMPLEMENTATION (UNIFIED SCREEN) ---
 
-/**
- * Reusable Screen for both Check-In and Check-Out.
- * Set [isCheckIn] to false for Check-Out mode.
- */
 @Composable
 fun ManualEntryScreen(
     bookingId: String,

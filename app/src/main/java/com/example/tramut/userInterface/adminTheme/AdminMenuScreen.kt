@@ -37,6 +37,7 @@ import com.example.tramut.ui.theme.BlueMain
 @Composable
 fun AdminMainScreen(
     navController: NavController,
+    onClick: () -> Unit,
     viewModel: AdminsViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
@@ -81,7 +82,7 @@ fun AdminMainScreen(
             AdminMenuButton(
                 text = "Check In",
                 icon = Icons.Default.CheckCircle,
-                onClick = { navController.navigate(AppScreen.AdminCheckin.name) }
+                onClick = { navController.navigate(AppScreen.CheckInScanner.name) }
             )
             Spacer(modifier = Modifier.height(40.dp))
 
@@ -89,7 +90,7 @@ fun AdminMainScreen(
             AdminMenuButton(
                 text = "Check Out",
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
-                onClick = { navController.navigate(AppScreen.AdminCheckout.name) }
+                onClick = { navController.navigate(AppScreen.CheckOutScanner.name) }
             )
             Spacer(modifier = Modifier.height(40.dp))
 
