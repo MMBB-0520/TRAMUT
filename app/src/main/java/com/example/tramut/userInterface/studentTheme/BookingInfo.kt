@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,26 +31,41 @@ fun BookingInfoScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val uiState by viewModel.uiState.collectAsState()
 
+    val level by remember(booking.venue) {
+        derivedStateOf { viewModel.getLevelForVenue(booking.venue) }
+    }
+
+    val building by remember(booking.venue) {
+        derivedStateOf { viewModel.getBuildingForVenue(booking.venue) }
+    }
+
+
     // 监听UI状态变化
     LaunchedEffect(uiState) {
         when (uiState) {
-            is MyBookingViewModel.BookingUIState.Loading -> {
-            }
-            is MyBookingViewModel.BookingUIState.Success -> {
+            MyBookingViewModel.BookingUIState.Success -> {
                 showCancelDialog = false
                 showSuccessDialog = true
-                // 重置状态，避免重复触发
-                viewModel.resetUIState()
             }
             is MyBookingViewModel.BookingUIState.Error -> {
                 showCancelDialog = false
-                val error = (uiState as MyBookingViewModel.BookingUIState.Error)
-                errorMessage = error.message
-                // 重置状态
-                viewModel.resetUIState()
             }
             else -> {}
         }
+    }
+
+    // 错误提示对话框
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Column(
@@ -57,6 +73,7 @@ fun BookingInfoScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Column(
@@ -79,8 +96,8 @@ fun BookingInfoScreen(
             BookingDetailRow("Date", booking.date)
             BookingDetailRow("Duration", booking.duration)
             BookingDetailRow("Venue / Room No.", booking.venue)
-            BookingDetailRow("Level", booking.level)
-            BookingDetailRow("Building", booking.building)
+            BookingDetailRow("Level", level)
+            BookingDetailRow("Building", building)
             BookingDetailRow("Check-in", booking.checkIn)
             BookingDetailRow("Check-out", booking.checkOut)
             BookingDetailRow("Status", booking.status)
@@ -127,15 +144,16 @@ fun BookingInfoScreen(
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Confirmation") },
+            title = { Text("Cancel Booking") },
             text = { Text("Are you sure you want to cancel this booking?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showCancelDialog = false
-                        showSuccessDialog = true
+                        viewModel.cancelBookingWithScope(booking.bookingNo)
                     }
-                ) { Text("Yes") }
+                ) {
+                    Text("Yes", color = Color.Red)
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showCancelDialog = false }) { Text("No") }
@@ -167,7 +185,12 @@ fun BookingDetailRow(label: String, value: String) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = label, color = Color.DarkGray)
-            Text(text = value, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = value,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End
+            )
         }
         Divider(color = Color.LightGray, thickness = 1.dp)
     }

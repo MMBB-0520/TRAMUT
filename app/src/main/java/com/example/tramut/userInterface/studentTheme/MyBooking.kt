@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.viewModel.MyBookingViewModel
 
@@ -140,7 +141,7 @@ fun MyBookingScreen(
                         MyBookingItem(
                             booking = booking,
                             onClick = {
-                                navController.navigate("BookingInfo/${booking.bookingNo}")
+                                navController.navigate("${AppScreen.StudentBookingDetails.name}/${booking.bookingId}")
                             }
                         )
                     }

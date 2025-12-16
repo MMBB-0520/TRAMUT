@@ -86,6 +86,7 @@ import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
+import com.example.tramut.viewModel.MyBookingViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -140,7 +141,6 @@ enum class AppScreen {
 
     // Student Screens
     StudentBooking,
-    StudentBookingDetail,
 
     // Staff Screens
     StaffCheckBooking,
@@ -174,6 +174,8 @@ enum class AppScreen {
     StudentBookingSport,
     StudentAvailabilityChart,
 
+    CheckInSuccess,
+    CheckOutSuccess,
     CheckOutManual,
     CheckOutScanner,
     CheckInManual,
@@ -479,7 +481,7 @@ fun FBSApp(
                 AppScreen.StudentScreen,
                 AppScreen.StaffScreen,
 
-            )
+                )
 
             if (showBottomBar) {
                 bottomChooseBar(
@@ -595,7 +597,9 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate(AppScreen.StudentBookingDetail.name)
+                            navController.navigate(
+                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
+                            )
                         },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
@@ -667,7 +671,9 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate(AppScreen.StudentBookingDetail.name)
+                            navController.navigate(
+                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
+                            )
                         },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
@@ -824,7 +830,7 @@ fun FBSApp(
                         oobCode = oobCode,
                         onOobCodeChange = {
                             oobCode =it
-                                          },
+                        },
                         onResendCodeClick = {
                             forgotPwdViewModel.resendResetEmail()
                         },
@@ -871,7 +877,7 @@ fun FBSApp(
                         newPassword = newPassword,
                         onNewPasswordChange = {
                             newPassword = it
-                                              },
+                        },
                         ruleMinLength = ruleMinLength,
                         ruleLower = ruleLower,
                         ruleUpper = ruleUpper,
@@ -879,7 +885,7 @@ fun FBSApp(
                         confirmPassword = confirmPassword,
                         onConfirmPasswordChange = {
                             confirmPassword = it
-                                                  },
+                        },
                         onSubmitClick = {
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
                                 navController.navigate(AppScreen.PwdUpdated.name){
@@ -947,11 +953,11 @@ fun FBSApp(
                 }
 
                 composable(
-                    route = "BookingInfo/{bookingId}"
+                    route = "${AppScreen.StudentBookingDetails.name}/{bookingId}",
+                    arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
                     var booking by remember { mutableStateOf<Booking?>(null) }
-                    val navController = rememberNavController()
 
                     LaunchedEffect(bookingId) {
                         FirebaseFirestore.getInstance()
@@ -961,16 +967,22 @@ fun FBSApp(
                             .addOnSuccessListener { doc ->
                                 if (doc.exists()) {
                                     booking = Booking(
+                                        bookingId = doc.getString("bookingId") ?: doc.id,
+                                        userId = doc.getString("userId") ?: "",
+                                        timeslotId = doc.getString("timeslotId") ?: "",
                                         facility = doc.getString("facility") ?: "",
-                                        bookingNo = doc.getString("bookingId") ?: doc.id,
-                                        date = doc.getString("date") ?: "",
-                                        duration = doc.getString("duration") ?: "",
                                         venue = doc.getString("venue") ?: "",
                                         level = doc.getString("level") ?: "",
                                         building = doc.getString("building") ?: "",
+                                        date = doc.getString("date") ?: "",
+                                        duration = doc.getString("duration") ?: "",
+                                        startTime = doc.getString("startTime") ?: "",
+                                        endTime = doc.getString("endTime") ?: "",
                                         checkIn = doc.getString("checkIn") ?: "",
                                         checkOut = doc.getString("checkOut") ?: "",
-                                        status = doc.getString("status") ?: "Booked"
+                                        bookingNo = doc.getString("bookingNo") ?: doc.id,
+                                        status = doc.getString("status") ?: "Booked",
+                                        members = (doc.get("members") as? List<Map<String,String>>)?.map { it["first"]!! to it["second"]!! } ?: emptyList()
                                     )
                                 }
                             }
@@ -992,7 +1004,7 @@ fun FBSApp(
                         else -> "Sports"
                     }
 
-                    val isStaffUser = currentUser?.role == "Staff" || staffId.isNotEmpty()
+                    val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
 
                     BookSportScreen(
                         facilityType = facilityType,
@@ -1035,7 +1047,7 @@ fun FBSApp(
                                     Log.e("Firebase", "Failed to save booking", it)
                                 }
                         },
-                        isStaff = isStaffUser,
+                        isStaff = isStaffLoggedIn,
                         userRepository = usersRepo
                     )
                 }
@@ -1043,10 +1055,14 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.StudentMyBooking.name}/{userId}",
                     arguments = listOf(navArgument("userId") { type = NavType.StringType })
-                ) {
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    val viewModel: MyBookingViewModel = viewModel()
+
                     MyBookingScreen(
                         navController = navController,
-                        userId = it.arguments!!.getString("userId")!!
+                        viewModel = viewModel,
+                        userId = userId
                     )
                 }
 

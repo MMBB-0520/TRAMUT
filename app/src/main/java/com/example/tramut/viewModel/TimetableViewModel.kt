@@ -116,6 +116,7 @@ class TimetableViewModel(
         }
     }
 
+
     fun loadBookingsForDate(date: String) {
         viewModelScope.launch {
             try {
@@ -149,13 +150,14 @@ class TimetableViewModel(
             return "Maintenance"
         }
 
+
         // 4. Booking Check
         val isBooked = uiState.value.bookingsList.any { booking ->
             val bookedStartHour = booking.startTime.split(":")[0].toIntOrNull() ?: 0
             val bookedEndHour = booking.endTime.split(":")[0].toIntOrNull() ?: 0
 
             booking.venue == facility.name &&
-                    booking.bookingDate == dateString &&
+                    booking.date == dateString &&
                     bookedStartHour <= hour &&
                     bookedEndHour > hour
         }
