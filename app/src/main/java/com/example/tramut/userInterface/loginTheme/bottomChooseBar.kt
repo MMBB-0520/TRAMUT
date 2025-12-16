@@ -19,13 +19,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tramut.ui.theme.Purple40
 
 @Composable
 fun bottomChooseBar(
     selectedIndex: Int,
     onItemSelected: (Int) -> Unit
 ) {
-    // 每个 item 对应 icon 名称 (未选中, 选中)
     val items = listOf(
         Pair("ic_home0", "ic_home1"),
         Pair("ic_stu0", "ic_stu1"),
@@ -37,7 +37,7 @@ fun bottomChooseBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFCECDDF))
+            .background(Color.White)
             .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -59,14 +59,13 @@ fun bottomChooseBar(
                 Text(
                     text = labels[index],
                     fontSize = 12.sp,
-                    color = if (isSelected) Color(0xFF0A72E8) else Color.Black
+                    color = if (isSelected) Purple40 else Color.Black
                 )
             }
         }
     }
 }
 
-// 辅助函数：根据名字获取 drawable id
 @Composable
 fun getDrawableId(name: String): Int {
     val context = LocalContext.current

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.tramut.R
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.BlueMain
+import com.example.tramut.ui.theme.GrayText
 import com.example.tramut.ui.theme.StaffRed
 
 @Composable
@@ -59,7 +60,7 @@ fun PasswordUpdatedScreen(
         Text(
             text = "Your password has been successfully updated.",
             fontSize = 13.sp,
-            color = Color.Gray
+            color = GrayText
         )
 
         Spacer(modifier = Modifier.height(40.dp))

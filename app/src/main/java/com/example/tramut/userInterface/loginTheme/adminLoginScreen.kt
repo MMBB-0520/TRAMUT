@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.userInterface.loginTheme
+package com.example.tramut.userInterface.loginTheme
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -111,7 +111,7 @@ fun AdminLoginScreen(
             onValueChange = onPasswordChange,
             leadingIcon = { Icon(Icons.Outlined.Lock, "Lock Icon", tint = Color.Black) },
             trailingIcon = {
-                val iconRes = if (showPassword) com.example.tramut.R.drawable.ic_visibility else com.example.tramut.R.drawable.ic_visibility_off
+                val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibility_off
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(painter = painterResource(id = iconRes), contentDescription = "Toggle", modifier = Modifier.size(28.dp))
                 }

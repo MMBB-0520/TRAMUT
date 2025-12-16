@@ -1,6 +1,6 @@
 package com.example.tramut
 
-import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
@@ -55,7 +55,6 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.PostAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
-import com.example.myfacilitybookingsystem.userInterface.loginTheme.AdminLoginScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.repo.UsersRepo
@@ -63,10 +62,12 @@ import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
+import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen3
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdatedScreen
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
@@ -166,9 +167,7 @@ enum class AppScreen {
 @Composable
 fun TopBarScreen(
     currentScreen: AppScreen,
-    hasPopBack: () -> Unit,
-    selectedTabIndex:Int,
-    onTabSelected:(Int) -> Unit
+    hasPopBack: () -> Unit
 ) {
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
@@ -355,29 +354,17 @@ fun TopBarScreen(
 @Composable
 fun FBSApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
-    startIntent: Intent?,
-    usersRepo: UsersRepo
+    navController: NavHostController = rememberNavController()
 ) {
-    LaunchedEffect(startIntent) {
-        val data = startIntent?.data
-        val mode = data?.getQueryParameter("mode")
-        val oobCode = data?.getQueryParameter("oobCode")
 
-        if (mode == "resetPassword" && oobCode != null) {
-            navController.navigate(
-                "${AppScreen.ResetPwd.name}?oobCode=$oobCode"
-            ) {
-                popUpTo(0)
-            }
-        }
-    }
     val context = LocalContext.current
 
     // App Database
     val db = remember { AppDatabase.getInstance(context) }
+
     // Repository
     val usersRepo = remember { UsersRepo(db.usersDao()) }
+
     // ViewModel
     val loginViewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(usersRepo)
@@ -391,23 +378,18 @@ fun FBSApp(
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
-    // Compose 状态
     var password by remember { mutableStateOf("") }
 
 
     val studentIdValid by loginViewModel.studentIdValid.collectAsState()
     val staffIdValid by loginViewModel.staffIdValid.collectAsState()
-    val idValid by loginViewModel.idValid.collectAsState()
     val studentLoginError by loginViewModel.studentLoginError.collectAsState()
     val staffLoginError by loginViewModel.staffLoginError.collectAsState()
-    val showLoginError by loginViewModel.showLoginError.collectAsState()
     val currentUser by loginViewModel.currentUser.collectAsState()
     val isStudentLoggedIn by loginViewModel.isStudentLoggedIn.collectAsState()
     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
     val emailError by forgotPwdViewModel.emailError.collectAsState()
-    val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
-
-
+    val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
@@ -422,9 +404,7 @@ fun FBSApp(
         topBar = {
             TopBarScreen(
                 currentScreen = currentScreen,
-                hasPopBack = { navController.popBackStack() },
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it }
+                hasPopBack = { navController.popBackStack() }
             )
         },
         bottomBar = {
@@ -500,12 +480,12 @@ fun FBSApp(
                         studentId = studentId.take(7),
                         onStudIdChange = {
                             studentId = it
-                            loginViewModel.checkStudentId(it) // <- 分开
+                            loginViewModel.checkStudentId(it)
                         },
-                        idValid = studentIdValid,// <- 分开
+                        idValid = studentIdValid,
                         password = pwd,
                         onPasswordChange = { pwd = it },
-                        showLoginError = studentLoginError,// <- 分开
+                        showLoginError = studentLoginError,
                         onLoginClick = {
                             loginViewModel.login(studentId, pwd, "Student") { success ->
                                 if (success) {
@@ -573,12 +553,12 @@ fun FBSApp(
                         staffId = staffId.take(4),
                         onStaffIdChange = {
                             staffId = it
-                            loginViewModel.checkStaffId(it) // <- 分开
+                            loginViewModel.checkStaffId(it)
                         },
                         idValid = staffIdValid,
                         password = pwd,
                         onPasswordChange = { pwd = it },
-                        showLoginError = staffLoginError, // <- 分开
+                        showLoginError = staffLoginError,
                         onLoginClick = {
                             loginViewModel.login(staffId, pwd, "Staff") { success ->
                                 if (success) {
@@ -641,8 +621,6 @@ fun FBSApp(
 
                 // 1. ADMIN LOGIN
                 composable(route = AppScreen.AdminLoginScreen.name) {
-                    var adminId by rememberSaveable { mutableStateOf("") }
-                    var pwd by remember { mutableStateOf(password) }
                     AdminLoginScreen(
                         viewModel = adminsViewModel,
                         onLoginSuccess = {
@@ -738,6 +716,7 @@ fun FBSApp(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
                 // Forgot Password Screen
                 composable(route = AppScreen.ForgotPassword1.name) {
                     var email by rememberSaveable { mutableStateOf("") }
@@ -757,10 +736,36 @@ fun FBSApp(
                         },
                         onRequestPwdResetClick = {
                             forgotPwdViewModel.requestPasswordReset(email, ic) {
-                                navController.navigate("${AppScreen.ResetPwd.name}?oobCode={oobCode}") {
-                                    popUpTo(AppScreen.MainSystem.name)
+                                navController.navigate(AppScreen.ForgotPassword3.name) {
+                                    popUpTo(AppScreen.ForgotPassword1.name)
                                     { inclusive = true }
                                 }
+                            }
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.ForgotPassword3.name) {
+                    var oobCode by rememberSaveable { mutableStateOf("") }
+
+                    ForgetPasswordScreen3(
+                        email = lastRequestedEmail,
+                        oobCode = oobCode,
+                        onOobCodeChange = {
+                            oobCode =it
+                                          },
+                        onResendCodeClick = {
+                            forgotPwdViewModel.resendResetEmail()
+                        },
+                        onContinueResetClick = {
+                            navController.navigate("${AppScreen.ResetPwd.name}?oobCode=${Uri.encode(oobCode)}") {
+                                popUpTo(AppScreen.ForgotPassword3.name)
+                                { inclusive = true }
+                            }},
+                        onChangeEmailClick = {
+                            navController.navigate(AppScreen.ForgotPassword1.name) {
+                                popUpTo(AppScreen.ForgotPassword3.name)
+                                { inclusive = true }
                             }
                         }
                     )
@@ -769,7 +774,12 @@ fun FBSApp(
 
                 composable(
                     route = "${AppScreen.ResetPwd.name}?oobCode={oobCode}",
-                    arguments = listOf(navArgument("oobCode") { type = NavType.StringType })
+                    arguments = listOf(
+                        navArgument("oobCode") {
+                            type = NavType.StringType
+                            nullable = false
+                        }
+                    )
                 ) { backStackEntry ->
                     var newPassword by rememberSaveable { mutableStateOf("") }
                     var confirmPassword by rememberSaveable { mutableStateOf("") }
@@ -800,13 +810,18 @@ fun FBSApp(
                             confirmPassword = it
                                                   },
                         onSubmitClick = {
-                            // 调用 ViewModel 方法重置密码
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
-                                navController.navigate(AppScreen.PwdUpdated.name)
+                                navController.navigate(AppScreen.PwdUpdated.name){
+                                    popUpTo(AppScreen.ResetPwd.name)
+                                    { inclusive = true }
+                                }
                             }
                         },
                         onCancelClick = {
-                            navController.navigate(AppScreen.HomeScreen.name)
+                            navController.navigate(AppScreen.HomeScreen.name){
+                                popUpTo(AppScreen.ResetPwd.name)
+                                { inclusive = true }
+                            }
                         }
                     )
                 }

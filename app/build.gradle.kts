@@ -44,10 +44,19 @@ android {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0" )as Any)
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+
+    // 🚨 移除版本号，让它们自动使用 BOM 提供的兼容最新版本
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx")       // <--- 关键：使用最新的 Auth KTX
+    implementation("com.google.firebase:firebase-firestore-ktx") // <--- 关键：移除版本号
+
+    // implementation(platform("com.google.firebase:firebase-bom:34.6.0" )as Any)
+    // implementation("com.google.firebase:firebase-analytics")
+
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+    // implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
     implementation("com.google.firebase:firebase-auth-ktx:23.1.0")

@@ -20,31 +20,20 @@ class LoginViewModel(
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    // 当前登录用户
     private val _currentUser = MutableStateFlow<Users?>(null)
     val currentUser: StateFlow<Users?> = _currentUser
 
-    // 学号/ID 是否存在
     private val _studentIdValid = MutableStateFlow<Boolean?>(null)
     val studentIdValid: StateFlow<Boolean?> = _studentIdValid
 
     private val _staffIdValid = MutableStateFlow<Boolean?>(null)
     val staffIdValid: StateFlow<Boolean?> = _staffIdValid
 
-    private val _idValid = MutableStateFlow<Boolean?>(null)
-    val idValid: StateFlow<Boolean?> = _idValid
-
-
-    // 错误显示
     private val _studentLoginError = MutableStateFlow(false)
     val studentLoginError: StateFlow<Boolean> = _studentLoginError
 
     private val _staffLoginError = MutableStateFlow(false)
     val staffLoginError: StateFlow<Boolean> = _staffLoginError
-
-    private val _showLoginError = MutableStateFlow(false)
-    val showLoginError: StateFlow<Boolean> = _showLoginError
-
 
     private val _isStudentLoggedIn  = MutableStateFlow(false)
     val isStudentLoggedIn  : StateFlow<Boolean> = _isStudentLoggedIn
@@ -52,9 +41,13 @@ class LoginViewModel(
     private val _isStaffLoggedIn   = MutableStateFlow(false)
     val isStaffLoggedIn  : StateFlow<Boolean> = _isStaffLoggedIn
 
+    private val _idValid = MutableStateFlow<Boolean?>(null)
+    val idValid: StateFlow<Boolean?> = _idValid
+    private val _showLoginError = MutableStateFlow(false)
+    val showLoginError: StateFlow<Boolean> = _showLoginError
 
 
-    // 所有用户列表 (Room 数据库)
+
     val users: StateFlow<List<Users>> =
         usersRepo.getAllUsers().stateIn(
             scope = viewModelScope,
@@ -63,18 +56,15 @@ class LoginViewModel(
         )
 
     init {
-        // App 启动时同步一次 Firebase 数据到 Room
         syncUserFirebase()
     }
 
-    /** 同步 Firebase 数据到 Room */
     private fun syncUserFirebase() {
         viewModelScope.launch {
             usersRepo.syncFromFirebase()
         }
     }
 
-    /** 检查用户ID是否存在 */
     fun checkStudentId(input: String) {
         if (input.isEmpty()) {
             _studentIdValid.value = null
@@ -103,15 +93,14 @@ class LoginViewModel(
         }
     }
 
-
-    /** 登录 */
     fun login(loginId: String, password: String, role: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val user = usersRepo.getUserByLoginIdAndRole(loginId, role)
             if (user == null) {
-                // 对应角色不存在
-                if (role == "Student") _studentLoginError.value = true
-                else _staffLoginError.value = true
+                if (role == "Student")
+                    _studentLoginError.value = true
+                else
+                    _staffLoginError.value = true
                 onResult(false)
                 return@launch
             }
@@ -139,7 +128,6 @@ class LoginViewModel(
         }
     }
 
-    /** 登出 */
     fun logout() {
         auth.signOut()
         _currentUser.value = null

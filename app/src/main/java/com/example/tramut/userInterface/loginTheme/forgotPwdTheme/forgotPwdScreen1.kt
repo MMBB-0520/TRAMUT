@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tramut.R
 import com.example.tramut.ui.theme.Background
+import com.example.tramut.ui.theme.GrayText
 
 
 @Composable
@@ -66,9 +67,9 @@ fun ForgetPasswordScreen1 (
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Provide the email address linked with your account to reset your password",
+            text = "Provide the email address linked with your account to reset your password.",
             fontSize = 13.sp,
-            color = Color.Gray
+            color = GrayText
         )
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -162,7 +163,7 @@ fun ForgetPasswordScreen1 (
     }
 }
 
-// 预览功能
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewForgetPasswordScreen() {

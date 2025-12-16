@@ -92,8 +92,8 @@ fun HomeScreen(
             style = TextStyle(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.5f),
-                    offset = Offset(0f, 8f),  // 阴影偏移
-                    blurRadius = 8f           // 模糊半径
+                    offset = Offset(0f, 8f),
+                    blurRadius = 8f
                 )
             ),
             modifier = Modifier.padding(top = 4.dp)
@@ -145,7 +145,6 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Bottom Navigation
         bottomBar()
     }
 }
@@ -195,7 +194,7 @@ fun AnnouncementCard(
                 )
 
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_visibility_off),//R.drawable.ic_chevron_right
+                    painter = painterResource(id = R.drawable.ic_visibility_off),
                     contentDescription = null,
                     tint = Color.Black,
                     modifier = Modifier.size(22.dp)
