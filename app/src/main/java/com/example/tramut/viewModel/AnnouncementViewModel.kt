@@ -68,50 +68,38 @@ class AnnouncementViewModel : ViewModel() {
     fun saveAnnouncement(docId: String? = null, department: String, adminId: String, onSuccess: () -> Unit) {
         val s = _uiState.value
 
-        // 1. VALIDATION CHECKS
-        if (s.title.isBlank() || s.description.isBlank()) {
-            _uiState.update { it.copy(error = "Title and Description cannot be empty.") }
-            return
-        }
-
-        // 2. DATE VALIDATION (No Past Dates)
-        if (isDateInPast(s.startDate)) {
-            _uiState.update { it.copy(error = "Start date cannot be in the past.") }
-            return
-        }
-
-        if (isDateInPast(s.endDate)) {
-            _uiState.update { it.copy(error = "End date cannot be in the past.") }
-            return
-        }
-
-        // Check if End Date is before Start Date
-        if (isEndDateBeforeStartDate(s.startDate, s.endDate)) {
-            _uiState.update { it.copy(error = "End date cannot be before Start date.") }
+        if (s.title.isBlank() || s.description.isBlank() || s.venueType.isBlank() || s.startDate.isBlank() || s.endDate.isBlank()) {
+            _uiState.update { it.copy(error = "All fields must be filled.") }
             return
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, error = null) } // Clear previous errors
+            _uiState.update { it.copy(isSaving = true, error = null) }
 
-            // ... (Rest of your existing save logic) ...
+            try {
+                if (docId != null) {
+                    repository.updateAnnouncement(docId, s.title, s.description, s.venueType, s.startDate, s.endDate)
+                } else {
+                    val newAn = Announcement(
+                        title = s.title,
+                        content = s.description,
+                        department = department,
+                        admin_id = adminId,
+                        venue = s.venueType,
+                        created_date_str = s.startDate,
+                        expiry_date_str = s.endDate
+                    )
+                    repository.addAnnouncement(newAn)
+                }
 
-            val result = if (docId != null) {
-                repository.updateAnnouncement(docId, s.title, s.description, s.venueType, s.startDate, s.endDate)
-            } else {
-                val newAn = Announcement(
-                    title = s.title,
-                    content = s.description,
-                    department = department,
-                    admin_id = adminId,
-                    venue = s.venueType,
-                    created_date_str = s.startDate,
-                    expiry_date_str = s.endDate
-                )
-                repository.addAnnouncement(newAn)
+                onSuccess()
+
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Failed to post announcement: ${e.message}") }
+
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
             }
-
-            // ... (Rest of your logic) ...
         }
     }
 

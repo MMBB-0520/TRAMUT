@@ -6,28 +6,39 @@ import com.google.firebase.firestore.PropertyName
 data class Facility(
     @get:Exclude var id: String = "",
 
-    @get:PropertyName("facility_type") @set:PropertyName("facility_type")
+    @get:PropertyName("name") @set:PropertyName("name")
     var name: String = "",
 
-    @get:PropertyName("facility_type") @set:PropertyName("facility_type")
+    var category: String = "",
+
+    var status:String ="",
+
+    var capacity: List<Long> = emptyList(),
+
+    @get:PropertyName("department") @set:PropertyName("department")
     var department: String = "",
 
-    @get:PropertyName("facility_status") @set:PropertyName("facility_status")
-    var status: String = "Available",
-
-    @get:PropertyName("capacity") @set:PropertyName("capacity")
-    var capacity: Int = 0,
-
-    @get:PropertyName("start_time") @set:PropertyName("start_time")
+    @get:PropertyName("startTime") @set:PropertyName("startTime")
     var startTime: String = "08:00",
 
-    @get:PropertyName("end_time") @set:PropertyName("end_time")
+    @get:PropertyName("endTime") @set:PropertyName("endTime")
     var endTime: String = "22:00",
 
-    @get:PropertyName("special_closures") @set:PropertyName("special_closures")
-    var specialClosures: Map<String, List<Int>> = emptyMap(),
+    var dailyBreakHours: List<Int> = emptyList(),
 
-    @get:PropertyName("facility_name") @set:PropertyName("facility_name")
-    var roomCode: String = ""
+    @get:PropertyName("duration") @set:PropertyName("duration")
+    var bookedSlots: Map<String, List<Int>> = emptyMap(),
+
+    @get:PropertyName("specialClosures") @set:PropertyName("specialClosures")
+    var specialClosures: Map<String, List<Int>> = emptyMap()
 
 )
+
+//Am2234
+//ThuthuCar2
+
+//Ah3234
+//HajimiNanBei3
+
+//Ak4234
+//imKwa*2
