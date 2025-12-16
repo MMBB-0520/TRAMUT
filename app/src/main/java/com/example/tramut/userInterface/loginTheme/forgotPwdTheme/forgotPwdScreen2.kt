@@ -1,11 +1,5 @@
 package com.example.tramut.userInterface.loginTheme.forgotPwdTheme
 
-import android.R.attr.enabled
-import android.R.attr.onClick
-import android.R.attr.singleLine
-import android.R.attr.text
-import android.R.attr.textStyle
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,10 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.InputTransformation.Companion.keyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,9 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.example.tramut.R
 import com.example.tramut.ui.theme.Background
 import kotlinx.coroutines.delay
-import java.time.format.TextStyle
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ForgetPasswordScreen2 (
@@ -223,6 +212,24 @@ fun ForgetPasswordScreen2 (
         )
     }
 }
+//                composable(route = AppScreen.ForgotPassword2.name) {
+//
+//
+//                    ForgetPasswordScreen2(
+//                        email = "",
+//                        otpValues = List(6) { "" },
+//                        onOtpChange = { _, _ -> },
+//                        onVerifyClick = {
+//
+//                        },
+//                        onResendCodeClick = {
+//                            navController.navigate(AppScreen.ResetPwd.name)
+//                        },
+//                        onChangeEmailClick = {
+//                            navController.navigate(AppScreen.ForgotPassword1.name)
+//                        }
+//                    )
+//                }
 
 @Preview(showBackground = true)
 @Composable

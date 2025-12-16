@@ -1,22 +1,10 @@
 package com.example.tramut.rooms.repo
 
 import android.util.Log
-import android.util.Log.e
 import com.example.tramut.rooms.dao.UsersDAO
 import com.example.tramut.rooms.entity.Users
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.unit.dp
-import com.example.myfacilitybookingsystem.rooms.dao.UsersDAO
-import com.example.myfacilitybookingsystem.rooms.entity.Users
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.auth.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -129,6 +117,11 @@ class UsersRepo(
             }
         }
 
+    suspend fun resendPassword(email: String): Boolean =
+        withContext(Dispatchers.IO) {
+            auth.sendPasswordResetEmail(email)
+            true
+        }
 
     // -----------------------------
     // 5️⃣ 检查用户是否存在

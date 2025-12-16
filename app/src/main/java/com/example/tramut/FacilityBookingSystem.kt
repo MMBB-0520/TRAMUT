@@ -1,8 +1,7 @@
-package com.example.myfacilitybookingsystem
+package com.example.tramut
 
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -49,13 +48,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.example.tramut.rooms.entity.Booking
-import com.example.tramut.rooms.repo.UsersRepo
-import com.example.tramut.ui.theme.StaffRed
-import com.example.tramut.ui.theme.StudentBlue
-import com.example.tramut.userInterface.HomeScreen
-import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
-import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.AdminMainScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AdminAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AnnouncementDetailScreen
@@ -65,7 +57,13 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.Adm
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
 import com.example.myfacilitybookingsystem.userInterface.loginTheme.AdminLoginScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
+import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.repo.UsersRepo
+import com.example.tramut.ui.theme.StaffRed
+import com.example.tramut.ui.theme.StudentBlue
+import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen1
@@ -73,14 +71,12 @@ import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdate
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
-import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.UUID
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -360,7 +356,7 @@ fun TopBarScreen(
 fun FBSApp(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startIntent: Intent?
+    startIntent: Intent?,
     usersRepo: UsersRepo
 ) {
     LaunchedEffect(startIntent) {
@@ -771,25 +767,6 @@ fun FBSApp(
                 }
 
 
-//                composable(route = AppScreen.ForgotPassword2.name) {
-//
-//
-//                    ForgetPasswordScreen2(
-//                        email = "",
-//                        otpValues = List(6) { "" },
-//                        onOtpChange = { _, _ -> },
-//                        onVerifyClick = {
-//
-//                        },
-//                        onResendCodeClick = {
-//                            navController.navigate(AppScreen.ResetPwd.name)
-//                        },
-//                        onChangeEmailClick = {
-//                            navController.navigate(AppScreen.ForgotPassword1.name)
-//                        }
-//                    )
-//                }
-
                 composable(
                     route = "${AppScreen.ResetPwd.name}?oobCode={oobCode}",
                     arguments = listOf(navArgument("oobCode") { type = NavType.StringType })
@@ -921,54 +898,6 @@ fun FBSApp(
                     }
 
                     booking?.let { BookingInfoScreen(it) }
-                }
-
-                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
-                ) { backStackEntry ->
-                    val venue = backStackEntry.arguments?.getString("venue") ?: ""
-                    val date = backStackEntry.arguments?.getString("date") ?: ""
-                    val facilityType = when {
-                        venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
-                        venue.contains("Library", ignoreCase = true) -> "Library"
-                        else -> "Sports"
-                    }
-
-                    val isStaffUser = currentUser?.role == "Staff" || staffId.isNotEmpty()
-
-                    BookSportScreen(
-                        facilityType = facilityType,
-                        selectedDateFromPrevious = date,
-                        onBackFacilityPage = { navController.popBackStack() },
-                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
-                            val bookingId = UUID.randomUUID().toString()
-                            val bookingData = hashMapOf(
-                                "bookingId" to bookingId,
-                                "facility" to "Sports Facilities",
-                                "venue" to venueType,
-                                "date" to date,
-                                "startTime" to startTime,
-                                "endTime" to endTime,
-                                "duration" to "$startTime - $endTime",
-                                "pax" to pax,
-                                "members" to members.map {it.first to it.second},
-                                "status" to "Booked",
-                                "timestamp" to System.currentTimeMillis()
-                            )
-
-                            FirebaseFirestore.getInstance()
-                                .collection("bookings")
-                                .document(bookingId)
-                                .set(bookingData)
-                                .addOnSuccessListener {
-                                    navController.navigate(AppScreen.StudentBookingDetails.name)
-                                }
-                                .addOnFailureListener {
-                                    Log.e("Firebase", "Failed to save booking", it)
-                                }
-                        },
-                        isStaff = isStaffUser,
-                        userRepository = usersRepo
-                    )
                 }
 
 

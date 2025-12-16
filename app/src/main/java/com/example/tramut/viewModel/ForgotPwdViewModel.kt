@@ -16,6 +16,9 @@ class ForgotPwdViewModel (
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+    private val _lastRequestedEmail = MutableStateFlow<String?>(null)
+    val lastRequestedEmail: StateFlow<String?> = _lastRequestedEmail
+
     private val emailRegex =
         Regex("^[a-zA-Z0-9._%+-]+@(student\\.tarc\\.edu\\.my|tarc\\.edu\\.my)$")
 
@@ -44,18 +47,27 @@ class ForgotPwdViewModel (
         viewModelScope.launch {
             val success = usersRepo.sendPasswordResetEmail(email, ic)
 
-
             if (!success) {
                 _emailError.value =
                     "Please make sure your registered email and IC Number are correct."
             } else {
+                _lastRequestedEmail.value = email
                 _emailError.value = null
                 onSuccess()
             }
         }
     }
 
+    fun resendResetEmail() {
+        val email = _lastRequestedEmail.value
 
+        if (email.isNullOrEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            usersRepo.resendPassword(email)
+        }
+    }
     fun resetPassword(oobCode: String, newPassword: String, onSuccess: () -> Unit) {
 
         viewModelScope.launch {

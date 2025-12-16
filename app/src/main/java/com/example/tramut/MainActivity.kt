@@ -9,9 +9,9 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import com.example.myfacilitybookingsystem.AppDatabase
-import com.example.myfacilitybookingsystem.FBSApp
-import com.example.myfacilitybookingsystem.rooms.repo.UsersRepo
+import com.example.tramut.AppDatabase
+import com.example.tramut.FBSApp
+import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.TRAMUTTheme
 import com.google.firebase.FirebaseApp
