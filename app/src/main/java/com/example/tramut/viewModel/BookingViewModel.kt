@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import android.util.Log
 
 class MyBookingViewModel : ViewModel() {
 
@@ -21,36 +22,37 @@ class MyBookingViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // 添加UI状态管理
+    // UI 状态
     private val _uiState = MutableStateFlow<BookingUIState>(BookingUIState.Idle)
     val uiState: StateFlow<BookingUIState> = _uiState
 
     private var listenerRegistration: ListenerRegistration? = null
 
+    // ===============================
+    // Listen booking list
+    // ===============================
     fun startListening(userId: String) {
         _isLoading.value = true
-
-        // 停止之前的监听器
         stopListening()
 
         listenerRegistration = firestore
             .collection("bookings")
             .whereEqualTo("userId", userId)
-            // 可以根据需要添加排序
             .orderBy("date")
             .addSnapshotListener { snapshot, error ->
                 _isLoading.value = false
 
                 if (error != null) {
-                    _uiState.value = BookingUIState.Error(error.message ?: "Unknown error")
+                    _uiState.value =
+                        BookingUIState.Error(error.message ?: "Unknown error")
                     return@addSnapshotListener
                 }
 
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
                         doc.toObject(Booking::class.java)?.copy(
-                            // 确保 bookingNo 有值
-                            bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
+                            // ✅ 统一：UI 用 bookingNo = bookingId
+                            bookingNo = doc.getString("bookingId") ?: doc.id
                         )
                     }
                     _bookingList.value = bookings
@@ -60,46 +62,49 @@ class MyBookingViewModel : ViewModel() {
             }
     }
 
-    // 取消预订的方法
+    // ===============================
+    // Cancel booking (by bookingId)
+    // ===============================
     suspend fun cancelBooking(bookingId: String): Boolean {
         return try {
             _uiState.value = BookingUIState.Loading
+            Log.d("CANCEL", "Try cancel bookingId=$bookingId")
 
-            // 使用 bookingNo 字段查找
-            val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingNo", bookingId)  // 改为 bookingNo
+            val querySnapshot = firestore
+                .collection("bookings")
+                .whereEqualTo("bookingId", bookingId) // ✅ 核心
                 .limit(1)
                 .get()
                 .await()
 
-            if (querySnapshot.documents.isNotEmpty()) {
-                val document = querySnapshot.documents[0]
-                val documentId = document.id
-
-                // 更新状态为"cancelled"
-                val updates = hashMapOf<String, Any>(
-                    "status" to "cancelled",
-                    // 可选：添加取消时间
-                    "cancelledAt" to System.currentTimeMillis()
-                )
-
-                firestore.collection("bookings").document(documentId)
-                    .update(updates)
-                    .await()
-
-                _uiState.value = BookingUIState.Success
-                true
-            } else {
+            if (querySnapshot.isEmpty) {
                 _uiState.value = BookingUIState.Error("Booking not found")
-                false
+                return false
             }
+
+            val documentId = querySnapshot.documents.first().id
+
+            val updates = hashMapOf<String, Any>(
+                "status" to "Cancelled",
+                "cancelledAt" to System.currentTimeMillis()
+            )
+
+            firestore.collection("bookings")
+                .document(documentId)
+                .update(updates)
+                .await()
+
+            _uiState.value = BookingUIState.Success
+            true
+
         } catch (e: Exception) {
-            _uiState.value = BookingUIState.Error(e.message ?: "Failed to cancel booking")
+            _uiState.value =
+                BookingUIState.Error(e.message ?: "Failed to cancel booking")
             false
         }
     }
 
-    // ViewModelScope封装的方法，方便在Compose中调用
+    // Compose 调用用
     fun cancelBookingWithScope(bookingId: String) {
         viewModelScope.launch {
             cancelBooking(bookingId)
@@ -115,6 +120,9 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration = null
     }
 
+    // ===============================
+    // Venue helpers (原样保留)
+    // ===============================
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()
         return when {
@@ -135,7 +143,7 @@ class MyBookingViewModel : ViewModel() {
             venueLower.contains("library") -> {
                 when {
                     venueLower.contains("discussion") -> "1A"
-                    else -> "1"  // 主图书馆在1楼
+                    else -> "1"
                 }
             }
 
@@ -157,10 +165,8 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
-
     fun getBuildingForVenue(venue: String): String {
         val venueLower = venue.lowercase()
-
         return when {
             venueLower.contains("badminton") ||
                     venueLower.contains("squash") ||
@@ -174,10 +180,8 @@ class MyBookingViewModel : ViewModel() {
                     venueLower.contains("karaoke") ||
                     venueLower.contains("guest") -> "Sports Complex"
 
-
-            venueLower.contains("library") -> "Library"
-            venueLower.contains("individual study") -> "Library"
-
+            venueLower.contains("library") ||
+                    venueLower.contains("individual study") -> "Library"
 
             venueLower.contains("citc") ||
                     venueLower.contains("cyber") -> "Cyber Centre"
@@ -189,8 +193,6 @@ class MyBookingViewModel : ViewModel() {
                     else -> "General Building"
                 }
             }
-
-            // 默认
             else -> "Not specified"
         }
     }
@@ -200,7 +202,9 @@ class MyBookingViewModel : ViewModel() {
         stopListening()
     }
 
-    // UI状态密封类
+    // ===============================
+    // UI State
+    // ===============================
     sealed class BookingUIState {
         object Idle : BookingUIState()
         object Loading : BookingUIState()

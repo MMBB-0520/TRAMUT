@@ -28,6 +28,8 @@ interface UsersDAO {
     @Query("SELECT * FROM users WHERE loginId = :loginId AND role = :role")
     suspend fun getUserByLoginIdAndRole(loginId: String, role: String): Users?
 
+    @Query("SELECT * FROM users WHERE loginId = :loginId AND username = :username")
+    suspend fun getUserByLoginIdAndUsername(loginId: String, username: String): Users?
     @Transaction
     suspend fun replaceAllUsers(users: List<Users>) {
         deleteAllUsers()

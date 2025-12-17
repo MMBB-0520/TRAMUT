@@ -1,6 +1,7 @@
 package com.example.tramut.viewModel
 
 import android.util.Log.e
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tramut.rooms.entity.Users
@@ -46,6 +47,8 @@ class LoginViewModel(
     private val _showLoginError = MutableStateFlow(false)
     val showLoginError: StateFlow<Boolean> = _showLoginError
 
+    private val _invalid = MutableStateFlow<Boolean?>(null)
+    val invalid: StateFlow<Boolean?> = _invalid
 
 
     val users: StateFlow<List<Users>> =
@@ -64,7 +67,39 @@ class LoginViewModel(
             usersRepo.syncFromFirebase()
         }
     }
+    // 存储成员的信息
+    var members = mutableStateListOf<Pair<String, String>>()
+        private set // 保持封装性
+    var validationResults = mutableListOf<Boolean>()
+        private set
 
+
+    // 验证成员的 ID 和用户名
+    fun validateMembers() {
+        viewModelScope.launch {
+            validationResults.clear()  // 清空之前的验证结果
+
+            // 遍历每个成员并验证
+            for (member in members) {
+                val loginId = member.first
+                val username = member.second
+
+                // 对每个成员进行验证，首先检查 loginId 和 role 是否有效
+                val isLoginIdValid = usersRepo.checkUserByLoginId(loginId, "Student")
+
+                // 如果 loginId 有效，再检查 username 是否匹配
+                if (isLoginIdValid) {
+                    val isUsernameValid = usersRepo.checkLoginIdAndUsername(loginId, username)
+                    validationResults.add(isUsernameValid)
+                    _invalid.value = true
+                } else {
+                    // 如果 loginId 无效，用户名也会被认为无效
+                    validationResults.add(false)
+                    _invalid.value = false
+                }
+            }
+        }
+    }
     fun checkStudentId(input: String) {
         if (input.isEmpty()) {
             _studentIdValid.value = null

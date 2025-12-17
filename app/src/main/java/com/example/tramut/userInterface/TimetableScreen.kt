@@ -45,7 +45,7 @@ fun TimetableScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // 1. Category Options List
+    // 1. Category Options List (Remains the same)
     val categoryOptions = remember(initialDepartment) {
         val optionsList = when (initialDepartment) {
             "Sport Facilities" -> listOf("All Sport Facilities", "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
@@ -65,6 +65,7 @@ fun TimetableScreen(
     }
 
     // FIX 2: LOAD DATA LOGIC (Triggers the consolidated fetchTimetableData)
+    // Removed uiState.selectedDate as a key, as its update is handled inside the VM and doesn't require re-fetching facilities.
     LaunchedEffect(selectedCategory) {
         val facilityQuery = if (selectedCategory.startsWith("All")) {
             initialDepartment
@@ -73,10 +74,12 @@ fun TimetableScreen(
         }
         val isCategoryQuery = !selectedCategory.startsWith("All")
 
+        // Call the consolidated fetch function.
+        // We pass uiState.selectedDate, which ensures the first fetch uses the date initialized in the VM.
         viewModel.fetchTimetableData(
             identifier = facilityQuery,
             isCategory = isCategoryQuery,
-            date = uiState.selectedDate
+            date = uiState.selectedDate // Use the date initialized in the VM
         )
     }
 
@@ -105,112 +108,20 @@ fun TimetableScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                // --- 整合了第一个代码块的 Venue Type/Category Dropdown 逻辑 ---
                 Box(modifier = Modifier.weight(1f)) {
-
-                    // 使用 TimetableScreen 的状态来模拟第一个代码块的 venueState
-                    val facilityListLoading = uiState.isLoading
-                    val facilityListError = uiState.errorMessage
-                    val facilityList = categoryOptions
-
-                    if (facilityListLoading) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Loading venues...",
-                                    fontSize = 14.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.Black // 使用主题色
-                                )
-                            }
-                            // Divider (线)
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    } else if (facilityListError != null && facilityList.isEmpty()) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Red,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Failed to load venues",
-                                    fontSize = 14.sp,
-                                    color = Color.Red,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            Text(
-                                text = "Using initial department list.",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    } else if (facilityList.isEmpty()) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Text(
-                                text = "No venues available",
-                                fontSize = 14.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp
-                            )
-                        }
-                    } else {
-                        // 正常显示下拉菜单 (使用 TimetableScreen 已有的组件 DepartmentDropdownLineStyle)
-                        DepartmentDropdownLineStyle(
-                            currentSelection = selectedCategory,
-                            options = facilityList,
-                            onSelect = { selectedCategory = it }
-                        )
-                    }
+                    // Category Dropdown
+                    DepartmentDropdownLineStyle(
+                        currentSelection = selectedCategory,
+                        options = categoryOptions,
+                        onSelect = { selectedCategory = it }
+                    )
                 }
-                // --- 整合后的 Venue Type/Category Dropdown 逻辑结束 ---
-
 
                 Box(modifier = Modifier.weight(1f)) {
-                    // Date Picker (保持不变)
+                    // Date Picker
                     AdminDatePickerLineStyle(
                         currentDate = uiState.selectedDate,
+                        // FIX: Changed onDateSelected to call the VM's updateDate, which handles booking refresh
                         onDateSelected = { newDate -> viewModel.updateDate(newDate) }
                     )
                 }
@@ -218,7 +129,6 @@ fun TimetableScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // 课程表数据的加载/错误/显示状态 (保持不变)
             if (uiState.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
@@ -353,7 +263,6 @@ fun TimetableGrid(
                                 .height(rowHeight)
                                 .background(cellColor)
                                 .border(0.5.dp, Color.White)
-                            // 如果需要点击预订，可以在这里添加 clickable 修饰符
                         )
                     }
                 }

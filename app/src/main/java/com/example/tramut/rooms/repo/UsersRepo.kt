@@ -118,11 +118,16 @@ class UsersRepo(
             ValidationResult.Error("Error validating student ID: ${e.message}", loginId)
         }
     }
+    suspend fun checkUserByLoginId(loginId: String, role: String) =
+        usersDao.getUserByLoginIdAndRole(loginId, role) != null
+    suspend fun checkLoginIdAndUsername(loginId: String, username: String) =
+        usersDao.getUserByLoginIdAndUsername(loginId, username) != null
 
     /**
      * 批量验证多个成员
      * 返回一个Map，key是loginId，value是验证结果
      */
+
     suspend fun validateMultipleMembers(loginIds: List<String>): Map<String, ValidationResult> = withContext(Dispatchers.IO) {
         try {
             val results = mutableMapOf<String, ValidationResult>()
@@ -205,6 +210,39 @@ class UsersRepo(
                 // 批量验证
                 val validationResults = validateMultipleMembers(loginIds)
 
+                // 3. 核心修改：检查 ID 是否存在 以及 姓名是否匹配
+                val invalidIds = mutableListOf<String>()
+                val errorDetails = mutableListOf<String>()
+
+                for (member in members) {
+                    if (member.first.isBlank()) continue
+
+                    val dbResult = validationResults[member.first]
+
+                    if (dbResult is ValidationResult.Error) {
+                        // 情况 A: ID 根本不存在
+                        invalidIds.add(member.first)
+                        errorDetails.add("ID ${member.first} 不存在")
+                    } else if (dbResult is ValidationResult.Success) {
+                        // 情况 B: ID 存在，检查姓名是否匹配 (忽略大小写和空格)
+                        val dbName = dbResult.user.username.trim()
+                        val inputName = member.second.trim()
+
+                        if (!dbName.equals(inputName, ignoreCase = true)) {
+                            invalidIds.add(member.first)
+                            errorDetails.add("ID ${member.first} 与姓名不匹配 (数据库: $dbName)")
+                        }
+                    }
+                }
+
+                // 如果有任何不匹配或不存在的，返回 InvalidIds
+                if (invalidIds.isNotEmpty()) {
+                    return@withContext MembersValidationResult.InvalidIds(
+                        invalidIds = invalidIds,
+                        errorMessage = errorDetails.joinToString(", ")
+                    )
+                }
+
                 // 检查无效的ID
                 val invalidResults = validationResults.filter { it.value is ValidationResult.Error }
 
@@ -232,7 +270,7 @@ class UsersRepo(
                     }
                 }
 
-                return@withContext MembersValidationResult.Success(validMembers)
+                return@withContext MembersValidationResult.Success(members)
             } catch (e: Exception) {
                 return@withContext MembersValidationResult.Error(
                     errorMessage = "Validation failed: ${e.message}"
