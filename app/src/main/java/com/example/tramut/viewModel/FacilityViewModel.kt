@@ -74,6 +74,7 @@ class FacilityViewModel : ViewModel() {
     fun addFacility(
         department: String,
         specialClosures: Map<String, List<Int>>,
+        dailyBreakHours: List<Int> = emptyList(),
         onResult: (Boolean, String?) -> Unit
     ) {
         val capacityListToSave = formCapacity.value
@@ -92,6 +93,7 @@ class FacilityViewModel : ViewModel() {
             "endTime" to formEndTime.value,
             "status" to "Available",
             "capacity" to finalCapacity,
+            "dailyBreakHours" to dailyBreakHours,
             "specialClosures" to specialClosures
         )
 

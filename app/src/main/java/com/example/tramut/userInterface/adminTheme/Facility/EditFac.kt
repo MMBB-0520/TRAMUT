@@ -181,9 +181,6 @@ fun EditFacilityScreen(
 
             if (selectedFacility != null) {
 
-                // =================================================================
-                // --- 2. FACILITY DETAILS SECTION (NO CARD - LINE STYLE) ---
-                // =================================================================
                 Text("Facility Details", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(Modifier.height(8.dp))
 
@@ -476,7 +473,6 @@ fun EditFacilityScreen(
                     }
                 }
 
-                // LIST ADDED CLOSURES (Matching AdminAddFacilityScreen)
                 if (specialClosuresMap.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text("Scheduled Closures:", fontWeight = FontWeight.Bold)
@@ -503,12 +499,12 @@ fun EditFacilityScreen(
                     Spacer(Modifier.height(24.dp))
                 }
 
-
+                Spacer(Modifier.height(16.dp))
                 // =================================================================
                 // --- 5. ACTION BUTTONS ---
                 // =================================================================
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp)) {
-                    // DELETE BUTTON
+
                     Button(
                         onClick = { showDeleteFacilityDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
@@ -518,7 +514,6 @@ fun EditFacilityScreen(
                         Text("Delete")
                     }
 
-                    // UPDATE BUTTON
                     Button(
                         onClick = {
                             selectedFacility?.id?.let { id ->

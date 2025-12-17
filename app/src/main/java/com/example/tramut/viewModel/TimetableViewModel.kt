@@ -31,7 +31,6 @@ class TimetableViewModel(
     private val _uiState = MutableStateFlow(TimetableUiState())
     val uiState = _uiState.asStateFlow()
 
-    // Listeners for real-time updates
     private var facilityListener: ListenerRegistration? = null
     private var bookingsListener: ListenerRegistration? = null
 
@@ -41,7 +40,6 @@ class TimetableViewModel(
         _uiState.update { it.copy(selectedDate = today) }
     }
 
-    // Call this when the screen is closed to stop listening to Firebase
     override fun onCleared() {
         super.onCleared()
         facilityListener?.remove()
@@ -67,7 +65,6 @@ class TimetableViewModel(
 
             if (snapshot != null) {
                 val liveList = snapshot.documents.mapNotNull { doc ->
-                    // Capacity mapping
                     val capacityData = doc.get("capacity")
                     val capacityList: List<Long> = when (capacityData) {
                         is List<*> -> capacityData.filterIsInstance<Long>()
@@ -75,20 +72,24 @@ class TimetableViewModel(
                         else -> emptyList()
                     }
 
-                    // Break Hours mapping
                     val breakHoursData = doc.get("dailyBreakHours")
                     val breakHoursList: List<Int> = when (breakHoursData) {
-                        is List<*> -> breakHoursData.mapNotNull { (it as? Long)?.toInt() ?: (it as? Int) }
-                        is String -> breakHoursData.split(",").mapNotNull { it.trim().toIntOrNull() }
+                        is List<*> -> breakHoursData.mapNotNull {
+                            (it as? Long)?.toInt() ?: (it as? Int)
+                        }
+
+                        is String -> breakHoursData.split(",")
+                            .mapNotNull { it.trim().toIntOrNull() }
+
                         else -> emptyList()
                     }
 
-                    // Special Closures mapping
-                    val rawSpecialClosures = doc.get("specialClosures") as? Map<String, Any> ?: emptyMap()
+                    val rawSpecialClosures =
+                        doc.get("specialClosures") as? Map<String, Any> ?: emptyMap()
                     val convertedSpecialClosures = rawSpecialClosures.mapValues { entry ->
                         val hoursList = entry.value as? List<*>
                         hoursList?.mapNotNull {
-                            when(it) {
+                            when (it) {
                                 is Long -> it.toInt()
                                 is Int -> it
                                 else -> null
@@ -116,12 +117,7 @@ class TimetableViewModel(
         }
     }
 
-    /**
-     * REAL-TIME BOOKING LISTENER
-     * This replaces the old repository.getBookingsForDate fetch.
-     */
     fun loadBookingsForDate(date: String) {
-        // Stop the old listener if date changes
         bookingsListener?.remove()
 
         bookingsListener = db.collection("bookings")
@@ -177,16 +173,16 @@ class TimetableViewModel(
             return "Maintenance"
         }
 
-
-        // Booking Check - This now checks the live bookingsList updated by the listener
         val isBooked = uiState.value.bookingsList.any { booking ->
             val bookedStartHour = booking.startTime.split(":")[0].toIntOrNull() ?: 0
             val bookedEndHour = booking.endTime.split(":")[0].toIntOrNull() ?: 0
 
-            booking.venue == facility.name &&
+            val venueMatches = booking.venue.trim().equals(facility.name.trim(), ignoreCase = true)
+
+            venueMatches &&
                     booking.date == dateString &&
-                    bookedStartHour <= hour &&
-                    bookedEndHour > hour
+                    hour >= bookedStartHour &&
+                    hour < bookedEndHour
         }
 
         return if (isBooked) "Booked" else "Available"

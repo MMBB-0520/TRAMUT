@@ -56,7 +56,7 @@ fun UserAddReviewScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Submit Review", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Submit", color = Color.White, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = StudentBlue),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {

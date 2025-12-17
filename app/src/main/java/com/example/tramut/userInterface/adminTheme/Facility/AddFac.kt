@@ -22,18 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.PostSuccessDialog
 import com.example.myfacilitybookingsystem.viewModel.FacilityViewModel
-import com.example.tramut.R
 import com.example.tramut.userInterface.adminTheme.Facility.AddSuccessDialog
 import com.example.tramut.userInterface.adminTheme.Facility.LabeledInput
 import com.example.tramut.userInterface.adminTheme.Facility.LineStaticInput
@@ -576,8 +572,8 @@ fun AdminAddFacilityScreen(
 
                         viewModel.addFacility(
                             department = adminDepartment,
-                            specialClosures = specialClosuresMap.toMap()
-                            // If you update ViewModel to accept dailyBreaks, pass: dailyBreaks = dailyBreakHours.toList()
+                            specialClosures = specialClosuresMap.toMap(),
+                            dailyBreakHours = dailyBreakHours.toList().sorted()
                         ) { isSuccess, errorMessage ->
                             isLoading = false
                             if (isSuccess) showSuccessDialog = true

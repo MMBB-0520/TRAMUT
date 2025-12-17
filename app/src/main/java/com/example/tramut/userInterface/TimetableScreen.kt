@@ -140,7 +140,7 @@ fun TimetableScreen(
                 TimetableGrid(
                     facilities = uiState.facilitiesList,
                     viewModel = viewModel,
-                    onCellClick = { _, hour -> 
+                    onCellClick = { clickedFacility, hour ->
                         val assignedId = viewModel.autoAssignFacilityId(
                             category = selectedCategory,
                             date = uiState.selectedDate,
@@ -148,7 +148,12 @@ fun TimetableScreen(
                         )
 
                         if (assignedId != null) {
-                            onNavigateToBooking(assignedId, hour, uiState.selectedDate)
+                            val assignedFacility = uiState.facilitiesList.find { it.id == assignedId }
+                            onNavigateToBooking(
+                                assignedId,
+                                hour,
+                                uiState.selectedDate
+                            )
                         } else {
                             Log.e("Booking", "No available facility found for this slot.")
                         }
