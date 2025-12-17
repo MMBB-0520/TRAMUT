@@ -468,9 +468,12 @@ fun FBSApp(
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
 
+    //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
-        AppScreen.valueOf(backStackEntry?.destination?.route ?: "")
+        val route = backStackEntry?.destination?.route
+        val baseRoute = route?.substringBefore("/")?.substringBefore("?") ?: ""
+        AppScreen.valueOf(baseRoute)
     } catch (e: Exception) {
         AppScreen.MainSystem
     }
