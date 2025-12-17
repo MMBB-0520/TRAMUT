@@ -42,7 +42,6 @@ fun CheckInConfirmationScreen(
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
-            // Center Content: Icon and Text
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

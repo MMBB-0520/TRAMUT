@@ -135,6 +135,7 @@ enum class AppScreen {
 
     StudentScreen,
     StaffScreen,
+    AdminScreen,
 
     // Forgot Password Screens
     ForgotPassword1,
@@ -1213,7 +1214,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckInManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "empty", we pass an empty string to the screen
+                    // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
@@ -1269,7 +1270,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckOutManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "empty", we pass an empty string to the screen
+                    // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
