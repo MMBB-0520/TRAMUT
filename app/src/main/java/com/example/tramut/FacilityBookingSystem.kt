@@ -1199,7 +1199,6 @@ fun FBSApp(
                         onManualInputClicked = {
                             // Navigate to Manual Entry, passing the bookingId
                             navController.navigate("${AppScreen.CheckOutManual.name}/empty")
-                            navController.navigate("${AppScreen.CheckOutManual.name}/_empty_")
                         },
                         onBackClicked = {
                             navController.popBackStack()

@@ -73,29 +73,44 @@ class EntryViewModel : ViewModel() {
 
     // Helper: Find Active Booking for a User (Auto-Discovery)
     private suspend fun findActiveBookingForUser(userId: String): Booking? {
-        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        // 1. FIX: Match the exact format in your Firestore image
+        // Pattern: "dd / MMM / yyyy (EEE)" -> "17 / Dec / 2025 (Wed)"
+        // We use Locale.US to ensure "Dec" and "Wed" are in English, regardless of phone settings
+        val databaseDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.US)
+        val todayDate = databaseDateFormat.format(Date())
 
         return try {
-            // 1. Query bookings where this user is the owner (userId) AND date is today
+            // 2. FIX: Query ONLY by Date first.
+            // We cannot query by "userId" because that misses the "members" array.
             val querySnapshot = bookingsCollection
-                .whereEqualTo("userId", userId)
                 .whereEqualTo("date", todayDate)
                 .get()
                 .await()
 
-            val bookings = querySnapshot.toObjects(Booking::class.java)
+            val todayBookings = querySnapshot.toObjects(Booking::class.java)
 
-            // 2. Filter: Find the most relevant booking
-            // Priority: 'Checked In' (for checkout) > 'Booked' (for checkin)
-            // If multiple exist, pick the first one.
-            bookings.firstOrNull {
-                it.status.equals("Checked In", ignoreCase = true) ||
-                        it.status.equals("Booked", ignoreCase = true)
+            // 3. Filter in Memory
+            // Find a booking where the scanned ID matches the Owner OR a Member
+            todayBookings.firstOrNull { booking ->
+                val isOwner = booking.userId == userId
+
+                // Check if the ID exists inside the members list (assuming List<Pair<String, String>> or similar)
+                // Adjust ".first" depending on your Member data class structure
+                val isMember = booking.members.any { it.first == userId }
+
+                val isParticipant = isOwner || isMember
+
+                // Check status (ignore Cancelled/Completed)
+                val isValidStatus = booking.status.equals("Checked In", ignoreCase = true) ||
+                        booking.status.equals("Booked", ignoreCase = true)
+
+                isParticipant && isValidStatus
             }
         } catch (e: Exception) {
             e.printStackTrace()
             null
         }
+
     }
 
     // --- SHARED RESOLVER LOGIC ---
@@ -117,6 +132,11 @@ class EntryViewModel : ViewModel() {
 
             if (booking == null) {
                 _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId today.")
+                return@launch
+            }
+
+            if (isTooEarly(booking)) {
+                _uiState.value = EntryUiState.Error("Too early! Check-in starts at ${booking.startTime}.")
                 return@launch
             }
 
@@ -154,21 +174,25 @@ class EntryViewModel : ViewModel() {
             _uiState.value = EntryUiState.Loading
             delay(500)
 
+            // 1. Find the booking (Uses the Date fix from findActiveBookingForUser)
             val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
-                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId today.")
+                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId")
                 return@launch
             }
 
-            // Ensure we are checking out a booking that is actually "Checked In"
-            if (!booking.status.equals("Checked In", ignoreCase = true)) {
-                // Optional: allow checkout if status is just "Booked" (user forgot to scan in)?
-                // For strict logic:
-                // _uiState.value = EntryUiState.Error("This booking is not currently Checked In.")
-                // return@launch
+            // 2. Validate Status
+            // If it is already Completed or Cancelled, stop.
+            if (booking.status.equals("Completed", ignoreCase = true)) {
+                _uiState.value = EntryUiState.Error("Room is already checked out.")
+                return@launch
             }
 
+            // Note: We ALLOW status "Booked".
+            // If they forgot to Check-In, scanning Check-Out will just finish the session.
+
+            // 3. Authorization Check (Booker OR Member)
             if (isAuthorized(booking, enteredId)) {
                 val currentTime = getCurrentTime()
 
@@ -183,10 +207,10 @@ class EntryViewModel : ViewModel() {
 
                     _uiState.value = EntryUiState.Success
                 } catch (e: Exception) {
-                    _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
+                    _uiState.value = EntryUiState.Error("Database error: ${e.message}")
                 }
             } else {
-                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized.")
+                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized to check out this room.")
             }
         }
     }
@@ -197,23 +221,49 @@ class EntryViewModel : ViewModel() {
         return booking.userId == id || booking.members.any { it.first == id }
     }
 
+    // Helper: Check if it is too early to check in
+    private fun isTooEarly(booking: Booking): Boolean {
+        return try {
+            // Use the format that matches your database
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // Combine Date + StartTime (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
+            val bookingStartStr = "${booking.date} ${booking.startTime}"
+            val startDateTime = dbDateFormat.parse(bookingStartStr) ?: return false
+
+            // Optional: Allow check-in 5 minutes early?
+            // If so, subtract 5 minutes from startDateTime before comparing:
+            // val calendar = Calendar.getInstance().apply { time = startDateTime }
+            // calendar.add(Calendar.MINUTE, -5)
+            // return Date().before(calendar.time)
+
+            // Strict Rule: Must be exactly start time or later
+            Date().before(startDateTime)
+        } catch (e: Exception) {
+            false // Fail open or closed depending on preference
+        }
+    }
+
     // Helper: Check 15-min expiry
+    // Inside EntryViewModel
     private fun isBookingExpired(booking: Booking): Boolean {
         if (booking.status.equals("Cancelled", ignoreCase = true)) return true
         if (booking.status.equals("Completed", ignoreCase = true)) return true
 
         return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-            // Note: Ensure your Booking class date format matches this
+            // MATCH THE DATABASE FORMAT HERE TOO
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // Combine DB date + DB start time (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
             val bookingDateTimeStr = "${booking.date} ${booking.startTime}"
-            val startDateTime = dateFormat.parse(bookingDateTimeStr) ?: return false
+            val startDateTime = dbDateFormat.parse(bookingDateTimeStr) ?: return false
 
             val calendar = Calendar.getInstance().apply { time = startDateTime }
-            calendar.add(Calendar.MINUTE, 15) // Cutoff time
+            calendar.add(Calendar.MINUTE, 15) // 15 minute grace period
 
-            Date().after(calendar.time) // If Current time > Start + 15mins
+            Date().after(calendar.time)
         } catch (e: Exception) {
-            false // If parse fails, assume valid (fail open) or invalid (fail closed)
+            false
         }
     }
 

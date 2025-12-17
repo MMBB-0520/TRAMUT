@@ -47,7 +47,7 @@ fun CheckOutManualEntryScreen(
     var studentId by remember { mutableStateOf(initialId) }
     val uiState by viewModel.uiState.collectAsState()
 
-    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4
+    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4 && studentId.length <= 7
     val isLoading = uiState is EntryUiState.Loading
 
     // Text & Strings based on Mode
