@@ -2,6 +2,7 @@ package com.example.tramut
 
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -49,12 +50,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.checkincompose.BarcodeScannerScreen
-import com.example.tramut.userInterface.HomeScreen
-import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
-import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
-import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
-import com.example.tramut.ui.theme.StaffRed
-import com.example.tramut.ui.theme.StudentBlue
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.AdminMainScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AdminAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.AnnouncementDetailScreen
@@ -84,12 +79,18 @@ import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdate
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
+import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
+import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
+import com.example.tramut.viewModel.MyBookingViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -141,7 +142,6 @@ enum class AppScreen {
 
     // Student Screens
     StudentBooking,
-    StudentBookingDetail,
 
     // Staff Screens
     StaffCheckBooking,
@@ -169,18 +169,20 @@ enum class AppScreen {
     LibraryTimetable,
     SportsTimetable,
     StudentBookingChart,
+    StudentMyBooking,
     StudentBookingDetails,
     StudentBookingFacility,
     StudentBookingSport,
+    StudentAvailabilityChart,
 
-    //Check-In Screen
-    CheckInScanner,
-    CheckInManual,
     CheckInSuccess,
-
-    CheckOutScanner,
+    CheckOutSuccess,
     CheckOutManual,
-    CheckOutSuccess
+    CheckOutScanner,
+    CheckInManual,
+    CheckInScanner,
+    CheckInConfirmation,
+    CheckOutConfirmation
 
 }
 
@@ -188,8 +190,15 @@ enum class AppScreen {
 @Composable
 fun TopBarScreen(
     currentScreen: AppScreen,
-    hasPopBack: () -> Unit
+    hasPopBack: () -> Unit,
+    isStaff: Boolean = false
 ) {
+    val containerColor = when {
+        currentScreen == AppScreen.AdminLoginScreen -> Color.Black
+        isStaff -> StaffRed
+        else -> StudentBlue
+    }
+
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
             TopAppBar(
@@ -251,12 +260,12 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
         }
-        AppScreen.StudentBooking ->{
+        AppScreen.StudentBooking -> {
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = hasPopBack) {
@@ -283,12 +292,14 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Blue,
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
         }
-        AppScreen.StudentBookingChart ->{
+        AppScreen.CITCTimetable,
+        AppScreen.LibraryTimetable,
+        AppScreen.SportsTimetable-> {
             TopAppBar(
                 navigationIcon = {
                     Icon(
@@ -307,12 +318,46 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
         }
-        AppScreen.StudentBookingDetails ->{
+        AppScreen.StudentMyBooking -> {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(
+                        onClick = hasPopBack,
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "My Bookings",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = hasPopBack) {
@@ -337,19 +382,19 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
         }
-        AppScreen.StudentBookingSport ->{
+        AppScreen.StudentBookingSport -> {
             TopAppBar(
                 navigationIcon = {
                     Icon(
                         Icons.Default.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
                     )
                 },
                 title = {
@@ -361,7 +406,7 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D47A1),
+                    containerColor = containerColor,
                     titleContentColor = Color.White
                 )
             )
@@ -436,12 +481,8 @@ fun FBSApp(
                 AppScreen.AdminLoginScreen,
                 AppScreen.StudentScreen,
                 AppScreen.StaffScreen,
-                AppScreen.AdminScreen,
-                AppScreen.AdminLoginScreen,
-                AppScreen.StudentScreen,
-                AppScreen.StaffScreen,
-                AppScreen.AdminMenuScreen
-            )
+
+                )
 
             if (showBottomBar) {
                 bottomChooseBar(
@@ -557,7 +598,9 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate(AppScreen.StudentBookingDetail.name)
+                            navController.navigate(
+                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
+                            )
                         },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
@@ -629,7 +672,9 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate(AppScreen.StudentBookingDetail.name)
+                            navController.navigate(
+                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
+                            )
                         },
                         onFacilityBookingClick = {
                             navController.navigate(AppScreen.StudentBooking.name)
@@ -646,6 +691,8 @@ fun FBSApp(
 
                 // 1. ADMIN LOGIN
                 composable(route = AppScreen.AdminLoginScreen.name) {
+                    var adminId by rememberSaveable { mutableStateOf("") }
+                    var pwd by remember { mutableStateOf(password) }
                     AdminLoginScreen(
                         viewModel = adminsViewModel,
                         onLoginSuccess = {
@@ -784,7 +831,7 @@ fun FBSApp(
                         oobCode = oobCode,
                         onOobCodeChange = {
                             oobCode =it
-                                          },
+                        },
                         onResendCodeClick = {
                             forgotPwdViewModel.resendResetEmail()
                         },
@@ -831,7 +878,7 @@ fun FBSApp(
                         newPassword = newPassword,
                         onNewPasswordChange = {
                             newPassword = it
-                                              },
+                        },
                         ruleMinLength = ruleMinLength,
                         ruleLower = ruleLower,
                         ruleUpper = ruleUpper,
@@ -839,7 +886,7 @@ fun FBSApp(
                         confirmPassword = confirmPassword,
                         onConfirmPasswordChange = {
                             confirmPassword = it
-                                                  },
+                        },
                         onSubmitClick = {
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
                                 navController.navigate(AppScreen.PwdUpdated.name){
@@ -876,6 +923,7 @@ fun FBSApp(
 
 
                 composable(route = AppScreen.StudentBooking.name) {
+                    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
 
                     FacilityBookScreen(
                         selectedTabIndex = selectedTabIndex,
@@ -905,62 +953,181 @@ fun FBSApp(
                     )
                 }
 
-                composable(route = AppScreen.SportsTimetable.name) {
-                    AvailabilityChartScreen(
-                        selectedFacilityFromPrevious = "Sports Facilities",
-                        onBookNow = { selectedVenue, selectedDate ->
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
-                        }
-                    )
-                }
-
                 composable(
-                    route = "BookingInfo/{bookingId}"
+                    route = "${AppScreen.StudentBookingDetails.name}/{bookingId}",
+                    arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
                     var booking by remember { mutableStateOf<Booking?>(null) }
 
                     LaunchedEffect(bookingId) {
                         FirebaseFirestore.getInstance()
-                            .collection("sportBookings")
+                            .collection("bookings")
                             .document(bookingId)
                             .get()
                             .addOnSuccessListener { doc ->
                                 if (doc.exists()) {
                                     booking = Booking(
+                                        bookingId = doc.getString("bookingId") ?: doc.id,
+                                        userId = doc.getString("userId") ?: "",
+                                        timeslotId = doc.getString("timeslotId") ?: "",
                                         facility = doc.getString("facility") ?: "",
-                                        bookingNo = doc.getString("bookingId") ?: doc.id,
-                                        date = doc.getString("date") ?: "",
-                                        duration = doc.getString("duration") ?: "",
                                         venue = doc.getString("venue") ?: "",
                                         level = doc.getString("level") ?: "",
                                         building = doc.getString("building") ?: "",
+                                        date = doc.getString("date") ?: "",
+                                        duration = doc.getString("duration") ?: "",
+                                        startTime = doc.getString("startTime") ?: "",
+                                        endTime = doc.getString("endTime") ?: "",
                                         checkIn = doc.getString("checkIn") ?: "",
                                         checkOut = doc.getString("checkOut") ?: "",
-                                        status = doc.getString("status") ?: "Booked"
+                                        bookingNo = doc.getString("bookingNo") ?: doc.id,
+                                        status = doc.getString("status") ?: "Booked",
+                                        members = (doc.get("members") as? List<Map<String,String>>)?.map { it["first"]!! to it["second"]!! } ?: emptyList()
                                     )
                                 }
                             }
                     }
 
-                    booking?.let { BookingInfoScreen(it) }
+                    booking?.let { BookingInfoScreen(
+                        it,
+                        navController = navController
+                    ) }
                 }
+
+                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                ) { backStackEntry ->
+                    val venue = backStackEntry.arguments?.getString("venue") ?: ""
+                    val date = backStackEntry.arguments?.getString("date") ?: ""
+                    val facilityType = when {
+                        venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
+                        venue.contains("Library", ignoreCase = true) -> "Library"
+                        else -> "Sports"
+                    }
+
+                    val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
+
+                    BookSportScreen(
+                        facilityType = facilityType,
+                        selectedDateFromPrevious = date,
+                        onBackFacilityPage = {
+                            navController.navigate(AppScreen.StudentBooking.name) {
+                                popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
+                            val bookingId = UUID.randomUUID().toString()
+                            val bookingData = hashMapOf(
+                                "bookingId" to bookingId,
+                                "userId" to currentUser?.loginId,
+                                "facility" to facilityType,
+                                "venue" to venueType,
+                                "date" to date,
+                                "startTime" to startTime,
+                                "endTime" to endTime,
+                                "duration" to "$startTime - $endTime",
+                                "pax" to pax,
+                                "members" to members.map { it.first to it.second },
+                                "status" to "Booked",
+                                "timestamp" to System.currentTimeMillis()
+                            )
+
+                            FirebaseFirestore.getInstance()
+                                .collection("bookings")
+                                .document(bookingId)
+                                .set(bookingData)
+                                .addOnSuccessListener {
+                                    navController.navigate(AppScreen.StudentBooking.name) {
+                                        // Clear the back stack so user can't go back to booking form
+                                        popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    Log.e("Firebase", "Failed to save booking", it)
+                                }
+                        },
+                        isStaff = isStaffLoggedIn,
+                        userRepository = usersRepo
+                    )
+                }
+
+                composable(
+                    route = "${AppScreen.StudentMyBooking.name}/{userId}",
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    val viewModel: MyBookingViewModel = viewModel()
+
+                    MyBookingScreen(
+                        navController = navController,
+                        viewModel = viewModel,
+                        userId = userId
+                    )
+                }
+
 
 
                 composable(route = AppScreen.CITCBooking.name) {
-                    // CITC Booking Screen
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                        }
+                    )// CITC Booking Screen
                 }
                 composable(route = AppScreen.LibraryBooking.name) {
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Library Discussion Room",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                        }
+                    )
                     // Library Booking Screen
                 }
                 composable(route = AppScreen.SportsBooking.name) {
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Sports Facilities",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                        }
+                    )
                     // Sports Booking Screen
                 }
+
                 composable(route = AppScreen.CITCTimetable.name) {
-                    // CITC Timetable
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                        }
+                    )
                 }
+
                 composable(route = AppScreen.LibraryTimetable.name) {
-                    // Library Timetable
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Library Discussion Room",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                        }
+                    )
+                }
+
+
+                composable(route = AppScreen.SportsTimetable.name) {
+                    AvailabilityChartScreen(
+                        selectedFacilityFromPrevious = "Sports Facilities",
+                        onBookNow = { selectedVenue, selectedDate ->
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                        }
+                    )
                 }
 
                 composable(
@@ -974,7 +1141,7 @@ fun FBSApp(
                         },
                         onManualInputClicked = {
                             // Navigate to Manual Entry, passing the bookingId
-                            navController.navigate("${AppScreen.CheckInManual.name}/_empty_")
+                            navController.navigate("${AppScreen.CheckInManual.name}/empty")
                         },
                         onBackClicked = {
                             navController.popBackStack()
@@ -988,7 +1155,7 @@ fun FBSApp(
                 ) { backStackEntry ->
                     // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
-                    val bookingId = if (arg == "_empty_") "" else arg
+                    val bookingId = if (arg == "empty") "" else arg
 
                     ManualEntryScreen(
                         bookingId = bookingId,
@@ -1030,6 +1197,8 @@ fun FBSApp(
                             navController.navigate("${AppScreen.CheckOutManual.name}/$scannedId")
                         },
                         onManualInputClicked = {
+                            // Navigate to Manual Entry, passing the bookingId
+                            navController.navigate("${AppScreen.CheckOutManual.name}/empty")
                             navController.navigate("${AppScreen.CheckOutManual.name}/_empty_")
                         },
                         onBackClicked = {
@@ -1043,7 +1212,7 @@ fun FBSApp(
                 ) { backStackEntry ->
                     // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
-                    val bookingId = if (arg == "_empty_") "" else arg
+                    val bookingId = if (arg == "empty") "" else arg
 
                     CheckOutManualEntryScreen(
                         bookingId = bookingId,

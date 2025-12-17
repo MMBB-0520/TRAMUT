@@ -1,32 +1,26 @@
 package com.example.tramut.rooms.entity
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "Booking")
 data class Booking(
 
+    @PrimaryKey
     val bookingId: String = "",
     val userId: String = "",
     val timeslotId: String = "",
-    val checkId: String = "",
-
-    val bookingDate: String = "",
-    val bookingStatus: String = "Booked",
-    val participantCount: Int = 1,
-    val bookingDuration: String = "",
-
-
     val facility: String = "",
     val venue: String = "",
+    val level: String = "",
+    val building: String = "",
+    val date: String = "",
+    val duration: String = "",
     val startTime: String = "",
     val endTime: String = "",
-    val venueType: String = "",
-
-    val members: List<Pair<String, String>> = emptyList(),
-    val userName: String = "",
-    val bookingNo: String,
-    val date: String,
-    val duration: String,
-    val building: String,
-    val level: String,
-    val checkIn: String,
-    val checkOut: String,
-    val status: String,
+    val checkIn: String = "",
+    val checkOut: String = "",
+    val bookingNo: String = "",
+    val status: String = "Booked",
+    val members: List<Pair<String,String>> = emptyList()
 )

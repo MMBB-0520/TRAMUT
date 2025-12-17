@@ -31,6 +31,7 @@ import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
+import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.Date
 import java.text.SimpleDateFormat
@@ -852,6 +853,12 @@ fun BookSportScreen(
                             emptyList()
                         }
                         onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers)
+
+                        coroutineScope.launch  {
+                            delay(500)
+                            onBackFacilityPage()
+                        }
+
                         // 重置状态
                         validationSuccess = false
                         termsAccepted = false
