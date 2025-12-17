@@ -35,6 +35,10 @@ fun UserAddReviewScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val StudentBlue = Color(0xFF0C1DBC)
+    val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val userId = currentUser?.uid ?: "Unknown"
+    val userName = currentUser?.displayName ?: "Student"
 
     var selectedCategory by remember { mutableStateOf("") }
     var otherDetail by remember { mutableStateOf("") }
@@ -69,8 +73,8 @@ fun UserAddReviewScreen(
             Text("BOOKING INFORMATION", fontWeight = FontWeight.ExtraBold, color = StudentBlue, fontSize = 12.sp)
 
             // --- STATIC FIELDS (Fixed Data) ---
-            LabeledLineSection("Facility / Department") {
-                LineStaticInput(text = booking.venueType)
+            LabeledLineSection("Facility") {
+                LineStaticInput(text = booking.facility)
             }
 
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -139,7 +143,14 @@ fun UserAddReviewScreen(
             Button(
                 onClick = {
                     if (selectedCategory.isNotEmpty() && description.isNotEmpty()) {
-                        viewModel.submitReview(booking, selectedCategory, otherDetail, description, context)
+                        viewModel.submitReview(
+                            booking = booking,
+                            category = selectedCategory,
+                            otherDetail = otherDetail,
+                            description = description,
+                            userId = userId,
+                            userName = userName
+                        )
                     } else {
                         Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
                     }
@@ -159,7 +170,13 @@ fun UserAddReviewScreen(
     }
 
     if (viewModel.showSuccessDialog) {
-        AddSuccessDialog(onOk = { viewModel.dismissSuccess(); onNavigateBack() }, onDismiss = { viewModel.dismissSuccess() })
+        AddSuccessDialog(
+            onOk = {
+                viewModel.dismissSuccess()
+                onNavigateBack() // This sends them back to the MyBookingScreen
+            },
+            onDismiss = { viewModel.dismissSuccess() }
+        )
     }
 }
 

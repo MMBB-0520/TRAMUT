@@ -6,7 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.repo.ReviewRepo
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewModel() {
 
@@ -16,47 +19,49 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
     var showSuccessDialog by mutableStateOf(false)
         private set
 
-    // Called by the User Screen
     fun submitReview(
         booking: Booking,
         category: String,
         otherDetail: String,
         description: String,
-        context: Context
+        userId: String,
+        userName: String
     ) {
         viewModelScope.launch {
             isSaving = true
+
+            // 1. Determine the final category string
             val finalCategory = if (category == "Other") otherDetail else category
 
+            // 2. Map data to match your Review Data Class exactly
             val reviewData = hashMapOf(
                 "bookingId" to booking.bookingId,
-                "bookingNo" to booking.bookingNo,
-                "userId" to booking.userId,
-                "userName" to booking.userName,
-                "venueType" to booking.facility,
-                "department" to booking.venueType,
-                "venue" to booking.venue,
-                "bookingDate" to booking.date,
+                "userId" to userId,
+                "userName" to userName,
                 "issueCategory" to finalCategory,
                 "comment" to description,
-                "status" to "Unsolved", // Default
+                "status" to "Unsolved",
+                "venue" to booking.venue,
+                "venueType" to booking.facility,
+                "department" to booking.facility,
+                "bookingDate" to booking.date,
                 "timestamp" to System.currentTimeMillis()
             )
 
+            // 3. Submit to repository
             val success = repository.submitReview(reviewData)
             if (success) showSuccessDialog = true
             isSaving = false
         }
     }
 
-    // Called by the Admin Screen to solve the issue
     fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            isSaving = true
-            val success = repository.updateReviewStatus(reviewId, newStatus)
-            if (success) onSuccess()
-            isSaving = false
-        }
+        Firebase.firestore.collection("reviews")
+            .document(reviewId)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                onSuccess()
+            }
     }
 
     fun dismissSuccess() {

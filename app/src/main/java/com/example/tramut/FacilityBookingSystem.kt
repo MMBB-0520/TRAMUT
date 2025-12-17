@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +65,7 @@ import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
@@ -84,6 +86,7 @@ import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
+import com.example.tramut.userInterface.userTheme.UserAddReviewScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
@@ -91,7 +94,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -157,7 +164,7 @@ enum class AppScreen {
     AddFac,
     EditFac,
     ViewTimetable,
-    AdminViewReview,
+    AdminReview,
 
     // Booking
     CITCBooking,
@@ -173,6 +180,8 @@ enum class AppScreen {
     StudentBookingFacility,
     StudentBookingSport,
     StudentAvailabilityChart,
+    MyBookings,
+    UserReview,
 
     CheckInSuccess,
     CheckOutSuccess,
@@ -442,6 +451,8 @@ fun FBSApp(
     val adminUser = adminsViewModel.adminUser.value
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
+
+    var loggedInAdminDept by remember { mutableStateOf("") }
 
     var password by remember { mutableStateOf("") }
 
@@ -762,8 +773,6 @@ fun FBSApp(
                     )
                 }
 
-
-
                 // 6. ADD FACILITY
                 composable(route = AppScreen.AddFac.name) {
                     AdminAddFacilityScreen(
@@ -787,12 +796,28 @@ fun FBSApp(
                 ) { backStackEntry ->
                     val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport"
 
-                    // Pass to 'initialDepartment'
                     TimetableScreen(
                         initialDepartment = departmentName,
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                //review
+                composable(AppScreen.AdminReview.name) {
+                    if (loggedInAdminDept != "Loading...") {
+                        AdminReviewScreen(
+                            adminDepartment = loggedInAdminDept,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        // Optional: Show a progress bar while waiting for the department name
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
+
 
                 // Forgot Password Screen
                 composable(route = AppScreen.ForgotPassword1.name) {
@@ -1004,7 +1029,10 @@ fun FBSApp(
                         else -> "Sports"
                     }
 
+
+
                     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
+
 
                     BookSportScreen(
                         facilityType = facilityType,
@@ -1051,6 +1079,37 @@ fun FBSApp(
                         userRepository = usersRepo
                     )
                 }
+
+                composable(route = AppScreen.UserReview.name) {
+                    val booking = navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.get<Booking>("booking_data")
+
+                    if (booking != null) {
+                        UserAddReviewScreen(booking = booking, onNavigateBack = { navController.popBackStack() })
+                    } else {
+                        // Fallback: If data is missing, just go back
+                        LaunchedEffect(Unit) { navController.popBackStack() }
+                    }
+                }
+
+            composable(route = AppScreen.MyBookings.name) {
+                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                val userId = auth.currentUser?.uid
+
+                if (userId != null) {
+                    MyBookingScreen(
+                        navController = navController,
+                        userId = userId
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(AppScreen.StudentLoginScreen.name) {
+                            popUpTo(AppScreen.MyBookings.name) { inclusive = true }
+                        }
+                    }
+                }
+            }
 
                 composable(
                     route = "${AppScreen.StudentMyBooking.name}/{userId}",

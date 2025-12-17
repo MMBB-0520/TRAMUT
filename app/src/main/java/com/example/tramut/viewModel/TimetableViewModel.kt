@@ -2,7 +2,6 @@ package com.example.myfacilitybookingsystem.viewModel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.repo.TimetableRepository
@@ -12,12 +11,10 @@ import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-// UI State remains the same
 data class TimetableUiState(
     val selectedDate: String = "",
     val facilitiesList: List<Facility> = emptyList(),
@@ -34,7 +31,9 @@ class TimetableViewModel(
     private val _uiState = MutableStateFlow(TimetableUiState())
     val uiState = _uiState.asStateFlow()
 
+    // Listeners for real-time updates
     private var facilityListener: ListenerRegistration? = null
+    private var bookingsListener: ListenerRegistration? = null
 
     init {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -42,9 +41,11 @@ class TimetableViewModel(
         _uiState.update { it.copy(selectedDate = today) }
     }
 
+    // Call this when the screen is closed to stop listening to Firebase
     override fun onCleared() {
         super.onCleared()
         facilityListener?.remove()
+        bookingsListener?.remove()
     }
 
     fun fetchTimetableData(identifier: String, isCategory: Boolean, date: String) {
@@ -66,8 +67,7 @@ class TimetableViewModel(
 
             if (snapshot != null) {
                 val liveList = snapshot.documents.mapNotNull { doc ->
-
-                    // --- 1. Robust Capacity Mapping ---
+                    // Capacity mapping
                     val capacityData = doc.get("capacity")
                     val capacityList: List<Long> = when (capacityData) {
                         is List<*> -> capacityData.filterIsInstance<Long>()
@@ -75,7 +75,7 @@ class TimetableViewModel(
                         else -> emptyList()
                     }
 
-                    // --- 2. Robust Daily Break Hours Mapping ---
+                    // Break Hours mapping
                     val breakHoursData = doc.get("dailyBreakHours")
                     val breakHoursList: List<Int> = when (breakHoursData) {
                         is List<*> -> breakHoursData.mapNotNull { (it as? Long)?.toInt() ?: (it as? Int) }
@@ -83,8 +83,7 @@ class TimetableViewModel(
                         else -> emptyList()
                     }
 
-                    // --- 3. CRITICAL: Robust Special Closures Mapping (Fix for Date Range) ---
-                    // Firestore stores numbers as Long. We must convert them to Int for .contains(hour) to work.
+                    // Special Closures mapping
                     val rawSpecialClosures = doc.get("specialClosures") as? Map<String, Any> ?: emptyMap()
                     val convertedSpecialClosures = rawSpecialClosures.mapValues { entry ->
                         val hoursList = entry.value as? List<*>
@@ -106,26 +105,57 @@ class TimetableViewModel(
                         endTime = doc.getString("endTime") ?: "22:00",
                         capacity = capacityList,
                         dailyBreakHours = breakHoursList,
-                        specialClosures = convertedSpecialClosures // Used converted map
+                        specialClosures = convertedSpecialClosures
                     )
                 }
 
                 _uiState.update { it.copy(facilitiesList = liveList, isLoading = false) }
+                // Start listening for bookings for the specific date
                 loadBookingsForDate(date)
             }
         }
     }
 
-
+    /**
+     * REAL-TIME BOOKING LISTENER
+     * This replaces the old repository.getBookingsForDate fetch.
+     */
     fun loadBookingsForDate(date: String) {
-        viewModelScope.launch {
-            try {
-                val allBookings = repository.getBookingsForDate(date)
-                _uiState.update { it.copy(bookingsList = allBookings) }
-            } catch (e: Exception) {
-                Log.e("TimetableViewModel", "Error loading bookings", e)
+        // Stop the old listener if date changes
+        bookingsListener?.remove()
+
+        bookingsListener = db.collection("bookings")
+            .whereEqualTo("date", date)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("TimetableViewModel", "Booking listen failed", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val liveBookings = snapshot.toObjects(Booking::class.java)
+                    _uiState.update { it.copy(bookingsList = liveBookings) }
+                    Log.d("TimetableViewModel", "Real-time update: ${liveBookings.size} bookings")
+                }
+            }
+    }
+
+    fun autoAssignFacilityId(category: String, date: String, hour: Int): String? {
+        // 1. Access your current list of facilities from the UI state
+        val facilities = uiState.value.facilitiesList
+
+        // 2. Loop through all facilities currently showing (e.g., all Pickleball courts)
+        for (facility in facilities) {
+            // 3. Check the status of this specific facility for this specific hour
+            val status = getSlotStatus(facility, hour)
+
+            // 4. Return the first ID that is green/available
+            if (status == "Available") {
+                return facility.id
             }
         }
+
+        return null
     }
 
     fun updateDate(newDate: String) {
@@ -139,10 +169,7 @@ class TimetableViewModel(
         val facilityStartHour = facility.startTime.split(":")[0].toIntOrNull() ?: 8
         val facilityEndHour = facility.endTime.split(":")[0].toIntOrNull() ?: 22
 
-        // 1. Operational Hours
         if (hour < facilityStartHour || hour >= facilityEndHour) return "Closed"
-
-        // 2. Daily Maintenance
         if (facility.dailyBreakHours.contains(hour)) return "Maintenance"
 
         val specialClosedHours = facility.specialClosures[dateString]
@@ -151,7 +178,7 @@ class TimetableViewModel(
         }
 
 
-        // 4. Booking Check
+        // Booking Check - This now checks the live bookingsList updated by the listener
         val isBooked = uiState.value.bookingsList.any { booking ->
             val bookedStartHour = booking.startTime.split(":")[0].toIntOrNull() ?: 0
             val bookedEndHour = booking.endTime.split(":")[0].toIntOrNull() ?: 0

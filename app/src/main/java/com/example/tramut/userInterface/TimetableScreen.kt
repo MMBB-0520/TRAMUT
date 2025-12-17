@@ -41,6 +41,7 @@ import java.util.Calendar
 fun TimetableScreen(
     initialDepartment: String,
     onNavigateBack: () -> Unit,
+    onNavigateToBooking: (facilityId: String, hour: Int, date: String) -> Unit,
     viewModel: TimetableViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -69,8 +70,6 @@ fun TimetableScreen(
         }
         val isCategoryQuery = !selectedCategory.startsWith("All")
 
-        // Call the consolidated fetch function.
-        // We pass uiState.selectedDate, which ensures the first fetch uses the date initialized in the VM.
         viewModel.fetchTimetableData(
             identifier = facilityQuery,
             isCategory = isCategoryQuery,
@@ -137,12 +136,24 @@ fun TimetableScreen(
                 }
             }
             else {
-                Column(modifier = Modifier.weight(1f)) {
-                    TimetableGrid(
-                        facilities = uiState.facilitiesList,
-                        viewModel = viewModel
-                    )
-                }
+
+                TimetableGrid(
+                    facilities = uiState.facilitiesList,
+                    viewModel = viewModel,
+                    onCellClick = { _, hour -> 
+                        val assignedId = viewModel.autoAssignFacilityId(
+                            category = selectedCategory,
+                            date = uiState.selectedDate,
+                            hour = hour
+                        )
+
+                        if (assignedId != null) {
+                            onNavigateToBooking(assignedId, hour, uiState.selectedDate)
+                        } else {
+                            Log.e("Booking", "No available facility found for this slot.")
+                        }
+                    }
+                )
 
                 Spacer(Modifier.height(10.dp))
                 Card(
@@ -170,7 +181,8 @@ fun TimetableScreen(
 @Composable
 fun TimetableGrid(
     facilities: List<Facility>,
-    viewModel: TimetableViewModel
+    viewModel: TimetableViewModel,
+    onCellClick: (Facility, Int) -> Unit // Added this to handle booking navigation
 ) {
     val venueColWidth = 130.dp
     val timeColWidth = 60.dp
@@ -181,7 +193,7 @@ fun TimetableGrid(
     val horizontalScroll = rememberScrollState()
 
     Column {
-        // Header Row
+        // --- HEADER ROW (Labels only) ---
         Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
             Box(
                 modifier = Modifier
@@ -194,7 +206,7 @@ fun TimetableGrid(
                 Text("Venue/Time", fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
 
-            // Time Slots from 8:00 to 22:00
+            // Correct Header Logic: Just show the time strings
             (8..22).forEach { hour ->
                 Box(
                     modifier = Modifier
@@ -213,7 +225,7 @@ fun TimetableGrid(
             }
         }
 
-        // Data Rows
+        // --- DATA ROWS (Where the facilities and colored boxes are) ---
         Column(
             modifier = Modifier
                 .verticalScroll(verticalScroll)
@@ -221,7 +233,7 @@ fun TimetableGrid(
         ) {
             facilities.forEach { facility ->
                 Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
-                    // Facility Name Column
+                    // 1. Facility Name Column
                     Box(
                         modifier = Modifier
                             .width(venueColWidth)
@@ -235,21 +247,19 @@ fun TimetableGrid(
                             modifier = Modifier.padding(horizontal = 4.dp),
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp,
-                            lineHeight = 11.sp,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    // Status Cells
+                    // 2. Status Cells (Colored Boxes)
                     (8..22).forEach { hour ->
-                        // Calling getSlotStatus with the current facility and hour
                         val status = viewModel.getSlotStatus(facility, hour)
                         val cellColor = when (status) {
-                            "Available" -> Color(0xFF4CAF50) // Green
-                            "Booked" -> Color(0xFF2196F3)    // Blue
-                            "Maintenance" -> Color(0xFFF44336) // Red
-                            else -> Color(0xFFE0E0E0)        // Gray (Closed/Unknown)
+                            "Available" -> Color(0xFF4CAF50)
+                            "Booked" -> Color(0xFF2196F3)
+                            "Maintenance" -> Color(0xFFF44336)
+                            else -> Color(0xFFE0E0E0)
                         }
 
                         Box(
@@ -258,6 +268,10 @@ fun TimetableGrid(
                                 .height(rowHeight)
                                 .background(cellColor)
                                 .border(0.5.dp, Color.White)
+                                // Enable clicking only if the slot is "Available"
+                                .clickable(enabled = status == "Available") {
+                                    onCellClick(facility, hour)
+                                }
                         )
                     }
                 }

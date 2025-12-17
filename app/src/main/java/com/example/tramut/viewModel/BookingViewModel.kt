@@ -99,6 +99,8 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
+
+
     // ViewModelScope封装的方法，方便在Compose中调用
     fun cancelBookingWithScope(bookingId: String) {
         viewModelScope.launch {
@@ -114,6 +116,7 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration?.remove()
         listenerRegistration = null
     }
+
 
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()
