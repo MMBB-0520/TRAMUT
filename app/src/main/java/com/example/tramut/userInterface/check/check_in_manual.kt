@@ -44,11 +44,11 @@ sealed class EntryUiState {
     data class Error(val message: String) : EntryUiState()
 }
 
-// --- 2. VIEWMODEL (LOGIC FOR BOTH) ---
 class EntryViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
-    private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
     private val bookingsCollection = db.collection("bookings")
+
+    private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
     val uiState: StateFlow<EntryUiState> = _uiState.asStateFlow()
 
     private fun getCurrentTime(): String {
@@ -56,12 +56,11 @@ class EntryViewModel : ViewModel() {
         return sdf.format(Date())
     }
 
-    // NEW FUNCTION: Fetch Booking from Firestore by ID (mimicking repository access)
+    // Helper: Fetch Booking by explicit ID
     private suspend fun getBookingFromDb(id: String): Booking? {
         return try {
             val doc = bookingsCollection.document(id).get().await()
             if (doc.exists()) {
-                // Assuming Booking data class fields match Firestore document fields
                 doc.toObject(Booking::class.java)?.copy(bookingId = doc.id)
             } else {
                 null
@@ -72,35 +71,100 @@ class EntryViewModel : ViewModel() {
         }
     }
 
+    // Helper: Find Active Booking for a User (Auto-Discovery)
+    private suspend fun findActiveBookingForUser(userId: String): Booking? {
+        // 1. FIX: Match the exact format in your Firestore image
+        // Pattern: "dd / MMM / yyyy (EEE)" -> "17 / Dec / 2025 (Wed)"
+        // We use Locale.US to ensure "Dec" and "Wed" are in English, regardless of phone settings
+        val databaseDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.US)
+        val todayDate = databaseDateFormat.format(Date())
+
+        return try {
+            // 2. FIX: Query ONLY by Date first.
+            // We cannot query by "userId" because that misses the "members" array.
+            val querySnapshot = bookingsCollection
+                .whereEqualTo("date", todayDate)
+                .get()
+                .await()
+
+            val todayBookings = querySnapshot.toObjects(Booking::class.java)
+
+            // 3. Filter in Memory
+            // Find a booking where the scanned ID matches the Owner OR a Member
+            todayBookings.firstOrNull { booking ->
+                val isOwner = booking.userId == userId
+
+                // Check if the ID exists inside the members list (assuming List<Pair<String, String>> or similar)
+                // Adjust ".first" depending on your Member data class structure
+                val isMember = booking.members.any { it.first == userId }
+
+                val isParticipant = isOwner || isMember
+
+                // Check status (ignore Cancelled/Completed)
+                val isValidStatus = booking.status.equals("Checked In", ignoreCase = true) ||
+                        booking.status.equals("Booked", ignoreCase = true)
+
+                isParticipant && isValidStatus
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+    }
+
+    // --- SHARED RESOLVER LOGIC ---
+    private suspend fun resolveBooking(bookingId: String, enteredId: String): Booking? {
+        // Scenario A: explicit ID from scanner
+        if (bookingId.isNotBlank() && bookingId != "no_id" && bookingId != "admin_override") {
+            return getBookingFromDb(bookingId)
+        }
+        // Scenario B: search by User ID
+        return findActiveBookingForUser(enteredId)
+    }
+
     fun performCheckIn(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
-            delay(1000)
+            delay(500)
 
-            // val booking = bookingsCollection.getBooking(bookingId) // Removed erroneous line
-            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
+            val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
-                _uiState.value = EntryUiState.Error("Booking not found.")
+                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId today.")
+                return@launch
+            }
+
+            if (isTooEarly(booking)) {
+                _uiState.value = EntryUiState.Error("Too early! Check-in starts at ${booking.startTime}.")
                 return@launch
             }
 
             // A. Auto-Cancellation Rule
             if (isBookingExpired(booking)) {
-                _uiState.value = EntryUiState.Error("Check-in failed: Booking expired (15-min rule).")
+                _uiState.value = EntryUiState.Error("Check-in failed: Booking expired.")
                 return@launch
             }
 
             // B. Authorization Rule
             if (isAuthorized(booking, enteredId)) {
-                val checkInTime = getCurrentTime()
+                val currentTime = getCurrentTime()
 
-                //save to db code
-                // repository.updateCheckIn(bookingId, checkInTime, status = "Checked In")
-                println("Saving Check-In Time to DB: $checkInTime")
-                _uiState.value = EntryUiState.Success
+                try {
+                    bookingsCollection.document(booking.bookingId).update(
+                        mapOf(
+                            "status" to "Checked In",
+                            "checkIn" to currentTime,
+                            "bookingStatus" to "Checked In"
+                        )
+                    ).await()
+
+                    _uiState.value = EntryUiState.Success
+                } catch (e: Exception) {
+                    _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
+                }
             } else {
-                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized for this booking.")
+                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized.")
             }
         }
     }
@@ -108,64 +172,136 @@ class EntryViewModel : ViewModel() {
     fun performCheckOut(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
-            delay(1000)
+            delay(500)
 
-            //val booking = repository.getBooking(bookingId)
-            val booking = getBookingFromDb(bookingId) // REPLACED MOCK DB CALL
+            val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
-                _uiState.value = EntryUiState.Error("Booking not found.")
+                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId")
                 return@launch
             }
 
-            // A. Authorization Rule (Only members/booker can check out)
-            if (isAuthorized(booking, enteredId)) {
-                val checkOutTime = getCurrentTime()
+            if (booking.status.equals("Completed", ignoreCase = true)) {
+                _uiState.value = EntryUiState.Error("Room is already checked out.")
+                return@launch
+            }
 
-                // save to db here
-                // repository.updateCheckOut(bookingId, checkOutTime, status = "Completed")
-                println("Saving Check-Out Time to DB: $checkOutTime")
-                _uiState.value = EntryUiState.Success
+            // --- NEW CODE STARTS HERE ---
+            // Validate Checkout Time Limit
+            if (isCheckoutLate(booking)) {
+                _uiState.value = EntryUiState.Error("Check-out failed: Session expired.")
+                // Optional: You might want to auto-complete it in the background instead of showing an error
+                return@launch
+            }
+            // --- NEW CODE ENDS HERE ---
+
+            if (isAuthorized(booking, enteredId)) {
+                val currentTime = getCurrentTime()
+
+                try {
+                    bookingsCollection.document(booking.bookingId).update(
+                        mapOf(
+                            "status" to "Completed",
+                            "checkOut" to currentTime,
+                            "bookingStatus" to "Completed"
+                        )
+                    ).await()
+
+                    _uiState.value = EntryUiState.Success
+                } catch (e: Exception) {
+                    _uiState.value = EntryUiState.Error("Database error: ${e.message}")
+                }
             } else {
-                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized to check out.")
+                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized to check out this room.")
             }
         }
     }
 
     // Helper: Check if User is Booker or Member
     private fun isAuthorized(booking: Booking, id: String): Boolean {
+        // Matches Booker OR Matches any member in the list
         return booking.userId == id || booking.members.any { it.first == id }
     }
 
+    // Helper: Check if it is too early to check in
+    private fun isTooEarly(booking: Booking): Boolean {
+        return try {
+            // Use the format that matches your database
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // Combine Date + StartTime (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
+            val bookingStartStr = "${booking.date} ${booking.startTime}"
+            val startDateTime = dbDateFormat.parse(bookingStartStr) ?: return false
+
+            // Optional: Allow check-in 5 minutes early?
+            // If so, subtract 5 minutes from startDateTime before comparing:
+            // val calendar = Calendar.getInstance().apply { time = startDateTime }
+            // calendar.add(Calendar.MINUTE, -5)
+            // return Date().before(calendar.time)
+
+            // Strict Rule: Must be exactly start time or later
+            Date().before(startDateTime)
+        } catch (e: Exception) {
+            false // Fail open or closed depending on preference
+        }
+    }
+
     // Helper: Check 15-min expiry
+    // Inside EntryViewModel
     private fun isBookingExpired(booking: Booking): Boolean {
         if (booking.status.equals("Cancelled", ignoreCase = true)) return true
+        if (booking.status.equals("Completed", ignoreCase = true)) return true
+
         return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            // MATCH THE DATABASE FORMAT HERE TOO
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // Combine DB date + DB start time (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
             val bookingDateTimeStr = "${booking.date} ${booking.startTime}"
-            val startDateTime = dateFormat.parse(bookingDateTimeStr) ?: return false
+            val startDateTime = dbDateFormat.parse(bookingDateTimeStr) ?: return false
 
             val calendar = Calendar.getInstance().apply { time = startDateTime }
-            calendar.add(Calendar.MINUTE, 15) // Cutoff time
+            calendar.add(Calendar.MINUTE, 15) // 15 minute grace period
 
-            Date().after(calendar.time) // Current time > Cutoff
+            Date().after(calendar.time)
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun isCheckoutLate(booking: Booking): Boolean {
+        return try {
+            // Use the same date format as the rest of your app
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // 1. Construct the full End Date/Time string
+            // NOTE: Ensure your Booking entity has an 'endTime' field.
+            // If not, you must calculate it: (startTime + duration)
+            val bookingEndStr = "${booking.date} ${booking.endTime}"
+
+            val endDateTime = dbDateFormat.parse(bookingEndStr) ?: return false
+
+            // 2. Add a Grace Period (e.g., 15 minutes to pack up)
+            val calendar = Calendar.getInstance().apply { time = endDateTime }
+            calendar.add(Calendar.MINUTE, 15)
+
+            // 3. Return true if current time is AFTER the allowed window
+            Date().after(calendar.time)
+        } catch (e: Exception) {
+            false // If parsing fails, we default to allowing it (or return true to block)
         }
     }
 
     fun resetState() {
         _uiState.value = EntryUiState.Idle
     }
-
 }
 
-// --- 3. UI IMPLEMENTATION (UNIFIED SCREEN) ---
-
+// check-in manual entry screen
 @Composable
 fun ManualEntryScreen(
     bookingId: String,
-    isCheckIn: Boolean = true, // Toggle this for Check-Out
+    isCheckIn: Boolean = true,
     initialId: String = "",
     onSuccess: (String) -> Unit,
     onBackClicked: () -> Unit = {},
@@ -174,10 +310,10 @@ fun ManualEntryScreen(
     var studentId by remember { mutableStateOf(initialId) }
     val uiState by viewModel.uiState.collectAsState()
 
-    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4
+    // Validation: simple length check
+    val isIdLengthValid = studentId.isNotBlank() && studentId.length >= 4 && studentId.length <= 7
     val isLoading = uiState is EntryUiState.Loading
 
-    // Text & Strings based on Mode
     val screenTitle = if (isCheckIn) "Check-In" else "Check-Out"
     val successMessage = if (isCheckIn) "Check-In Successful" else "Check-Out Successful"
 
@@ -210,11 +346,11 @@ fun ManualEntryScreen(
             OutlinedTextField(
                 value = studentId,
                 onValueChange = {
-                    if (it.length <= 10) {
-                        studentId = it.filter { char -> char.isDigit() }
+                    if (it.length <= 15) { // Limit length
+                        studentId = it
                     }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text), // Changed to Text to allow alphanumeric IDs if needed
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLoading,
@@ -273,8 +409,7 @@ fun ManualEntryScreen(
     }
 }
 
-// --- 4. HELPER COMPONENTS ---
-
+//topbar for checkin and check out
 @Composable
 fun CheckInTopBar(title: String, onBackClicked: () -> Unit) {
     Box(
@@ -296,39 +431,10 @@ fun CheckInTopBar(title: String, onBackClicked: () -> Unit) {
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     tint = Color.White,
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Mode: Check-In")
-@Composable
-fun PreviewManualCheckIn() {
-    TRAMUTTheme {
-        ManualEntryScreen(
-            bookingId = "dummy",
-            isCheckIn = true,
-            initialId = "1234",
-            onSuccess = {},
-            onBackClicked = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "Mode: Check-Out")
-@Composable
-fun PreviewManualCheckOut() {
-    TRAMUTTheme {
-        ManualEntryScreen(
-            bookingId = "dummy",
-            isCheckIn = false,
-            initialId = "1234",
-            onSuccess = {},
-            onBackClicked = {}
-        )
-    }
-}

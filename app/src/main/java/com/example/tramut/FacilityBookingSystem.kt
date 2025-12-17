@@ -128,6 +128,7 @@ enum class AppScreen {
 
     StudentScreen,
     StaffScreen,
+    AdminScreen,
 
     // Forgot Password Screens
     ForgotPassword1,
@@ -456,9 +457,12 @@ fun FBSApp(
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
 
+    //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
-        AppScreen.valueOf(backStackEntry?.destination?.route ?: "")
+        val route = backStackEntry?.destination?.route
+        val baseRoute = route?.substringBefore("/")?.substringBefore("?") ?: ""
+        AppScreen.valueOf(baseRoute)
     } catch (e: Exception) {
         AppScreen.MainSystem
     }
@@ -1152,7 +1156,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckInManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "empty", we pass an empty string to the screen
+                    // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
@@ -1208,7 +1212,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckOutManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "empty", we pass an empty string to the screen
+                    // If the ID is "_empty_", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
