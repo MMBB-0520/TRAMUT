@@ -6,12 +6,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,12 +21,13 @@ import com.example.myfacilitybookingsystem.viewModel.TimetableViewModel
 @Composable
 fun TimetableGrid(
     facilities: List<Facility>,
-    viewModel: TimetableViewModel
+    viewModel: TimetableViewModel,
+    modifier: Modifier
 ) {
     // Shared Design Dimensions
-    val venueColWidth = 130.dp
-    val timeColWidth = 60.dp
-    val rowHeight = 35.dp
+    val venueColWidth = 180.dp
+    val timeColWidth = 80.dp
+    val rowHeight = 50.dp
     val borderColor = Color(0xFFE0E0E0)
 
     Column {
