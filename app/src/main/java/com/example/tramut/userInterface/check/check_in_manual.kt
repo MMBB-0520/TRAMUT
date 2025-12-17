@@ -174,7 +174,6 @@ class EntryViewModel : ViewModel() {
             _uiState.value = EntryUiState.Loading
             delay(500)
 
-            // 1. Find the booking (Uses the Date fix from findActiveBookingForUser)
             val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
@@ -182,17 +181,20 @@ class EntryViewModel : ViewModel() {
                 return@launch
             }
 
-            // 2. Validate Status
-            // If it is already Completed or Cancelled, stop.
             if (booking.status.equals("Completed", ignoreCase = true)) {
                 _uiState.value = EntryUiState.Error("Room is already checked out.")
                 return@launch
             }
 
-            // Note: We ALLOW status "Booked".
-            // If they forgot to Check-In, scanning Check-Out will just finish the session.
+            // --- NEW CODE STARTS HERE ---
+            // Validate Checkout Time Limit
+            if (isCheckoutLate(booking)) {
+                _uiState.value = EntryUiState.Error("Check-out failed: Session expired.")
+                // Optional: You might want to auto-complete it in the background instead of showing an error
+                return@launch
+            }
+            // --- NEW CODE ENDS HERE ---
 
-            // 3. Authorization Check (Booker OR Member)
             if (isAuthorized(booking, enteredId)) {
                 val currentTime = getCurrentTime()
 
@@ -264,6 +266,29 @@ class EntryViewModel : ViewModel() {
             Date().after(calendar.time)
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun isCheckoutLate(booking: Booking): Boolean {
+        return try {
+            // Use the same date format as the rest of your app
+            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+
+            // 1. Construct the full End Date/Time string
+            // NOTE: Ensure your Booking entity has an 'endTime' field.
+            // If not, you must calculate it: (startTime + duration)
+            val bookingEndStr = "${booking.date} ${booking.endTime}"
+
+            val endDateTime = dbDateFormat.parse(bookingEndStr) ?: return false
+
+            // 2. Add a Grace Period (e.g., 15 minutes to pack up)
+            val calendar = Calendar.getInstance().apply { time = endDateTime }
+            calendar.add(Calendar.MINUTE, 15)
+
+            // 3. Return true if current time is AFTER the allowed window
+            Date().after(calendar.time)
+        } catch (e: Exception) {
+            false // If parsing fails, we default to allowing it (or return true to block)
         }
     }
 
