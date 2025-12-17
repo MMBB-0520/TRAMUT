@@ -133,7 +133,6 @@ fun AnnouncementDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Load data immediately when screen opens
     LaunchedEffect(announcementId) {
         viewModel.loadAnnouncement(announcementId)
     }
@@ -194,7 +193,6 @@ fun AnnouncementDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Meta Data Row (Date & Venue)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)

@@ -45,7 +45,6 @@ fun TimetableScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // 1. Category Options List (Remains the same)
     val categoryOptions = remember(initialDepartment) {
         val optionsList = when (initialDepartment) {
             "Sport Facilities" -> listOf("All Sport Facilities", "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
@@ -56,16 +55,12 @@ fun TimetableScreen(
         optionsList
     }
 
-    // 2. STATE HOLDER
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
 
-    // FIX 1: Reset selectedCategory when navigating between departments
     LaunchedEffect(categoryOptions) {
         selectedCategory = categoryOptions.first()
     }
 
-    // FIX 2: LOAD DATA LOGIC (Triggers the consolidated fetchTimetableData)
-    // Removed uiState.selectedDate as a key, as its update is handled inside the VM and doesn't require re-fetching facilities.
     LaunchedEffect(selectedCategory) {
         val facilityQuery = if (selectedCategory.startsWith("All")) {
             initialDepartment
@@ -271,7 +266,6 @@ fun TimetableGrid(
     }
 }
 
-// --- DROPDOWN COMPONENT (Unchanged) ---
 @Composable
 fun DepartmentDropdownLineStyle(
     currentSelection: String,
