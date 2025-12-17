@@ -26,18 +26,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
+import com.example.tramut.viewModel.VenueViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlin.math.abs
 import kotlinx.coroutines.launch
+import com.example.tramut.userInterface.studentTheme.FacilityData
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,16 +77,30 @@ fun BookSportScreen(
         MutableList(validPax) { index -> Pair("", "") }
     }
 
-    val (facilityName, venueList, terms, showMemberDetails, notes) = when (facilityType) {
-        "Cyber Centre" -> Quintuple(
+    // 使用 ViewModel 获取场地列表
+    val venueViewModel: VenueViewModel = viewModel()
+    val venueState by venueViewModel.uiState.collectAsState()
+
+    // facilityType -> department 映射
+    val department = when (facilityType) {
+        "Library" -> "Library"
+        "Cyber Centre", "CITC" -> "CITC"
+        else -> "Sport Facilities"
+    }
+
+    val venueList = remember(department) {
+        FacilityData.getCategoriesForDepartment(department)
+    }
+
+    // 当进入页面时加载场地
+    LaunchedEffect(facilityType) {
+        venueViewModel.loadVenues(facilityType)
+    }
+
+    // 根据 facilityType 确定场地来源
+    val (facilityName, terms, showMemberDetails, notes) = when (facilityType) {
+        "Cyber Centre" -> Quadruple(
             "Cyber Centre Discussion Room",
-            listOf(
-                "Discussion Room (1 PC)",
-                "Discussion Room (2 PCs)",
-                "Discussion Room (2 PCs)",
-                "Discussion Room with Projector (2 PCs)",
-                "Discussion Room with Projector (2 PCs) [HDMI]"
-            ),
             listOf(
                 "Read the Booking Guidelines.",
                 "Discussion rooms are for study purposes only.",
@@ -105,14 +121,8 @@ fun BookSportScreen(
                 "Projecting movie from projector is prohibited due to copyright issue."
             )
         )
-        "Library" -> Quintuple(
+        "Library" -> Quadruple(
             "Library Discussion Room / Individual Study Room",
-            listOf(
-                "Discussion Room",
-                "Discussion Room with PC",
-                "Individual Study Room",
-                "Presentation Room(with LCD Projector & Whiteboard)"
-            ),
             listOf(
                 "Must read the 'Booking Guidelines' before proceeding for booking.",
                 "Artwork, role-play, video shooting and/or any other disruptive activities are not allowed in the Library.",
@@ -132,26 +142,8 @@ fun BookSportScreen(
                 "Library Rules and Regulations applied. Users may be asked to leave immediately if do not comply with the rules."
             )
         )
-        else -> Quintuple(
+        else -> Quadruple(
             "Sports Facilities",
-            listOf(
-                "Club House - Squash",
-                "Club House-Swimming Pool",
-                "Club House-Guest/Karaoke Room",
-                "Club House-Gym 1 (11am-1pm, 3pm-5pm & 7pm-9pm)",
-                "Club House-Gym 1 (9am-11am, 1pm-3pm & 5pm-7pm)",
-                "Club House-S.P.Foyer (11am-1pm & 3pm-5pm)",
-                "Club House-S.P.Foyer (9am-11am & 1pm-3pm)",
-                "Club House-Snooker",
-                "Sports Complex-Badminton",
-                "Sports Complex-Gym 3 (11am-1pm, 3pm-5pm & 7pm-9pm)",
-                "Sports Complex-Gym 3 (9am-11am, 1pm-3pm & 5pm-7pm)",
-                "Sports Complex-Pickleball",
-                "Sports Complex-Table Tennis",
-                "Sports Complex-Tennis",
-                "Sports Complex-Futsal",
-                "TAR UMT Arena-Futsal"
-            ),
             listOf(
                 "The booked facilities will be forfeited after 15 minutes if no-show, except for futsal court.",
                 "Check-in/Check-out at the Counter. All users/participants must present their ID cards at the counter upon using sports facilities.",
@@ -184,6 +176,13 @@ fun BookSportScreen(
     }
 
     var selectedDate by remember { mutableStateOf("") }
+
+    // 如果从上一页传入了日期，设置它
+    LaunchedEffect(selectedDateFromPrevious) {
+        if (selectedDateFromPrevious.isNotEmpty() && selectedDate.isEmpty()) {
+            selectedDate = selectedDateFromPrevious
+        }
+    }
 
     // check start & end time
     fun parseTimeToMinutes(timeStr: String): Int {
@@ -439,18 +438,99 @@ fun BookSportScreen(
                 }
                 Spacer(Modifier.height(20.dp))
 
-                // Venue Type
+                // Venue Type - 添加加载状态显示
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 ) {
-                    DropdownUnderlinedTextFieldSimple(
-                        value = selectedVenue,
-                        items = venueList,
-                        label = "Venue Type *",
-                        onValueChange = { selectedVenue = it }
-                    )
+                    if (venueState.isLoading) {
+                        Column {
+                            Text(
+                                text = "Venue Type *",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Loading venues...",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                            Divider(
+                                color = Color.Gray,
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    } else if (venueState.error != null && venueList.isEmpty()) {
+                        Column {
+                            Text(
+                                text = "Venue Type *",
+                                fontSize = 12.sp,
+                                color = Color.Red,
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Failed to load venues",
+                                    fontSize = 14.sp,
+                                    color = Color.Red,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Text(
+                                text = "Using default list",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            Divider(
+                                color = Color.Gray,
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    } else if (venueList.isEmpty()) {
+                        Column {
+                            Text(
+                                text = "Venue Type *",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            Text(
+                                text = "No venues available",
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                            Divider(
+                                color = Color.Gray,
+                                thickness = 1.dp
+                            )
+                        }
+                    } else {
+                        DropdownUnderlinedTextFieldSimple(
+                            value = selectedVenue,
+                            items = venueList,
+                            label = "Venue Type *",
+                            onValueChange = { selectedVenue = it }
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -874,12 +954,11 @@ fun BookSportScreen(
     }
 }
 
-data class Quintuple<out A, out B, out C, out D, out E>(
+data class Quadruple<out A, out B, out C, out D>(
     val first: A,
     val second: B,
     val third: C,
-    val fourth: D,
-    val fifth: E
+    val fourth: D
 )
 
 @Composable

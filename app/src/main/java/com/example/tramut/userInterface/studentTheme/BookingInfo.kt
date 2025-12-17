@@ -49,8 +49,15 @@ fun BookingInfoScreen(
             }
             is MyBookingViewModel.BookingUIState.Error -> {
                 showCancelDialog = false
+                // 🐛 FIX: Capture the error message to display the AlertDialog
+                val errorState = uiState as MyBookingViewModel.BookingUIState.Error
+                errorMessage = errorState.message
             }
             else -> {}
+        }
+        // IMPORTANT: Reset UI state after handling success/error to prevent re-triggering
+        if (uiState is MyBookingViewModel.BookingUIState.Success || uiState is MyBookingViewModel.BookingUIState.Error) {
+            viewModel.resetUIState()
         }
     }
 
