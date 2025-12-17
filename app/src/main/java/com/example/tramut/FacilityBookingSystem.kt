@@ -794,11 +794,14 @@ fun FBSApp(
                     route = "${AppScreen.ViewTimetable.name}/{departmentName}",
                     arguments = listOf(navArgument("departmentName") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport"
+                    val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport Facilities"
 
                     TimetableScreen(
                         initialDepartment = departmentName,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToBooking = { facilityId, hour, date ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityId/$date/$hour")
+                        }
                     )
                 }
 
@@ -1080,15 +1083,14 @@ fun FBSApp(
                     )
                 }
 
-                composable(route = AppScreen.UserReview.name) {
-                    val booking = navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.get<Booking>("booking_data")
+                composable(route = "${AppScreen.UserReview.name}/{bookingId}",
+                    arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val bookingId = backStackEntry.arguments?.getString("bookingId")
 
-                    if (booking != null) {
-                        UserAddReviewScreen(booking = booking, onNavigateBack = { navController.popBackStack() })
+                    if (bookingId != null) {
+                        UserAddReviewScreen(bookingId = bookingId, onNavigateBack = { navController.popBackStack() })
                     } else {
-                        // Fallback: If data is missing, just go back
                         LaunchedEffect(Unit) { navController.popBackStack() }
                     }
                 }

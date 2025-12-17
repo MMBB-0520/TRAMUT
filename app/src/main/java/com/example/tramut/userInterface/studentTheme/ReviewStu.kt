@@ -21,14 +21,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.userInterface.adminTheme.Facility.AddSuccessDialog
+import com.example.tramut.userInterface.adminTheme.Facility.LineStaticInput
 import com.example.tramut.viewModel.ReviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserAddReviewScreen(
-    booking: Booking,
+    bookingId: String,
     onNavigateBack: () -> Unit,
     viewModel: ReviewViewModel = viewModel()
 ) {
@@ -39,6 +39,8 @@ fun UserAddReviewScreen(
     val currentUser = auth.currentUser
     val userId = currentUser?.uid ?: "Unknown"
     val userName = currentUser?.displayName ?: "Student"
+    val view by viewModel.view.collectAsState()
+
 
     var selectedCategory by remember { mutableStateOf("") }
     var otherDetail by remember { mutableStateOf("") }
@@ -46,6 +48,10 @@ fun UserAddReviewScreen(
     var isExpanded by remember { mutableStateOf(false) }
 
     val issueCategories = listOf("Damage/Broken Items", "Network/Technology Issues", "Plumbing/Ventilation Issues", "Electrical/Lighting Issues", "Cleanliness & Safety", "Other")
+
+    LaunchedEffect(bookingId) {
+        viewModel.getBookingFromId(bookingId)
+    }
 
     Scaffold(
         topBar = {
@@ -74,21 +80,21 @@ fun UserAddReviewScreen(
 
             // --- STATIC FIELDS (Fixed Data) ---
             LabeledLineSection("Facility") {
-                LineStaticInput(text = booking.facility)
+                LineStaticInput(text = view?.facility ?: "")
             }
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
-                    LabeledLineSection("Venue") { LineStaticInput(text = booking.venue) }
+                    LabeledLineSection("Venue") { LineStaticInput(text = view?.venue ?: "") }
                 }
                 Spacer(Modifier.width(16.dp))
                 Box(modifier = Modifier.weight(1f)) {
-                    LabeledLineSection("Date") { LineStaticInput(text = booking.date) }
+                    LabeledLineSection("Date") { LineStaticInput(text = view?.date ?: "") }
                 }
             }
 
             LabeledLineSection("Booking No") {
-                LineStaticInput(text = booking.bookingNo)
+                LineStaticInput(text = view?.bookingNo ?: "")
             }
 
             Spacer(Modifier.height(16.dp))
@@ -144,7 +150,7 @@ fun UserAddReviewScreen(
                 onClick = {
                     if (selectedCategory.isNotEmpty() && description.isNotEmpty()) {
                         viewModel.submitReview(
-                            booking = booking,
+                            booking = view,
                             category = selectedCategory,
                             otherDetail = otherDetail,
                             description = description,

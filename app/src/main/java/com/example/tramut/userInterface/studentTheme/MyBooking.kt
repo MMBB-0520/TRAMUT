@@ -116,9 +116,7 @@ fun MyBookingScreen(
                                 navController.navigate("${AppScreen.StudentBookingDetails.name}/${booking.bookingId}")
                             },
                             onReportClick = {
-                                // IMPORTANT: This key "booking_data" must match your NavHost getter!
-                                navController.navigate("booking_detail/${booking.bookingId}")
-                                navController.navigate(AppScreen.UserReview.name)
+                                navController.navigate("${AppScreen.UserReview.name}/${booking.bookingId}")
                             }
                         )
                     }
@@ -127,6 +125,7 @@ fun MyBookingScreen(
         }
     }
 }
+
 
 @Composable
 fun MyBookingItem(

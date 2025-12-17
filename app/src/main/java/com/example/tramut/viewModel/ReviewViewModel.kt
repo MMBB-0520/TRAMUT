@@ -1,6 +1,5 @@
 package com.example.tramut.viewModel
 
-import android.content.Context
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,11 +7,13 @@ import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.repo.ReviewRepo
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewModel() {
-
+    private val _view = MutableStateFlow<Booking?>(null)
+    val view: StateFlow<Booking?> = _view
     var isSaving by mutableStateOf(false)
         private set
 
@@ -20,7 +21,7 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
         private set
 
     fun submitReview(
-        booking: Booking,
+        booking: Booking?,
         category: String,
         otherDetail: String,
         description: String,
@@ -35,16 +36,16 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
 
             // 2. Map data to match your Review Data Class exactly
             val reviewData = hashMapOf(
-                "bookingId" to booking.bookingId,
+                "bookingId" to (booking?.bookingId ?: ""),
                 "userId" to userId,
                 "userName" to userName,
                 "issueCategory" to finalCategory,
                 "comment" to description,
                 "status" to "Unsolved",
-                "venue" to booking.venue,
-                "venueType" to booking.facility,
-                "department" to booking.facility,
-                "bookingDate" to booking.date,
+                "venue" to (booking?.venue ?: ""),
+                "venueType" to (booking?.facility ?: ""),
+                "department" to (booking?.facility ?: ""),
+                "bookingDate" to (booking?.date ?: ""),
                 "timestamp" to System.currentTimeMillis()
             )
 
@@ -66,5 +67,17 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
 
     fun dismissSuccess() {
         showSuccessDialog = false
+    }
+
+    fun getBookingFromId(bookingId: String) {
+        Firebase.firestore.collection("bookings")
+            .document(bookingId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val booking = document.toObject(Booking::class.java)
+                    _view.value = booking
+                }
+            }
     }
 }
