@@ -39,6 +39,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
+import com.example.tramut.userInterface.studentTheme.FacilityData
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +80,17 @@ fun BookSportScreen(
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
     val venueState by venueViewModel.uiState.collectAsState()
+
+    // facilityType -> department 映射
+    val department = when (facilityType) {
+        "Library" -> "Library"
+        "Cyber Centre", "CITC" -> "CITC"
+        else -> "Sport Facilities"
+    }
+
+    val venueList = remember(department) {
+        FacilityData.getCategoriesForDepartment(department)
+    }
 
     // 当进入页面时加载场地
     LaunchedEffect(facilityType) {
