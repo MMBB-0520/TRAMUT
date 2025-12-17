@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class MyBookingViewModel : ViewModel() {
 
@@ -26,6 +27,76 @@ class MyBookingViewModel : ViewModel() {
     val uiState: StateFlow<BookingUIState> = _uiState
 
     private var listenerRegistration: ListenerRegistration? = null
+
+    fun performSystemAssignment(
+        department: String,
+        venueCategory: String,
+        date: String,
+        hour: Int,
+        userId: String,
+        onComplete: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = BookingUIState.Loading
+
+                // 1. Get all physical courts (e.g., Badminton Court 1, Court 2) from 'facilities' collection
+                val facilitiesSnapshot = firestore.collection("facilities")
+                    .whereEqualTo("category", venueCategory)
+                    .get()
+                    .await()
+
+                val allCourts = facilitiesSnapshot.documents.mapNotNull { it.getString("name") }
+
+                // 2. Get all current bookings for that date and time
+                val bookingsSnapshot = firestore.collection("bookings")
+                    .whereEqualTo("date", date)
+                    .whereEqualTo("startTime", "$hour:00")
+                    .get()
+                    .await()
+
+                val takenCourts = bookingsSnapshot.documents.mapNotNull { doc ->
+                    val status = doc.getString("status") ?: ""
+                    // Exclude cancelled bookings so the court becomes available again
+                    if (status.lowercase() != "cancelled") doc.getString("finalVenue") else null
+                }
+
+                // 3. LOGIC: Find the first court name that is NOT in the taken list
+                val assignedCourtName = allCourts.firstOrNull { it !in takenCourts }
+
+                if (assignedCourtName != null) {
+                    // 4. Create the final Booking object
+                    val bookingId = UUID.randomUUID().toString()
+                    val finalBooking = Booking(
+                        bookingId = bookingId,
+                        bookingNo = bookingId.take(8).uppercase(), // Shortened ID for UI
+                        userId = userId,
+                        facility = department,
+                        venue = venueCategory,
+                        finalVenue = assignedCourtName, // The System-Assigned specific court
+                        date = date,
+                        startTime = "$hour:00",
+                        endTime = "${hour + 1}:00",
+                        status = "confirmed",
+                        level = getLevelForVenue(venueCategory),
+                        building = getBuildingForVenue(venueCategory)
+                    )
+
+                    // 5. Save to Firestore
+                    firestore.collection("bookings").document(bookingId).set(finalBooking).await()
+
+                    _uiState.value = BookingUIState.Success
+                    onComplete(true, "Successfully booked $assignedCourtName")
+                } else {
+                    _uiState.value = BookingUIState.Error("Fully Booked")
+                    onComplete(false, "No courts available for this slot.")
+                }
+            } catch (e: Exception) {
+                _uiState.value = BookingUIState.Error(e.message ?: "Unknown error")
+                onComplete(false, e.message ?: "Error")
+            }
+        }
+    }
 
     fun startListening(userId: String) {
         _isLoading.value = true

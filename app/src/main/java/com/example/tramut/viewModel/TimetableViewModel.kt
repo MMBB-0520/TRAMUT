@@ -65,6 +65,7 @@ class TimetableViewModel(
 
             if (snapshot != null) {
                 val liveList = snapshot.documents.mapNotNull { doc ->
+                    // Capacity mapping
                     val capacityData = doc.get("capacity")
                     val capacityList: List<Long> = when (capacityData) {
                         is List<*> -> capacityData.filterIsInstance<Long>()
@@ -72,24 +73,20 @@ class TimetableViewModel(
                         else -> emptyList()
                     }
 
+                    // Break Hours mapping
                     val breakHoursData = doc.get("dailyBreakHours")
                     val breakHoursList: List<Int> = when (breakHoursData) {
-                        is List<*> -> breakHoursData.mapNotNull {
-                            (it as? Long)?.toInt() ?: (it as? Int)
-                        }
-
-                        is String -> breakHoursData.split(",")
-                            .mapNotNull { it.trim().toIntOrNull() }
-
+                        is List<*> -> breakHoursData.mapNotNull { (it as? Long)?.toInt() ?: (it as? Int) }
+                        is String -> breakHoursData.split(",").mapNotNull { it.trim().toIntOrNull() }
                         else -> emptyList()
                     }
 
-                    val rawSpecialClosures =
-                        doc.get("specialClosures") as? Map<String, Any> ?: emptyMap()
+                    // Special Closures mapping
+                    val rawSpecialClosures = doc.get("specialClosures") as? Map<String, Any> ?: emptyMap()
                     val convertedSpecialClosures = rawSpecialClosures.mapValues { entry ->
                         val hoursList = entry.value as? List<*>
                         hoursList?.mapNotNull {
-                            when (it) {
+                            when(it) {
                                 is Long -> it.toInt()
                                 is Int -> it
                                 else -> null
@@ -173,16 +170,16 @@ class TimetableViewModel(
             return "Maintenance"
         }
 
+
+        // Booking Check - This now checks the live bookingsList updated by the listener
         val isBooked = uiState.value.bookingsList.any { booking ->
             val bookedStartHour = booking.startTime.split(":")[0].toIntOrNull() ?: 0
             val bookedEndHour = booking.endTime.split(":")[0].toIntOrNull() ?: 0
 
-            val venueMatches = booking.venue.trim().equals(facility.name.trim(), ignoreCase = true)
-
-            venueMatches &&
+            booking.venue == facility.name &&
                     booking.date == dateString &&
-                    hour >= bookedStartHour &&
-                    hour < bookedEndHour
+                    bookedStartHour <= hour &&
+                    bookedEndHour > hour
         }
 
         return if (isBooked) "Booked" else "Available"

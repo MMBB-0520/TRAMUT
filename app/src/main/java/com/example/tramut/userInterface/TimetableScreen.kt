@@ -47,33 +47,22 @@ fun TimetableScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val categoryOptions = remember(initialDepartment) {
-        val optionsList = when (initialDepartment) {
-            "Sport Facilities" -> listOf("All Sport Facilities", "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
-            "Library" -> listOf("All Library Rooms", "Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "CITC" -> listOf("All CITC Facilities", "Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
-            else -> listOf("All $initialDepartment Facilities")
+        when (initialDepartment) {
+            "Sport Facilities" -> listOf("Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
+            "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
+            "CITC" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            else -> listOf(initialDepartment)
         }
-        optionsList
     }
 
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
 
-    LaunchedEffect(categoryOptions) {
-        selectedCategory = categoryOptions.first()
-    }
-
-    LaunchedEffect(selectedCategory) {
-        val facilityQuery = if (selectedCategory.startsWith("All")) {
-            initialDepartment
-        } else {
-            selectedCategory
-        }
-        val isCategoryQuery = !selectedCategory.startsWith("All")
-
+    // Sync facilities when category or date changes
+    LaunchedEffect(selectedCategory, uiState.selectedDate) {
         viewModel.fetchTimetableData(
-            identifier = facilityQuery,
-            isCategory = isCategoryQuery,
-            date = uiState.selectedDate // Use the date initialized in the VM
+            identifier = selectedCategory,
+            isCategory = true,
+            date = uiState.selectedDate
         )
     }
 
@@ -97,13 +86,11 @@ fun TimetableScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    // Category Dropdown
                     DepartmentDropdownLineStyle(
                         currentSelection = selectedCategory,
                         options = categoryOptions,
@@ -112,10 +99,8 @@ fun TimetableScreen(
                 }
 
                 Box(modifier = Modifier.weight(1f)) {
-                    // Date Picker
                     AdminDatePickerLineStyle(
                         currentDate = uiState.selectedDate,
-                        // FIX: Changed onDateSelected to call the VM's updateDate, which handles booking refresh
                         onDateSelected = { newDate -> viewModel.updateDate(newDate) }
                     )
                 }
@@ -127,20 +112,13 @@ fun TimetableScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
                 }
-            } else if (uiState.errorMessage != null) {
-                Box(
-                    Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-                ) {
-                    Text("Error: ${uiState.errorMessage}",
-                        color = Color.Red)
-                }
-            }
-            else {
-
+            } else {
+                // AUTOMATED GRID: Shows Category row instead of individual facility rows
                 TimetableGrid(
-                    facilities = uiState.facilitiesList,
+                    selectedCategory = selectedCategory,
                     viewModel = viewModel,
-                    onCellClick = { clickedFacility, hour ->
+                    onCellClick = { hour ->
+                        // System automatically finds the first available court ID
                         val assignedId = viewModel.autoAssignFacilityId(
                             category = selectedCategory,
                             date = uiState.selectedDate,
@@ -148,14 +126,9 @@ fun TimetableScreen(
                         )
 
                         if (assignedId != null) {
-                            val assignedFacility = uiState.facilitiesList.find { it.id == assignedId }
-                            onNavigateToBooking(
-                                assignedId,
-                                hour,
-                                uiState.selectedDate
-                            )
+                            onNavigateToBooking(assignedId, hour, uiState.selectedDate)
                         } else {
-                            Log.e("Booking", "No available facility found for this slot.")
+                            Log.e("Booking", "No courts available.")
                         }
                     }
                 )
@@ -166,13 +139,11 @@ fun TimetableScreen(
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(10.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         LegendItem(Color(0xFF4CAF50), "Available")
-                        LegendItem(Color(0xFF2196F3), "Booked")
+                        LegendItem(Color(0xFF2196F3), "Full") // Changed "Booked" to "Full"
                         LegendItem(Color(0xFFF44336), "Maint.")
                         LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
@@ -182,104 +153,70 @@ fun TimetableScreen(
     }
 }
 
-// --- HELPER COMPONENT: The Grid (Unchanged) ---
 @Composable
 fun TimetableGrid(
-    facilities: List<Facility>,
+    selectedCategory: String,
     viewModel: TimetableViewModel,
-    onCellClick: (Facility, Int) -> Unit // Added this to handle booking navigation
+    onCellClick: (Int) -> Unit
 ) {
-    val venueColWidth = 130.dp
-    val timeColWidth = 60.dp
-    val rowHeight = 35.dp
+    val categoryColWidth = 140.dp
+    val timeColWidth = 65.dp
+    val rowHeight = 50.dp
     val borderColor = Color(0xFFE0E0E0)
-
-    val verticalScroll = rememberScrollState()
     val horizontalScroll = rememberScrollState()
 
     Column {
-        // --- HEADER ROW (Labels only) ---
+        // --- HEADER ROW ---
         Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
             Box(
-                modifier = Modifier
-                    .width(venueColWidth)
-                    .height(rowHeight)
-                    .background(Color.White)
-                    .border(1.dp, borderColor),
+                modifier = Modifier.width(categoryColWidth).height(rowHeight)
+                    .background(Color.White).border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Venue/Time", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Category", fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
 
-            // Correct Header Logic: Just show the time strings
             (8..22).forEach { hour ->
                 Box(
-                    modifier = Modifier
-                        .width(timeColWidth)
-                        .height(rowHeight)
-                        .background(Color.White)
-                        .border(1.dp, borderColor),
+                    modifier = Modifier.width(timeColWidth).height(rowHeight)
+                        .background(Color.White).border(1.dp, borderColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = String.format("%02d:00", hour),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
-                    )
+                    Text(text = String.format("%02d:00", hour), fontWeight = FontWeight.Bold, fontSize = 11.sp)
                 }
             }
         }
 
-        // --- DATA ROWS (Where the facilities and colored boxes are) ---
-        Column(
-            modifier = Modifier
-                .verticalScroll(verticalScroll)
-                .fillMaxHeight()
-        ) {
-            facilities.forEach { facility ->
-                Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
-                    // 1. Facility Name Column
-                    Box(
-                        modifier = Modifier
-                            .width(venueColWidth)
-                            .height(rowHeight)
-                            .background(Color.White)
-                            .border(1.dp, borderColor),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Text(
-                            text = facility.name,
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+        // --- AUTOMATED DATA ROW ---
+        Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
+            Box(
+                modifier = Modifier.width(categoryColWidth).height(rowHeight)
+                    .background(Color.White).border(1.dp, borderColor),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = selectedCategory,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
 
-                    // 2. Status Cells (Colored Boxes)
-                    (8..22).forEach { hour ->
-                        val status = viewModel.getSlotStatus(facility, hour)
-                        val cellColor = when (status) {
-                            "Available" -> Color(0xFF4CAF50)
-                            "Booked" -> Color(0xFF2196F3)
-                            "Maintenance" -> Color(0xFFF44336)
-                            else -> Color(0xFFE0E0E0)
-                        }
+            (8..22).forEach { hour ->
+                // Check if any court is available via ViewModel
+                val availableId = viewModel.autoAssignFacilityId(selectedCategory, viewModel.uiState.value.selectedDate, hour)
 
-                        Box(
-                            modifier = Modifier
-                                .width(timeColWidth)
-                                .height(rowHeight)
-                                .background(cellColor)
-                                .border(0.5.dp, Color.White)
-                                // Enable clicking only if the slot is "Available"
-                                .clickable(enabled = status == "Available") {
-                                    onCellClick(facility, hour)
-                                }
-                        )
-                    }
-                }
+                val isAvailable = availableId != null
+                val cellColor = if (isAvailable) Color(0xFF4CAF50) else Color(0xFF2196F3)
+
+                Box(
+                    modifier = Modifier
+                        .width(timeColWidth)
+                        .height(rowHeight)
+                        .background(cellColor)
+                        .border(0.5.dp, Color.White)
+                        .clickable(enabled = isAvailable) { onCellClick(hour) }
+                )
             }
         }
     }

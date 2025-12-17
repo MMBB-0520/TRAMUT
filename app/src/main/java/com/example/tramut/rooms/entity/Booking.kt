@@ -12,6 +12,7 @@ data class Booking(
     val timeslotId: String = "",
     val facility: String = "",
     val venue: String = "",
+    val finalVenue :String = "",
     val level: String = "",
     val building: String = "",
     val date: String = "",
