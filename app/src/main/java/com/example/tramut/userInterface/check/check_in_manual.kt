@@ -46,8 +46,9 @@ sealed class EntryUiState {
 
 class EntryViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
-    private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
     private val bookingsCollection = db.collection("bookings")
+
+    private val _uiState = MutableStateFlow<EntryUiState>(EntryUiState.Idle)
     val uiState: StateFlow<EntryUiState> = _uiState.asStateFlow()
 
     private fun getCurrentTime(): String {
@@ -55,7 +56,7 @@ class EntryViewModel : ViewModel() {
         return sdf.format(Date())
     }
 
-    // Helper: Fetch Booking from Firestore
+    // Helper: Fetch Booking by explicit ID
     private suspend fun getBookingFromDb(id: String): Booking? {
         return try {
             val doc = bookingsCollection.document(id).get().await()
@@ -70,45 +71,80 @@ class EntryViewModel : ViewModel() {
         }
     }
 
+    // Helper: Find Active Booking for a User (Auto-Discovery)
+    private suspend fun findActiveBookingForUser(userId: String): Booking? {
+        val todayDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+        return try {
+            // 1. Query bookings where this user is the owner (userId) AND date is today
+            val querySnapshot = bookingsCollection
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("date", todayDate)
+                .get()
+                .await()
+
+            val bookings = querySnapshot.toObjects(Booking::class.java)
+
+            // 2. Filter: Find the most relevant booking
+            // Priority: 'Checked In' (for checkout) > 'Booked' (for checkin)
+            // If multiple exist, pick the first one.
+            bookings.firstOrNull {
+                it.status.equals("Checked In", ignoreCase = true) ||
+                        it.status.equals("Booked", ignoreCase = true)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // --- SHARED RESOLVER LOGIC ---
+    private suspend fun resolveBooking(bookingId: String, enteredId: String): Booking? {
+        // Scenario A: explicit ID from scanner
+        if (bookingId.isNotBlank() && bookingId != "no_id" && bookingId != "admin_override") {
+            return getBookingFromDb(bookingId)
+        }
+        // Scenario B: search by User ID
+        return findActiveBookingForUser(enteredId)
+    }
+
     fun performCheckIn(bookingId: String, enteredId: String) {
         viewModelScope.launch {
             _uiState.value = EntryUiState.Loading
-            // Artificial delay for UX (optional)
             delay(500)
 
-            val booking = getBookingFromDb(bookingId)
+            val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
-                _uiState.value = EntryUiState.Error("Booking not found.")
+                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId today.")
                 return@launch
             }
 
             // A. Auto-Cancellation Rule
             if (isBookingExpired(booking)) {
-                _uiState.value = EntryUiState.Error("Check-in failed: Booking expired (15-min rule).")
+                _uiState.value = EntryUiState.Error("Check-in failed: Booking expired.")
                 return@launch
             }
 
             // B. Authorization Rule
             if (isAuthorized(booking, enteredId)) {
-                val checkInTime = getCurrentTime()
+                val currentTime = getCurrentTime()
 
-                // --- UPDATE FIRESTORE (Repository Logic) ---
                 try {
-                    bookingsCollection.document(bookingId).update(
+                    bookingsCollection.document(booking.bookingId).update(
                         mapOf(
                             "status" to "Checked In",
-                            "checkIn" to checkInTime,
+                            "checkIn" to currentTime,
+                            "bookingStatus" to "Checked In"
                         )
                     ).await()
 
-                    println("Saved Check-In Time to DB: $checkInTime")
                     _uiState.value = EntryUiState.Success
                 } catch (e: Exception) {
                     _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
                 }
             } else {
-                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized for this booking.")
+                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized.")
             }
         }
     }
@@ -118,59 +154,66 @@ class EntryViewModel : ViewModel() {
             _uiState.value = EntryUiState.Loading
             delay(500)
 
-            val booking = getBookingFromDb(bookingId)
+            val booking = resolveBooking(bookingId, enteredId)
 
             if (booking == null) {
-                _uiState.value = EntryUiState.Error("Booking not found.")
+                _uiState.value = EntryUiState.Error("No active booking found for ID: $enteredId today.")
                 return@launch
             }
 
-            // A. Authorization Rule (Only members/booker can check out)
-            if (isAuthorized(booking, enteredId)) {
-                val checkOutTime = getCurrentTime()
+            // Ensure we are checking out a booking that is actually "Checked In"
+            if (!booking.status.equals("Checked In", ignoreCase = true)) {
+                // Optional: allow checkout if status is just "Booked" (user forgot to scan in)?
+                // For strict logic:
+                // _uiState.value = EntryUiState.Error("This booking is not currently Checked In.")
+                // return@launch
+            }
 
-                // UPDATE FIRESTORE (Repository Logic)
+            if (isAuthorized(booking, enteredId)) {
+                val currentTime = getCurrentTime()
+
                 try {
-                    bookingsCollection.document(bookingId).update(
+                    bookingsCollection.document(booking.bookingId).update(
                         mapOf(
                             "status" to "Completed",
-                            "checkOut" to checkOutTime
+                            "checkOut" to currentTime,
+                            "bookingStatus" to "Completed"
                         )
                     ).await()
 
-                    println("Saved Check-Out Time to DB: $checkOutTime")
                     _uiState.value = EntryUiState.Success
                 } catch (e: Exception) {
                     _uiState.value = EntryUiState.Error("Failed to update database: ${e.message}")
                 }
             } else {
-                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized to check out.")
+                _uiState.value = EntryUiState.Error("ID $enteredId is not authorized.")
             }
         }
     }
 
-    // Check if User is Booker or Member
+    // Helper: Check if User is Booker or Member
     private fun isAuthorized(booking: Booking, id: String): Boolean {
-        // Admin override can be added here if needed (e.g. if id == "ADMIN")
+        // Matches Booker OR Matches any member in the list
         return booking.userId == id || booking.members.any { it.first == id }
     }
 
-    //Check 15-min expiry
+    // Helper: Check 15-min expiry
     private fun isBookingExpired(booking: Booking): Boolean {
         if (booking.status.equals("Cancelled", ignoreCase = true)) return true
         if (booking.status.equals("Completed", ignoreCase = true)) return true
 
         return try {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            // Note: Ensure your Booking class date format matches this
             val bookingDateTimeStr = "${booking.date} ${booking.startTime}"
             val startDateTime = dateFormat.parse(bookingDateTimeStr) ?: return false
 
             val calendar = Calendar.getInstance().apply { time = startDateTime }
             calendar.add(Calendar.MINUTE, 15) // Cutoff time
 
-            Date().after(calendar.time) // Current time > Cutoff
+            Date().after(calendar.time) // If Current time > Start + 15mins
         } catch (e: Exception) {
-            false
+            false // If parse fails, assume valid (fail open) or invalid (fail closed)
         }
     }
 
@@ -320,16 +363,3 @@ fun CheckInTopBar(title: String, onBackClicked: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true, name = "Mode: Check-In")
-@Composable
-fun PreviewManualCheckIn() {
-    TRAMUTTheme {
-        ManualEntryScreen(
-            bookingId = "dummy",
-            isCheckIn = true,
-            initialId = "1234",
-            onSuccess = {},
-            onBackClicked = {}
-        )
-    }
-}
