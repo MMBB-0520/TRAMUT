@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,9 @@ fun MyBookingScreen(
     val bookingList by viewModel.bookingList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var selectedTab by remember { mutableStateOf(BookingTab.ALL) }
+
+    var paxInput by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     // Guard for empty userId
     if (userId.isBlank()) {
@@ -148,6 +152,7 @@ fun MyBookingItem(
                 StatusBadge(status = booking.status)
             }
 
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // Body: Venue
@@ -164,6 +169,13 @@ fun MyBookingItem(
                 Text("Time: ", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
                 Text(booking.duration, style = MaterialTheme.typography.bodyMedium)
             }
+            Row {
+                Text("Venue: ", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                Text(booking.finalVenue, style = MaterialTheme.typography.bodyMedium)
+            }
+
+
+
 
             Spacer(modifier = Modifier.height(8.dp))
 

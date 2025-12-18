@@ -132,7 +132,7 @@ class FacilityViewModel : ViewModel() {
             "dailyBreakHours" to dailyBreakHours,
             "startTime" to formStartTime.value,
             "endTime" to formEndTime.value,
-            "specialClosures" to (specialClosures ?: emptyMap())
+            "specialClosures" to (specialClosures ?: emptyMap()),
         )
 
         Firebase.firestore.collection("facilities").document(docId)

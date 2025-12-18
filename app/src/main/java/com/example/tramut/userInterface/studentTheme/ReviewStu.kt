@@ -158,18 +158,17 @@ fun UserAddReviewScreen(
                             userName = userName
                         )
                     } else {
-                        Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Please fill in all details", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = StudentBlue),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !viewModel.isSaving
+                enabled = !viewModel.isSaving // Prevent double-clicks
             ) {
                 if (viewModel.isSaving) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Submit Report", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Submit", fontWeight = FontWeight.Bold)
                 }
             }
         }

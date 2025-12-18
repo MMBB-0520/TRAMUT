@@ -1,5 +1,7 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.widget.Toast
+import android.widget.Toast.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -40,6 +42,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
 import com.example.tramut.userInterface.studentTheme.FacilityData
+import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +52,9 @@ fun BookSportScreen(
     onBackFacilityPage: () -> Unit,
     onSubmit: (String, String, String, String, Int, List<Pair<String, String>>) -> Unit,
     isStaff: Boolean = false,
-    userRepository: UsersRepo
+    userRepository: UsersRepo,
+    MyBookingViewModel: MyBookingViewModel = viewModel(),
+    userId: String
 ) {
     val containerColor = if (isStaff) StaffRed else StudentBlue
     var termsAccepted by remember { mutableStateOf(false) }
@@ -926,20 +931,34 @@ fun BookSportScreen(
                 SuccessDialog(
                     onOk = {
                         showSuccessDialog = false
-                        val pax = numberOfPax.toIntOrNull() ?: 1
-                        val currentMembers = if (pax > 1 && showMemberDetails) {
-                            members.subList(1, minOf(pax, members.size)).toList()
-                        } else {
-                            emptyList()
-                        }
-                        onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers)
 
-                        coroutineScope.launch  {
-                            delay(500)
-                            onBackFacilityPage()
-                        }
+                        // 1. Convert the selected time string to an integer hour for logic check
+                        val hourInt = try {
+                            val hourPart = selectedStartTime.split(":")[0].trim().toInt()
+                            val isPM = selectedStartTime.contains("PM", ignoreCase = true)
 
-                        // 重置状态
+                            if (isPM && hourPart != 12) hourPart + 12
+                            else if (!isPM && hourPart == 12) 0
+                            else hourPart
+                        } catch (e: Exception) { 8 }
+                        MyBookingViewModel.performSystemAssignment(
+                            department = department,
+                            venueCategory = selectedVenue,
+                            date = selectedDate,
+                            hour = hourInt,
+                            pax = numberOfPax.toLongOrNull() ?: 1L,
+                            userId = userId,
+                            onComplete = { success, message ->
+                                if (success) {
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        onBackFacilityPage()
+                                    }
+                                } else {
+                                }
+                            }
+                        )
+
                         validationSuccess = false
                         termsAccepted = false
                         isVerifying = false

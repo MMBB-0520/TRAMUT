@@ -222,23 +222,19 @@ fun EditFacilityScreen(
                         }
                     }
                 }
+
                 Spacer(Modifier.height(16.dp))
 
-                // Capacity Logic (Matching AdminAddFacilityScreen)
                 if (adminDepartment != "Sport Facilities") {
-                    LabeledInput("Capacity (List, e.g., 6, 7, 8)") {
+                    LabeledInput("Capacity (List, e.g., 4, 5, 6)") {
                         LineTextField(
-                            viewModel.formCapacity.value,
-                            { newValue -> if (newValue.all { c -> c.isDigit() || c == ',' || c == ' ' }) { viewModel.formCapacity.value = newValue } },
-                            "Enter numbers separated by commas"
-                        )
-                    }
-                } else {
-                    LabeledInput("Capacity (Single Number, e.g., 1)") {
-                        LineTextField(
-                            viewModel.formCapacity.value,
-                            { newValue -> if (newValue.all { c -> c.isDigit() } && newValue.length <= 2) { viewModel.formCapacity.value = newValue.take(2) } },
-                            "Enter a single number (e.g., 1)"
+                            value = viewModel.formCapacity.value,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() || it == ',' || it == ' ' }) {
+                                    viewModel.formCapacity.value = newValue
+                                }
+                            },
+                            placeholder = "Enter numbers separated by commas"
                         )
                     }
                 }
@@ -410,7 +406,6 @@ fun EditFacilityScreen(
                                 }
                             }
                         } else {
-                            // --- DATE RANGE MODE (FULL DAY CLOSURE) (Matching AdminAddFacilityScreen) ---
                             Text("Close Facility for a period of time (Full Days).", fontSize = 12.sp, color = Color.Gray)
                             Spacer(Modifier.height(12.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -436,7 +431,6 @@ fun EditFacilityScreen(
                         }
                         Spacer(Modifier.height(16.dp))
 
-                        // ADD EXCEPTION BUTTON (Matching AdminAddFacilityScreen)
                         Button(
                             onClick = {
                                 if (!isRangeMode) {
@@ -519,6 +513,7 @@ fun EditFacilityScreen(
                             selectedFacility?.id?.let { id ->
                                 if (viewModel.formName.value.isBlank()) Toast.makeText(context, "Missing Name", Toast.LENGTH_SHORT).show()
                                 else if (viewModel.formCategory.value.isBlank()) Toast.makeText(context, "Missing Category", Toast.LENGTH_SHORT).show()
+
                                 else if (viewModel.formStartTime.value.isEmpty() || viewModel.formEndTime.value.isEmpty()) Toast.makeText(context, "Missing Hours", Toast.LENGTH_SHORT).show()
                                 else if (start >= end) Toast.makeText(context, "Start time must be before End time", Toast.LENGTH_SHORT).show()
                                 else {
@@ -526,7 +521,7 @@ fun EditFacilityScreen(
                                         docId = id,
                                         department = adminDepartment,
                                         dailyBreakHours = dailyBreakHours.toList().sorted(),
-                                        specialClosures = specialClosuresMap.toMap()
+                                        specialClosures = specialClosuresMap.toMap(),
                                     ) { success, errorMsg ->
                                         if (success) {
                                             showSuccessDialog = true

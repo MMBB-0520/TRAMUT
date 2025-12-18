@@ -2,8 +2,13 @@ package com.example.tramut.rooms.repo
 
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class BookingRepo {
+
+    val db = FirebaseFirestore.getInstance()
+
     suspend fun getFacilitiesByCategory(category: String): List<Facility> {
         return try {
             db.collection("facilities")

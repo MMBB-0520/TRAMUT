@@ -156,6 +156,15 @@ class TimetableViewModel(
         loadBookingsForDate(newDate)
     }
 
+    fun findFinalVenue(selectedCategory: String, requestedPax: Int, availableFacilities: List<Facility>): String? {
+        val matchedFacility = availableFacilities.find { facility ->
+            facility.category == selectedCategory &&
+                    facility.capacity.contains(requestedPax.toLong())
+        }
+
+        return matchedFacility?.id
+    }
+
     fun getSlotStatus(facility: Facility, hour: Int): String {
         val dateString = uiState.value.selectedDate
 

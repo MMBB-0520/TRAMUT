@@ -1073,7 +1073,6 @@ fun FBSApp(
                                 .set(bookingData)
                                 .addOnSuccessListener {
                                     navController.navigate(AppScreen.StudentBooking.name) {
-                                        // Clear the back stack so user can't go back to booking form
                                         popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
                                         launchSingleTop = true
                                     }
@@ -1082,8 +1081,11 @@ fun FBSApp(
                                     Log.e("Firebase", "Failed to save booking", it)
                                 }
                         },
+
                         isStaff = isStaffLoggedIn,
-                        userRepository = usersRepo
+                        userRepository = usersRepo,
+                        MyBookingViewModel = viewModel(),
+                        userId = currentUser?.loginId ?: ""
                     )
                 }
 

@@ -25,6 +25,18 @@ class FacilityRepository {
             .addOnFailureListener { onResult(null) }
     }
 
+    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
+        return try {
+            db.collection("facilities")
+                .whereEqualTo("category", category)
+                .get()
+                .await() // Now works because of the import and dependency
+                .toObjects(Facility::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     fun getFacilitiesFlow(department: String): Flow<List<Facility>> = callbackFlow {
 
         val listener = facilitiesCollection

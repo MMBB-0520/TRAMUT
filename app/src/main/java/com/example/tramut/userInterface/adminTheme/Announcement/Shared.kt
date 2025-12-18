@@ -1,5 +1,7 @@
 package com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
@@ -40,24 +42,47 @@ import com.example.tramut.ui.theme.ErrorRed
 @Composable
 fun SwipeableAnnouncementItem(
     item: Announcement,
+    isConfirming : Boolean,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     var isRemoved by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope() // Required to call reset()
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             when (it) {
                 SwipeToDismissBoxValue.StartToEnd -> { onEdit(); false }
-                SwipeToDismissBoxValue.EndToStart -> { isRemoved = true; true }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    isRemoved = true
+                    true
+                }
                 else -> false
             }
         }
     )
 
-    LaunchedEffect(isRemoved) { if (isRemoved) { delay(500); onDelete() } }
+    // FIX: Listen for when the dialog is closed without deleting
+    LaunchedEffect(isConfirming) {
+        // If the parent says we are no longer confirming, and the item is currently hidden
+        if (!isConfirming && isRemoved) {
+            isRemoved = false // Make it visible again
+            dismissState.reset() // Slide the card back to the center
+        }
+    }
 
-    AnimatedVisibility(visible = !isRemoved, exit = shrinkVertically() + fadeOut()) {
+    LaunchedEffect(isRemoved) {
+        if (isRemoved) {
+            delay(500)
+            onDelete()
+        }
+    }
+
+    AnimatedVisibility(
+        visible = !isRemoved,
+        exit = shrinkVertically() + fadeOut(),
+        enter = expandVertically() + fadeIn()
+    ) {
         SwipeToDismissBox(
             state = dismissState,
             backgroundContent = {

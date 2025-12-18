@@ -167,6 +167,22 @@ fun AdminAddFacilityScreen(
                     }
                 }
             }
+            Spacer(Modifier.height(16.dp))
+
+            if (adminDepartment != "Sport Facilities") {
+                LabeledInput("Capacity (List, e.g., 4, 5, 6)") {
+                    LineTextField(
+                        viewModel.formCapacity.value,
+                        { newValue ->
+                            if (newValue.all { c -> c.isDigit() || c == ',' || c == ' ' }) {
+                                viewModel.formCapacity.value = newValue
+                            }
+                        },
+                        "Enter numbers separated by commas"
+                    )
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
 
             // ================= 2. OPERATING HOURS & DAILY BREAKS =================
@@ -449,6 +465,7 @@ fun AdminAddFacilityScreen(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
+
 
                     Button(
                         onClick = {

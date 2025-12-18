@@ -31,10 +31,8 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
         viewModelScope.launch {
             isSaving = true
 
-            // 1. Determine the final category string
             val finalCategory = if (category == "Other") otherDetail else category
 
-            // 2. Map data to match your Review Data Class exactly
             val reviewData = hashMapOf(
                 "bookingId" to (booking?.bookingId ?: ""),
                 "userId" to userId,
@@ -43,13 +41,12 @@ class ReviewViewModel(private val repository: ReviewRepo = ReviewRepo()) : ViewM
                 "comment" to description,
                 "status" to "Unsolved",
                 "venue" to (booking?.venue ?: ""),
-                "venueType" to (booking?.facility ?: ""),
-                "department" to (booking?.facility ?: ""),
+                "venueType" to (booking?.finalVenue ?: ""),
+                "department" to (booking?.facility ?: "Sport Facilities"),
                 "bookingDate" to (booking?.date ?: ""),
                 "timestamp" to System.currentTimeMillis()
             )
 
-            // 3. Submit to repository
             val success = repository.submitReview(reviewData)
             if (success) showSuccessDialog = true
             isSaving = false

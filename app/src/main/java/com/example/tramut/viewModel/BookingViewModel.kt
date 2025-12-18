@@ -3,8 +3,10 @@ package com.example.tramut.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tramut.rooms.entity.Booking
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -33,69 +35,58 @@ class MyBookingViewModel : ViewModel() {
         venueCategory: String,
         date: String,
         hour: Int,
+        pax: Long,
         userId: String,
         onComplete: (Boolean, String) -> Unit
     ) {
-        viewModelScope.launch {
-            try {
-                _uiState.value = BookingUIState.Loading
+        val db = Firebase.firestore
 
-                // 1. Get all physical courts (e.g., Badminton Court 1, Court 2) from 'facilities' collection
-                val facilitiesSnapshot = firestore.collection("facilities")
-                    .whereEqualTo("category", venueCategory)
-                    .get()
-                    .await()
+        db.collection("facilities")
+            .whereEqualTo("department", department)
+            .whereEqualTo("category", venueCategory)
+            .whereArrayContains("capacity", pax) // This matches the [4, 5, 6] list
+            .get()
+            .addOnSuccessListener { facilityDocs ->
+                if (facilityDocs.isEmpty) {
+                    onComplete(false, "No room in $venueCategory fits $pax pax.")
+                    return@addOnSuccessListener
+                }
 
-                val allCourts = facilitiesSnapshot.documents.mapNotNull { it.getString("name") }
+                val matchingIds = facilityDocs.map { it.id }
 
-                // 2. Get all current bookings for that date and time
-                val bookingsSnapshot = firestore.collection("bookings")
+                db.collection("bookings")
                     .whereEqualTo("date", date)
-                    .whereEqualTo("startTime", "$hour:00")
+                    .whereEqualTo("hour", hour)
+                    .whereIn("facilityId", matchingIds)
                     .get()
-                    .await()
+                    .addOnSuccessListener { bookingDocs ->
+                        val takenRoomIds = bookingDocs.mapNotNull { it.getString("facilityId") }
 
-                val takenCourts = bookingsSnapshot.documents.mapNotNull { doc ->
-                    val status = doc.getString("status") ?: ""
-                    // Exclude cancelled bookings so the court becomes available again
-                    if (status.lowercase() != "cancelled") doc.getString("finalVenue") else null
-                }
+                        val finalVenueId = matchingIds.firstOrNull { it !in takenRoomIds }
 
-                // 3. LOGIC: Find the first court name that is NOT in the taken list
-                val assignedCourtName = allCourts.firstOrNull { it !in takenCourts }
-
-                if (assignedCourtName != null) {
-                    // 4. Create the final Booking object
-                    val bookingId = UUID.randomUUID().toString()
-                    val finalBooking = Booking(
-                        bookingId = bookingId,
-                        bookingNo = bookingId.take(8).uppercase(), // Shortened ID for UI
-                        userId = userId,
-                        facility = department,
-                        venue = venueCategory,
-                        finalVenue = assignedCourtName, // The System-Assigned specific court
-                        date = date,
-                        startTime = "$hour:00",
-                        endTime = "${hour + 1}:00",
-                        status = "confirmed",
-                        level = getLevelForVenue(venueCategory),
-                        building = getBuildingForVenue(venueCategory)
-                    )
-
-                    // 5. Save to Firestore
-                    firestore.collection("bookings").document(bookingId).set(finalBooking).await()
-
-                    _uiState.value = BookingUIState.Success
-                    onComplete(true, "Successfully booked $assignedCourtName")
-                } else {
-                    _uiState.value = BookingUIState.Error("Fully Booked")
-                    onComplete(false, "No courts available for this slot.")
-                }
-            } catch (e: Exception) {
-                _uiState.value = BookingUIState.Error(e.message ?: "Unknown error")
-                onComplete(false, e.message ?: "Error")
+                        if (finalVenueId != null) {
+                            saveBooking(finalVenueId, date, hour, userId, onComplete)
+                        } else {
+                            onComplete(false, "All $venueCategory rooms for $pax pax are fully booked.")
+                        }
+                    }
             }
-        }
+            .addOnFailureListener { e ->
+                onComplete(false, "Error: ${e.message}")
+            }
+    }
+
+    private fun saveBooking(facilityId: String, date: String, hour: Int, userId: String, onComplete: (Boolean, String) -> Unit) {
+        val bookingData = hashMapOf(
+            "facilityId" to facilityId,
+            "date" to date,
+            "hour" to hour,
+            "userId" to userId,
+            "status" to "Confirmed"
+        )
+        Firebase.firestore.collection("bookings").add(bookingData)
+            .addOnSuccessListener { onComplete(true, "Success") }
+            .addOnFailureListener { onComplete(false, "Failed to save booking") }
     }
 
     fun startListening(userId: String) {
