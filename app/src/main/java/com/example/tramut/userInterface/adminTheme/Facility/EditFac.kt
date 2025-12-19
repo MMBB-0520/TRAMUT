@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility
+package com.example.tramut.userInterface.adminTheme.Facility
 
 import android.app.DatePickerDialog
 import android.widget.DatePicker
@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,13 +30,6 @@ import com.example.myfacilitybookingsystem.viewModel.FacilityViewModel
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
-import com.example.tramut.userInterface.adminTheme.Facility.LabeledInput
-import com.example.tramut.userInterface.adminTheme.Facility.LineStaticInput
-import com.example.tramut.userInterface.adminTheme.Facility.LineTextField
-import com.example.tramut.userInterface.adminTheme.Facility.DeleteClosureConfirmationDialog
-import com.example.tramut.userInterface.adminTheme.Facility.DeleteFacilityConfirmationDialog
-import com.example.tramut.userInterface.adminTheme.Facility.EditSuccessDialog
-import com.example.tramut.userInterface.adminTheme.Facility.FacilityDropdownSelector
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
