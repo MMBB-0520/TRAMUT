@@ -56,6 +56,9 @@ fun ForgetPasswordScreen3 (
 
     val canResend = timeLeft == 0
 
+    val maskedEmail = remember(email) {
+        maskEmail(email)
+    }
     Column(
         modifier = Modifier
             .background(Background)
@@ -81,7 +84,7 @@ fun ForgetPasswordScreen3 (
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "You will receive an email with a verification code to reset your password. Please check your inbox.\n\nEnter oobCode sent to $email",
+            text = "You will receive an email with a verification code to reset your password. Please check your inbox.\n\nEnter oobCode sent to $maskedEmail",
             fontSize = 13.sp,
             color = GrayText
         )
@@ -96,7 +99,7 @@ fun ForgetPasswordScreen3 (
                     fontSize = 15.sp,
                     color = Color.Gray
                 )
-                          },
+            },
             modifier = Modifier
                 .fillMaxWidth(),
             singleLine = true
@@ -162,11 +165,24 @@ fun ForgetPasswordScreen3 (
     }
 }
 
+fun maskEmail(email: String?): String? {
+    val parts = email?.split("@")
+    if (parts?.size != 2) return email
+
+    val name = parts[0]
+    val domain = parts[1]
+
+    if (name.length <= 2) {
+        return "${name.first()}****@$domain"
+    }
+
+    return "${name.first()}****${name.last()}@$domain"
+}
 @Preview (showBackground = true)
 @Composable
 fun FGPW3() {
     ForgetPasswordScreen3(
-        email = "",
+        email = "p0934@tarc.edu.my",
         oobCode = "",
         onOobCodeChange = {},
         onResendCodeClick = {},

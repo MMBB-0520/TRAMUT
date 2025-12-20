@@ -16,7 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.ui.theme.StaffRed
+import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,8 +27,11 @@ import com.example.tramut.viewModel.MyBookingViewModel
 fun BookingInfoScreen(
     booking: Booking,
     navController: NavHostController,
+    isStaff: Boolean = false,
     viewModel: MyBookingViewModel = viewModel()
 ) {
+    val containerColor = if (isStaff) StaffRed else StudentBlue
+
     var showCancelDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -34,13 +40,11 @@ fun BookingInfoScreen(
     val level by remember(booking.venue) {
         derivedStateOf { viewModel.getLevelForVenue(booking.venue) }
     }
-
     val building by remember(booking.venue) {
         derivedStateOf { viewModel.getBuildingForVenue(booking.venue) }
     }
 
-
-    // 监听UI状态变化
+    // 监听UI状态变化 (保持不变)
     LaunchedEffect(uiState) {
         when (uiState) {
             MyBookingViewModel.BookingUIState.Success -> {
@@ -49,103 +53,104 @@ fun BookingInfoScreen(
             }
             is MyBookingViewModel.BookingUIState.Error -> {
                 showCancelDialog = false
-                // 🐛 FIX: Capture the error message to display the AlertDialog
-                val errorState = uiState as MyBookingViewModel.BookingUIState.Error
-                errorMessage = errorState.message
+                errorMessage = (uiState as MyBookingViewModel.BookingUIState.Error).message
             }
             else -> {}
         }
-        // IMPORTANT: Reset UI state after handling success/error to prevent re-triggering
         if (uiState is MyBookingViewModel.BookingUIState.Success || uiState is MyBookingViewModel.BookingUIState.Error) {
             viewModel.resetUIState()
         }
     }
 
-    // 错误提示对话框
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                title = {
+                    Box(modifier = Modifier.fillMaxWidth().padding(end = 48.dp), contentAlignment = Alignment.Center) {
+                        Text("Booking Information", fontWeight = FontWeight.SemiBold, fontSize = 20.sp)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                )
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color(0xFFF5F5F5))
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "Booking Details",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Divider(color = Color.LightGray)
+
+                BookingDetailRow("Facility", booking.facility)
+                BookingDetailRow("Booking No.", booking.bookingNo)
+                BookingDetailRow("Date", booking.date)
+                BookingDetailRow("Duration", booking.duration)
+                BookingDetailRow("Venue / Room No.", booking.venue)
+                BookingDetailRow("Level", level)
+                BookingDetailRow("Building", building)
+                BookingDetailRow("Check-in", booking.checkIn)
+                BookingDetailRow("Check-out", booking.checkOut)
+                BookingDetailRow("Status", booking.status)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val canCancel = booking.status.equals("Booked", ignoreCase = true) ||
+                    booking.status.equals("Valid", ignoreCase = true) ||
+                    booking.status.equals("confirmed", ignoreCase = true)
+
+            if (canCancel) {
+                if (uiState is MyBookingViewModel.BookingUIState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else {
+                    Button(
+                        onClick = { showCancelDialog = true },
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("CANCEL BOOKING", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+
     if (errorMessage != null) {
         AlertDialog(
             onDismissRequest = { errorMessage = null },
             title = { Text("Error") },
             text = { Text(errorMessage ?: "Unknown error") },
-            confirmButton = {
-                TextButton(onClick = { errorMessage = null }) {
-                    Text("OK")
-                }
-            }
+            confirmButton = { TextButton(onClick = { errorMessage = null }) { Text("OK") } }
         )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                .padding(10.dp)
-        ) {
-            Text(
-                "Booking Details",
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            Divider(color = Color.LightGray)
-
-            BookingDetailRow("Facility", booking.facility)
-            BookingDetailRow("Booking No.", booking.bookingNo)
-            BookingDetailRow("Date", booking.date)
-            BookingDetailRow("Duration", booking.duration)
-            BookingDetailRow("Venue / Room No.", booking.venue)
-            BookingDetailRow("Level", level)
-            BookingDetailRow("Building", building)
-            BookingDetailRow("Check-in", booking.checkIn)
-            BookingDetailRow("Check-out", booking.checkOut)
-            BookingDetailRow("Status", booking.status)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 只在状态是有效时显示取消按钮
-        val canCancel = booking.status.equals("Booked", ignoreCase = true) ||
-                booking.status.equals("Valid", ignoreCase = true) ||
-                booking.status.equals("confirmed", ignoreCase = true)
-
-        if (canCancel) {
-            when (uiState) {
-                is MyBookingViewModel.BookingUIState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
-                            .height(50.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                else -> {
-                    Button(
-                        onClick = { showCancelDialog = true },
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text("CANCEL BOOKING", color = Color.White, fontSize = 20.sp)
-                    }
-                }
-            }
-        }
-
     }
 
     if (showCancelDialog) {
@@ -154,11 +159,7 @@ fun BookingInfoScreen(
             title = { Text("Cancel Booking") },
             text = { Text("Are you sure you want to cancel this booking?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.cancelBookingWithScope(booking.bookingNo)
-                    }
-                ) {
+                TextButton(onClick = { viewModel.cancelBookingWithScope(booking.bookingId) }) {
                     Text("Yes", color = Color.Red)
                 }
             },
@@ -170,14 +171,8 @@ fun BookingInfoScreen(
 
     if (showSuccessDialog) {
         SuccessCancelDialog(
-            onOk = {
-                showSuccessDialog = false
-                navController.popBackStack()
-            },
-            onDismiss = {
-                showSuccessDialog = false
-                navController.popBackStack()
-            }
+            onOk = { showSuccessDialog = false; navController.popBackStack() },
+            onDismiss = { showSuccessDialog = false; navController.popBackStack() }
         )
     }
 }
@@ -188,17 +183,22 @@ fun BookingDetailRow(label: String, value: String) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = label, color = Color.DarkGray)
+            Text(
+                text = label,
+                color = Color.Gray,
+                modifier = Modifier.weight(1f)
+            )
             Text(
                 text = value,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1.5f)
             )
         }
-        Divider(color = Color.LightGray, thickness = 1.dp)
+        Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
     }
 }

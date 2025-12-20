@@ -2,6 +2,7 @@ package com.example.tramut.rooms.repo
 
 import android.util.Log
 import com.example.tramut.rooms.dao.UsersDAO
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.entity.Users
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
@@ -10,6 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlin.collections.filter
+import kotlin.collections.map
 
 class UsersRepo(
     private val usersDao: UsersDAO
@@ -118,16 +121,11 @@ class UsersRepo(
             ValidationResult.Error("Error validating student ID: ${e.message}", loginId)
         }
     }
-    suspend fun checkUserByLoginId(loginId: String, role: String) =
-        usersDao.getUserByLoginIdAndRole(loginId, role) != null
-    suspend fun checkLoginIdAndUsername(loginId: String, username: String) =
-        usersDao.getUserByLoginIdAndUsername(loginId, username) != null
 
     /**
      * 批量验证多个成员
      * 返回一个Map，key是loginId，value是验证结果
      */
-
     suspend fun validateMultipleMembers(loginIds: List<String>): Map<String, ValidationResult> = withContext(Dispatchers.IO) {
         try {
             val results = mutableMapOf<String, ValidationResult>()
@@ -189,11 +187,11 @@ class UsersRepo(
         }
     }
 
-    suspend fun validateMembersWithDuplicates(members: List<Pair<String, String>>): MembersValidationResult {
+    suspend fun validateMembersWithDuplicates(members: List<Member>): MembersValidationResult {
         return withContext(Dispatchers.IO) {
             try {
-                // 提取loginIds并过滤空值
-                val loginIds = members.map { it.first }.filter { it.isNotBlank() }
+                // 使用 it.id 替代 it.first
+                val loginIds = members.map { it.id }.filter { it.isNotBlank() }
 
                 // 检查重复
                 val duplicateIds = loginIds.groupingBy { it }
@@ -202,79 +200,30 @@ class UsersRepo(
                     .keys
 
                 if (duplicateIds.isNotEmpty()) {
-                    return@withContext MembersValidationResult.DuplicatesFound(
-                        duplicates = duplicateIds.toList()
-                    )
+                    return@withContext MembersValidationResult.DuplicatesFound(duplicateIds.toList())
                 }
 
-                // 批量验证
                 val validationResults = validateMultipleMembers(loginIds)
-
-                // 3. 核心修改：检查 ID 是否存在 以及 姓名是否匹配
-                val invalidIds = mutableListOf<String>()
-                val errorDetails = mutableListOf<String>()
-
-                for (member in members) {
-                    if (member.first.isBlank()) continue
-
-                    val dbResult = validationResults[member.first]
-
-                    if (dbResult is ValidationResult.Error) {
-                        // 情况 A: ID 根本不存在
-                        invalidIds.add(member.first)
-                        errorDetails.add("ID ${member.first} 不存在")
-                    } else if (dbResult is ValidationResult.Success) {
-                        // 情况 B: ID 存在，检查姓名是否匹配 (忽略大小写和空格)
-                        val dbName = dbResult.user.username.trim()
-                        val inputName = member.second.trim()
-
-                        if (!dbName.equals(inputName, ignoreCase = true)) {
-                            invalidIds.add(member.first)
-                            errorDetails.add("ID ${member.first} 与姓名不匹配 (数据库: $dbName)")
-                        }
-                    }
-                }
-
-                // 如果有任何不匹配或不存在的，返回 InvalidIds
-                if (invalidIds.isNotEmpty()) {
-                    return@withContext MembersValidationResult.InvalidIds(
-                        invalidIds = invalidIds,
-                        errorMessage = errorDetails.joinToString(", ")
-                    )
-                }
-
-                // 检查无效的ID
                 val invalidResults = validationResults.filter { it.value is ValidationResult.Error }
 
                 if (invalidResults.isNotEmpty()) {
-                    val invalidIds = invalidResults.keys.toList()
-                    val errorMessages = invalidResults.values
-                        .filterIsInstance<ValidationResult.Error>()
-                        .map { it.message }
-                        .joinToString(", ")
-
                     return@withContext MembersValidationResult.InvalidIds(
-                        invalidIds = invalidIds,
-                        errorMessage = errorMessages
+                        invalidIds = invalidResults.keys.toList(),
+                        errorMessage = "Invalid IDs found"
                     )
                 }
 
-                // 获取有效的用户信息
-                val validMembers = members.filter { it.first.isNotBlank() }.map { member ->
-                    val result = validationResults[member.first]
+                // 返回新的 Member 对象列表
+                val validMembers = members.filter { it.id.isNotBlank() }.map { m ->
+                    val result = validationResults[m.id]
                     if (result is ValidationResult.Success) {
-                        // 使用Firestore中的用户名（如果提供了成员姓名，可以进行比较验证）
-                        Pair(member.first, result.user.username)
-                    } else {
-                        Pair(member.first, member.second)
-                    }
+                        Member(id = m.id, name = result.user.username)
+                    } else m
                 }
 
-                return@withContext MembersValidationResult.Success(members)
+                return@withContext MembersValidationResult.Success(validMembers)
             } catch (e: Exception) {
-                return@withContext MembersValidationResult.Error(
-                    errorMessage = "Validation failed: ${e.message}"
-                )
+                return@withContext MembersValidationResult.Error("Validation failed: ${e.message}")
             }
         }
     }
@@ -286,7 +235,7 @@ sealed class ValidationResult {
 }
 
 sealed class MembersValidationResult {
-    data class Success(val members: List<Pair<String, String>>) : MembersValidationResult()
+    data class Success(val members: List<Member>) : MembersValidationResult()
     data class DuplicatesFound(val duplicates: List<String>) : MembersValidationResult()
     data class InvalidIds(val invalidIds: List<String>, val errorMessage: String) : MembersValidationResult()
     data class Error(val errorMessage: String) : MembersValidationResult()

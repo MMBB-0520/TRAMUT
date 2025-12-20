@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
@@ -40,14 +41,16 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
 import com.example.tramut.userInterface.studentTheme.FacilityData
+import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookSportScreen(
     facilityType: String,
     selectedDateFromPrevious: String = "",
+    selectedVenueFromPrevious: String = "",
     onBackFacilityPage: () -> Unit,
-    onSubmit: (String, String, String, String, Int, List<Pair<String, String>>) -> Unit,
+    onSubmit: (String, String, String, String, Int, List<Member>, String, String) -> Unit,
     isStaff: Boolean = false,
     userRepository: UsersRepo
 ) {
@@ -74,7 +77,7 @@ fun BookSportScreen(
         if (validPax != pax) {
             numberOfPax = validPax.toString()
         }
-        MutableList(validPax) { index -> Pair("", "") }
+        MutableList(validPax) { Member(id = "", name = "") }
     }
 
     // 使用 ViewModel 获取场地列表
@@ -82,9 +85,9 @@ fun BookSportScreen(
     val venueState by venueViewModel.uiState.collectAsState()
 
     // facilityType -> department 映射
-    val department = when (facilityType) {
-        "Library" -> "Library"
-        "Cyber Centre", "CITC" -> "CITC"
+    val department = when {
+        facilityType.contains("Library", ignoreCase = true) -> "Library"
+        facilityType.contains("CITC", ignoreCase = true) || facilityType.contains("Cyber", ignoreCase = true) -> "CITC"
         else -> "Sport Facilities"
     }
 
@@ -176,11 +179,45 @@ fun BookSportScreen(
     }
 
     var selectedDate by remember { mutableStateOf("") }
+    var selectedVenue by remember { mutableStateOf("") }
+    var originalRoomNo by remember { mutableStateOf("") }
 
-    // 如果从上一页传入了日期，设置它
-    LaunchedEffect(selectedDateFromPrevious) {
-        if (selectedDateFromPrevious.isNotEmpty() && selectedDate.isEmpty()) {
-            selectedDate = selectedDateFromPrevious
+    // BookSport.kt 约第 167 行
+    LaunchedEffect(selectedDateFromPrevious, selectedVenueFromPrevious) {
+        if (selectedDateFromPrevious.isNotEmpty()) {
+            selectedDate = selectedDateFromPrevious.replace("+", " ")
+        }
+
+        if (selectedVenueFromPrevious.isNotEmpty()) {
+            val cleanedVenue = selectedVenueFromPrevious.replace("+", " ")
+
+            originalRoomNo = cleanedVenue
+
+            val detectedCategory = when {
+                cleanedVenue.contains("Snooker", ignoreCase = true) -> "Snooker"
+                cleanedVenue.contains("Badminton", ignoreCase = true) -> "Badminton"
+                cleanedVenue.contains("Squash", ignoreCase = true) -> "Squash"
+                cleanedVenue.contains("Gym", ignoreCase = true) -> "Gym"
+                cleanedVenue.contains("Swimming Pool", ignoreCase = true) -> "Swimming Pool"
+                cleanedVenue.contains("Pickleball", ignoreCase = true) -> "Pickleball"
+                cleanedVenue.contains("Table Tennis", ignoreCase = true) -> "Table Tennis"
+                cleanedVenue.contains("Tennis", ignoreCase = true) -> "Tennis"
+                cleanedVenue.contains("Futsal", ignoreCase = true) -> "Futsal"
+                cleanedVenue.startsWith("Guest", ignoreCase = true)-> "Guest/Karaoke Room"
+
+                cleanedVenue.startsWith("CC", ignoreCase = true)-> "Cyber Centre Discussion Room"
+                cleanedVenue.contains("A", ignoreCase = true) ||
+                        cleanedVenue.contains("B", ignoreCase = true) ||
+                        cleanedVenue.contains("G", ignoreCase = true) ||
+                        cleanedVenue.contains("Q", ignoreCase = true)-> "Library Discussion Room"
+                cleanedVenue.contains("Discussion", ignoreCase = true) -> {
+                    if (cleanedVenue.contains("PC")) "Discussion Room with PC" else "Discussion Room"
+                }
+                cleanedVenue.contains("Study Room", ignoreCase = true) -> "Individual Study Room"
+                else -> cleanedVenue
+            }
+
+            selectedVenue = detectedCategory
         }
     }
 
@@ -270,8 +307,6 @@ fun BookSportScreen(
         }
     }
 
-    var selectedVenue by remember { mutableStateOf("") }
-
     // 验证成员函数
     fun validateMembers(): Boolean {
         if (!showMemberDetails) return true
@@ -279,7 +314,7 @@ fun BookSportScreen(
         val totalMembers = numberOfPax.toIntOrNull() ?: 1
         val membersToValidate = if (totalMembers > 1) {
             members.subList(1, minOf(totalMembers, members.size))
-                .filter { it.first.isNotBlank() }
+                .filter { it.id.isNotBlank() }
         } else {
             emptyList()
         }
@@ -287,7 +322,7 @@ fun BookSportScreen(
         if (membersToValidate.isEmpty()) return true
 
         // 检查重复ID
-        val loginIds = membersToValidate.map { it.first }
+        val loginIds = membersToValidate.map { it.id }
         val duplicateIds = loginIds.groupingBy { it }
             .eachCount()
             .filter { it.value > 1 }
@@ -615,7 +650,7 @@ fun BookSportScreen(
 
                                 for (index in 0 until membersToShow) {
                                     val memberIndex = index + 1
-                                    val member = if (memberIndex < members.size) members[memberIndex] else Pair("", "")
+                                    val member = members[memberIndex]
 
                                     Row(
                                         modifier = Modifier
@@ -631,14 +666,11 @@ fun BookSportScreen(
                                                 modifier = Modifier.padding(bottom = 4.dp)
                                             )
                                             LineTextField(
-                                                value = member.first,
+                                                value = member.id,
                                                 onValueChange = { newId ->
                                                     if (memberIndex < members.size) {
-                                                        val updatedList = members.toMutableList()
-                                                        updatedList[memberIndex] = Pair(newId, member.second)
-                                                        for (i in updatedList.indices) {
-                                                            members[i] = updatedList[i]
-                                                        }
+                                                        // 更新对象属性
+                                                        members[memberIndex] = members[memberIndex].copy(id = newId)
                                                     }
                                                 },
                                                 label = "ID"
@@ -655,14 +687,10 @@ fun BookSportScreen(
                                                 modifier = Modifier.padding(bottom = 4.dp)
                                             )
                                             LineTextField(
-                                                value = member.second,
+                                                value = member.name,
                                                 onValueChange = { newName ->
                                                     if (memberIndex < members.size) {
-                                                        val updatedList = members.toMutableList()
-                                                        updatedList[memberIndex] = Pair(member.first, newName)
-                                                        for (i in updatedList.indices) {
-                                                            members[i] = updatedList[i]
-                                                        }
+                                                        members[memberIndex] = members[memberIndex].copy(name = newName)
                                                     }
                                                 },
                                                 label = "Name"
@@ -814,7 +842,7 @@ fun BookSportScreen(
                         val totalMembers = numberOfPax.toIntOrNull() ?: 1
                         val membersToValidate = if (totalMembers > 1 && showMemberDetails) {
                             members.subList(1, minOf(totalMembers, members.size))
-                                .filter { it.first.isNotBlank() }
+                                .filter { it.id.isNotBlank() }
                         } else {
                             emptyList()
                         }
@@ -850,6 +878,23 @@ fun BookSportScreen(
                             validationSuccess = true
                             showSuccessDialog = true
                         }
+
+                        val finalVenueName = if (originalRoomNo.isNotEmpty() && originalRoomNo != selectedVenue) {
+                            "$selectedVenue - $originalRoomNo"
+                        } else {
+                            selectedVenue
+                        }
+
+                        onSubmit(
+                            finalVenueName,
+                            selectedDate,
+                            selectedStartTime,
+                            selectedEndTime,
+                            1,
+                            members,
+                            facilityType,
+                            department
+                        )
                     },
                     enabled = termsAccepted && !isVerifying,
                     modifier = Modifier.fillMaxWidth(),
@@ -923,8 +968,12 @@ fun BookSportScreen(
             }
 
             if (showSuccessDialog) {
+                val bookingViewModel: MyBookingViewModel = viewModel() // 获取计算工具
+
                 SuccessDialog(
                     onOk = {
+                        val level = bookingViewModel.getLevelForVenue(selectedVenue)
+                        val building = bookingViewModel.getBuildingForVenue(selectedVenue)
                         showSuccessDialog = false
                         val pax = numberOfPax.toIntOrNull() ?: 1
                         val currentMembers = if (pax > 1 && showMemberDetails) {
@@ -932,7 +981,7 @@ fun BookSportScreen(
                         } else {
                             emptyList()
                         }
-                        onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers)
+                        onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers, level, building)
 
                         coroutineScope.launch  {
                             delay(500)

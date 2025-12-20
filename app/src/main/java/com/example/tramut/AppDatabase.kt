@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.tramut.rooms.dao.UsersDAO
 import com.example.tramut.rooms.entity.Users
@@ -13,9 +14,10 @@ import kotlin.jvm.java
     entities = [
         Users::class
     ],
-    version = 1)
+    version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun usersDao(): UsersDAO
+
     companion object{
         @Volatile
         private var INSTANCE: AppDatabase? = null

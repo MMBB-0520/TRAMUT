@@ -40,8 +40,7 @@ import java.util.*
 fun AvailabilityChartScreen(
     selectedFacilityFromPrevious: String,
     viewModel: TimetableViewModel = viewModel(),
-    onBookNow: (String, String) -> Unit = { _, _ -> },
-    onBackFacility: () -> Unit = {}
+    onBookNow: (String, String) -> Unit = { _, _ -> }
 ) {
     // Reuse the date logic
     val today = java.time.LocalDate.now()
@@ -49,7 +48,7 @@ fun AvailabilityChartScreen(
     // Generate next 3 days for display
     val dateList = remember {
         val calendar = Calendar.getInstance()
-        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        val formatter = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
 
         List(3) { i ->
             calendar.time = Date()
@@ -58,7 +57,7 @@ fun AvailabilityChartScreen(
         }
     }
 
-    var selectedDate by remember { mutableStateOf(dateList.firstOrNull() ?: "") }
+    var selectedDate by remember { mutableStateOf("") }
     var selectedVenue by remember { mutableStateOf("") }
 
     // Collect UI state
@@ -95,7 +94,7 @@ fun AvailabilityChartScreen(
         }
     }
 
-    var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
+    var selectedCategory by remember { mutableStateOf("") }
 
     // Reset selectedCategory when options change
     LaunchedEffect(categoryOptions) {
@@ -125,171 +124,173 @@ fun AvailabilityChartScreen(
             selectedDate = dateList[0]
         }
     }
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Book Now Button
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            contentAlignment = Alignment.CenterEnd
         ) {
-            // Book Now Button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                val isVenueSelected = selectedVenue.isNotEmpty()
+            val isVenueSelected = selectedVenue.isNotEmpty()
 
-                Button(
-                    onClick = {
+            Button(
+                onClick = {
+                    if (selectedVenue.isNotEmpty()) {
                         onBookNow(selectedVenue, selectedDate)
-                    },
-                    enabled = true,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0D47A1)
-                    )
-                ) {
-                    Text("Book Now")
-                }
+                    }
+                },
+                enabled = selectedVenue.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0D47A1)
+                )
+            ) {
+                Text("Book Now")
             }
+        }
 
-            // Date selector - Custom 3-day selector for AvailabilityChartScreen
+        // Date selector - Custom 3-day selector for AvailabilityChartScreen
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            UnderlinedFloatingLabelDropdown(
+                label = "Booking Date *",
+                value = selectedDate,
+                items = dateList,
+                onValueChange = {
+                    selectedDate = it
+                    selectedVenue = "" // Clear venue selection when date changes
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Category Dropdown (Reused from TimetableScreen)
+        if (categoryOptions.size > 1) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
-                UnderlinedFloatingLabelDropdown(
-                    label = "Booking Date *",
-                    value = selectedDate,
-                    items = dateList,
-                    onValueChange = {
-                        selectedDate = it
-                        selectedVenue = "" // Clear venue selection when date changes
+                DepartmentDropdownLineStyle(
+                    currentSelection = selectedCategory,
+                    options = categoryOptions,
+                    onSelect = {
+                        selectedCategory = it
+                        selectedVenue = "" // Clear venue selection when category changes
                     }
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Selected Venue Display
+        if (selectedVenue.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFE3F2FD)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Selected venue: ",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = selectedVenue,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0D47A1)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Main Timetable Section
+        Column(modifier = Modifier.weight(1f)) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Timetable",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // Show current selected category
+                Text(
+                    text = selectedCategory,
+                    fontSize = 12.sp,
+                    color = Color.Gray
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Category Dropdown (Reused from TimetableScreen)
-            if (categoryOptions.size > 1) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    DepartmentDropdownLineStyle(
-                        currentSelection = selectedCategory,
-                        options = categoryOptions,
-                        onSelect = {
-                            selectedCategory = it
-                            selectedVenue = "" // Clear venue selection when category changes
-                        }
-                    )
+            // Loading/Error States
+            if (uiState.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.Black)
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            } else if (uiState.errorMessage != null) {
+                Box(
+                    Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                ) {
+                    Text("Error: ${uiState.errorMessage}", color = Color.Red)
+                }
+            } else {
+                // Timetable Grid
+                AvailabilityChartTimetableGrid(
+                    facilities = uiState.facilitiesList,
+                    viewModel = viewModel,
+                    selectedVenue = selectedVenue,
+                    onVenueSelected = { venueName ->
+                        selectedVenue = if (selectedVenue == venueName) "" else venueName
+                    }
+                )
 
-            // Selected Venue Display
-            if (selectedVenue.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+
+                // Legend
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFE3F2FD)
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Text(
-                            text = "Selected venue: ",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            text = selectedVenue,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0D47A1)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Main Timetable Section
-            Column(modifier = Modifier.weight(1f)) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Timetable",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Show current selected category
-                    Text(
-                        text = selectedCategory,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Loading/Error States
-                if (uiState.isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.Black)
-                    }
-                } else if (uiState.errorMessage != null) {
-                    Box(
-                        Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-                    ) {
-                        Text("Error: ${uiState.errorMessage}", color = Color.Red)
-                    }
-                } else {
-                    // Timetable Grid
-                    AvailabilityChartTimetableGrid(
-                        facilities = uiState.facilitiesList,
-                        viewModel = viewModel,
-                        selectedVenue = selectedVenue,
-                        onVenueSelected = { venueName ->
-                            selectedVenue = if (selectedVenue == venueName) "" else venueName
-                        }
-                    )
-
-                    Spacer(Modifier.height(10.dp))
-
-                    // Legend
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            LegendItem(Color(0xFF4CAF50), "Available")
-                            LegendItem(Color(0xFF2196F3), "Booked")
-                            LegendItem(Color(0xFFF44336), "Maint.")
-                            LegendItem(Color(0xFFE0E0E0), "Closed")
-                        }
+                        LegendItem(Color(0xFF4CAF50), "Available")
+                        LegendItem(Color(0xFF2196F3), "Booked")
+                        LegendItem(Color(0xFFF44336), "Maint.")
+                        LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
                 }
             }
         }
+    }
 }
 
 // Custom TimetableGrid for AvailabilityChartScreen with selection capability
