@@ -65,17 +65,6 @@ fun ReviewSubmission_Preview() {
     )
 }
 
-data class Review(
-    @DocumentId
-    val id: String = "",
-    val bookingId: String = "", //（fac-type，bok-date，venue，venuetype）
-    val loginId: String = "",
-    val issueCategory: String = "",
-    val comment: String = "",
-    val status: String = "Unsolved",
-    val department: String = ""
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewSubmissionScreen(
@@ -91,46 +80,10 @@ fun ReviewSubmissionScreen(
     val canSubmit = selectedBooking != null &&
             !selectedCategory.isNullOrEmpty()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Review",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1427C9)
-                )
-            )
-        },
-        containerColor = Color(0xFFF4F4F4)
-    ) { padding ->
 
         Column(
             modifier = Modifier
                 .background(Background)
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
 
@@ -222,7 +175,6 @@ fun ReviewSubmissionScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
     }
 }
 @Composable

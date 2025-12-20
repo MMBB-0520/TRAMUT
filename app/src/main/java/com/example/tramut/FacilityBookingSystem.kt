@@ -1,6 +1,5 @@
 package com.example.tramut
 
-import android.R.attr.description
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -61,7 +61,6 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
-import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
@@ -94,12 +93,12 @@ import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
+import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
 import com.example.tramut.viewModel.ReviewViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -533,11 +532,16 @@ fun TopBarScreen(
         AppScreen.UserReview -> {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Review",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
                 },
                 navigationIcon = {
                     Icon(
@@ -557,8 +561,46 @@ fun TopBarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E2BD8)
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
                 )
+            )
+        }
+        AppScreen.ReviewSubmission -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                ),
+                actions = {
+                    IconButton(onClick = { }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
             )
         }
         else -> {}
@@ -1456,10 +1498,16 @@ fun FBSApp(
 
                 composable(route = AppScreen.UserReview.name) {
                     LaunchedEffect(Unit) {
-                        reviewViewModel.fetchMyReviews()
+                        reviewViewModel.fetchMyReviews(currentUser?.loginId)
                     }
+                    var selectedTab by remember { mutableStateOf("All") }
+                    val filteredReviews = reviewViewModel.filterByStatus(reviews, selectedTab)
+                    val containerColor = getContainerColor(currentScreen, isStaffLoggedIn)
                     ReviewScreen(
-                        reviews = reviews
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it },
+                        filteredReviews = filteredReviews,
+                        containColor = containerColor
                     )
                 }
 
@@ -1487,10 +1535,13 @@ fun FBSApp(
                         },
                         onSubmitReviewClick = {
                             reviewViewModel.submitReview(
+                                userId = currentUser?.loginId,
                                 booking = selectedBooking!!,
                                 category = selectedCategory!!,
                                 description = comment
-                            )
+                            ){
+                                navController.popBackStack()
+                            }
                         }
                     )
                 }
