@@ -133,8 +133,10 @@ class EntryViewModel : ViewModel() {
     }
 
     // Helper: Check if User is Booker or Member
+    // check_in_manual.kt 中的 isAuthorized 方法
     private fun isAuthorized(booking: Booking, id: String): Boolean {
-        return booking.userId == id || booking.members.any { it.first == id }
+        // 将 it.first 改为 it.id
+        return booking.userId == id || booking.members.any { it.id == id }
     }
 
     // Helper: Check 15-min expiry

@@ -1,5 +1,6 @@
 package com.example.tramut
 
+import android.R.attr.description
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -59,6 +61,7 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
@@ -88,14 +91,19 @@ import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
+import com.example.tramut.userInterface.studentTheme.ReviewScreen
+import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
+import com.example.tramut.viewModel.ReviewViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.collections.map
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -146,6 +154,9 @@ enum class AppScreen {
     ForgotPassword3,
     ResetPwd,
     PwdUpdated,
+
+    UserReview,
+    ReviewSubmission,
 
     // Details under Home tab
     AnnouncementDetail,
@@ -201,6 +212,7 @@ enum class AppScreen {
 fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
+    addReview: () -> Unit,
     isStaff: Boolean = false
 ) {
     val containerColor = when {
@@ -450,7 +462,7 @@ fun TopBarScreen(
             TopAppBar(
                 navigationIcon = {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        Icons.Default.Close,
                         contentDescription = "Back",
                         tint = Color.White,
                         modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
@@ -474,7 +486,7 @@ fun TopBarScreen(
             TopAppBar(
                 navigationIcon = {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        Icons.Default.Close,
                         contentDescription = "Back",
                         tint = Color.White,
                         modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
@@ -518,6 +530,37 @@ fun TopBarScreen(
                 )
             )
         }
+        AppScreen.UserReview -> {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Review",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { addReview() } ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E2BD8)
+                )
+            )
+        }
         else -> {}
     }
 }
@@ -545,6 +588,7 @@ fun FBSApp(
     val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
+    val reviewViewModel: ReviewViewModel = viewModel()
 
     val adminsViewModel: AdminsViewModel = viewModel()
     val adminUser = adminsViewModel.adminUser.value
@@ -564,6 +608,8 @@ fun FBSApp(
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
+    val reviews by reviewViewModel.reviews.collectAsState()
+    val bookings by reviewViewModel.bookings.collectAsState()
 
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -573,13 +619,12 @@ fun FBSApp(
         AppScreen.MainSystem
     }
 
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-
     Scaffold(
         topBar = {
             TopBarScreen(
                 currentScreen = currentScreen,
-                hasPopBack = { navController.popBackStack() }
+                hasPopBack = { navController.popBackStack() },
+                addReview = { navController.navigate(AppScreen.ReviewSubmission.name) }
             )
         },
         bottomBar = {
@@ -715,7 +760,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onFeedbackClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserReview.name)
                         },
                         onSettingsClick = {
                             navController.navigate(AppScreen.UserSetting.name)
@@ -1140,36 +1185,28 @@ fun FBSApp(
                             .get()
                             .addOnSuccessListener { doc ->
                                 if (doc.exists()) {
-                                    booking = Booking(
-                                        bookingId = doc.getString("bookingId") ?: doc.id,
-                                        userId = doc.getString("userId") ?: "",
-                                        timeslotId = doc.getString("timeslotId") ?: "",
-                                        facility = doc.getString("facility") ?: "",
-                                        venue = doc.getString("venue") ?: "",
-                                        level = doc.getString("level") ?: "",
-                                        building = doc.getString("building") ?: "",
-                                        date = doc.getString("date") ?: "",
-                                        duration = doc.getString("duration") ?: "",
-                                        startTime = doc.getString("startTime") ?: "",
-                                        endTime = doc.getString("endTime") ?: "",
-                                        checkIn = doc.getString("checkIn") ?: "",
-                                        checkOut = doc.getString("checkOut") ?: "",
-                                        bookingNo = doc.getString("bookingNo") ?: doc.id,
-                                        status = doc.getString("status") ?: "Booked",
-                                        members = (doc.get("members") as? List<Map<String,String>>)?.map { it["first"]!! to it["second"]!! } ?: emptyList()
+                                    // 使用 toObject 自动转换整个对象
+                                    val b = doc.toObject(Booking::class.java)?.copy(
+                                        // 确保 bookingId 和 bookingNo 正确（如果文档 ID 就是编号）
+                                        bookingId = doc.id,
+                                        bookingNo = doc.getString("bookingNo") ?: doc.id
                                     )
+                                    booking = b
                                 }
                             }
                     }
 
-                    booking?.let { BookingInfoScreen(
-                        it,
-                        navController = navController
-                    ) }
+                    booking?.let {
+                        BookingInfoScreen(
+                            booking = it,
+                            navController = navController
+                        )
+                    }
                 }
 
                 composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
+
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
                     val date = backStackEntry.arguments?.getString("date") ?: ""
                     val facilityType = when {
@@ -1189,7 +1226,7 @@ fun FBSApp(
                                 launchSingleTop = true
                             }
                         },
-                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
+                        onSubmit = { venueType, date, startTime, endTime, pax, members, lvl, build ->
                             val bookingId = UUID.randomUUID().toString()
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
@@ -1201,9 +1238,10 @@ fun FBSApp(
                                 "endTime" to endTime,
                                 "duration" to "$startTime - $endTime",
                                 "pax" to pax,
-                                "members" to members.map { it.first to it.second },
+                                "members" to members.map { it.id to it.name },
                                 "status" to "Booked",
-                                "timestamp" to System.currentTimeMillis()
+                                "level" to lvl,
+                                "building" to build
                             )
 
                             FirebaseFirestore.getInstance()
@@ -1254,7 +1292,7 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                            navController.navigate("${AppScreen. StudentBookingSport.name}/$selectedVenue/$selectedDate")
                         }
                     )
                     // Library Booking Screen
@@ -1415,6 +1453,48 @@ fun FBSApp(
                         }
                     )
                 }
+
+                composable(route = AppScreen.UserReview.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyReviews()
+                    }
+                    ReviewScreen(
+                        reviews = reviews
+                    )
+                }
+
+                composable(route = AppScreen.ReviewSubmission.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyBookings(currentUser?.loginId)
+                    }
+                    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
+                    var selectedCategory by remember { mutableStateOf<String?>(null) }
+                    var comment by remember { mutableStateOf("") }
+
+                    ReviewSubmissionScreen(
+                        bookings = bookings,
+                        selectedBooking = selectedBooking,
+                        onBookingSelected = {
+                            selectedBooking = it
+                                            },
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = {
+                            selectedCategory = it
+                        },
+                        comment = comment,
+                        onCommentChange = {
+                            comment = it
+                        },
+                        onSubmitReviewClick = {
+                            reviewViewModel.submitReview(
+                                booking = selectedBooking!!,
+                                category = selectedCategory!!,
+                                description = comment
+                            )
+                        }
+                    )
+                }
+
             }
         }
     }
