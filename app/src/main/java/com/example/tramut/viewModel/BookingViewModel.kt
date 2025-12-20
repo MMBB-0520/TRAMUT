@@ -47,8 +47,6 @@ class MyBookingViewModel : ViewModel() {
     fun SCode(): String {
         return "S${generate9UniqueDigits()}"
     }
-
-
     fun startListening(userId: String) {
         _isLoading.value = true
 
@@ -71,8 +69,7 @@ class MyBookingViewModel : ViewModel() {
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
                         doc.toObject(Booking::class.java)?.copy(
-                            // 确保 bookingNo 有值
-                            bookingId = doc.getString("bookingId") ?: doc.id
+                            bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
                         )
                     }
                     _bookingList.value = bookings
@@ -83,13 +80,13 @@ class MyBookingViewModel : ViewModel() {
     }
 
     // 取消预订的方法
-    suspend fun cancelBooking(bookingId: String): Boolean {
+    suspend fun cancelBooking(bookingNo: String): Boolean {
         return try {
             _uiState.value = BookingUIState.Loading
 
             // 使用 bookingNo 字段查找
             val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingId", bookingId)
+                .whereEqualTo("bookingId", bookingNo)  // 改为 bookingNo
                 .limit(1)
                 .get()
                 .await()
@@ -121,12 +118,10 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
-
-
     // ViewModelScope封装的方法，方便在Compose中调用
-    fun cancelBookingWithScope(bookingId: String) {
+    fun cancelBookingWithScope(bookingNo: String) {
         viewModelScope.launch {
-            cancelBooking(bookingId)
+            cancelBooking(bookingNo)
         }
     }
 
@@ -175,7 +170,7 @@ class MyBookingViewModel : ViewModel() {
                 when {
                     venueLower.contains("library") -> "1A"
                     venueLower.contains("cyber") -> "First Floor"
-                    else -> "Ground Floor"
+                    else -> "Not specified"
                 }
             }
             else -> "Not specified"
@@ -211,7 +206,7 @@ class MyBookingViewModel : ViewModel() {
                 when {
                     venueLower.contains("library") -> "Library"
                     venueLower.contains("cyber") -> "Cyber Centre"
-                    else -> "Library"
+                    else -> "General Building"
                 }
             }
 

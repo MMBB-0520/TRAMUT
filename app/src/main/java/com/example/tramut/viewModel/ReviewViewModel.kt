@@ -18,50 +18,41 @@ class ReviewViewModel : ViewModel(){
     private val db = FirebaseFirestore.getInstance()
 
     fun submitReview(
+        userId: String?,
         booking: Booking,
         category: String,
         description: String,
-        onSuccess: () -> Unit
+        onReviewSubmitted: () -> Unit
     ) {
-
-        val user = FirebaseAuth.getInstance().currentUser ?: run {
+        if (userId.isNullOrBlank()) {
+            Log.e("Review", "User ID is null or blank")
             return
         }
         val docRef = db.collection("reviews").document() // 先生成 ID
 
         val reviewData = hashMapOf(
             "reviewId" to docRef.id,
-            "userId" to user.uid,
             "bookingId" to booking.bookingId,
-            "facility" to booking.facility,
+            "bookingDate" to booking.date,
             "venue" to booking.venue,
-            "date" to booking.date,
-            "category" to category,
-            "description" to description,
-            "status" to "Unresolved"
         )
 
         db.collection("reviews")
             .add(reviewData)
             .addOnSuccessListener {
-                Log.d("Review", "Submit success")
-                onSuccess()
+                onReviewSubmitted()
             }
-            .addOnFailureListener { e ->
-                Log.e("Review", "Submit failed: ${e.message}")
-            }
-    }
-    fun fetchMyReviews() {
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        if (currentUser == null) {
-            Log.e("Review", "用户未登录")
+            .addOnFailureListener {}
+}
+    fun fetchMyReviews(userId: String?) {
+        if (userId.isNullOrBlank()) {
             _reviews.value = emptyList()
             return
         }
 
         FirebaseFirestore.getInstance()
             .collection("reviews") // 确保这里的名字和数据库一模一样
-            .whereEqualTo("userId", currentUser.uid)
+            .whereEqualTo("loginId", userId)
             .addSnapshotListener { snapshot, error -> // 建议用监听器，实时更新
                 if (error != null) {
                     Log.e("Review", "获取失败: ${error.message}")

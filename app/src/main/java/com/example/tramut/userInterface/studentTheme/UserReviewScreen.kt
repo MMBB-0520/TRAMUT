@@ -1,6 +1,9 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.R.attr.text
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,30 +18,41 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Review
-
+import com.example.tramut.ui.theme.StaffRed
+import com.example.tramut.ui.theme.StudentBlue
 
 @Composable
 fun ReviewScreen(
-    reviews: List<Review>
+    filteredReviews: List<Review>,
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    containColor: Color
 ) {
+
     Column(
         modifier = Modifier
             .padding(16.dp)
     ) {
 
-        // Tabs
-        ReviewTabs()
+        ReviewTabs(
+            selectedTab = selectedTab,
+            onTabSelected = onTabSelected,
+            containColor = containColor
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "All",
+            text = selectedTab,
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp
         )
@@ -46,35 +60,51 @@ fun ReviewScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn {
-            items(reviews) { item ->
-                ReviewCard(item)
+            items(filteredReviews) { item ->
+                ReviewCard(item,containColor)
             }
         }
     }
 }
 @Composable
-fun ReviewTabs() {
+fun ReviewTabs(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    containColor: Color
+) {
+    val tabs = listOf("All", "Unresolved", "Pending", "Resolved")
+
     Row(
         modifier = Modifier
             .background(Color(0xFFEDEDED), RoundedCornerShape(20.dp))
             .padding(4.dp)
     ) {
-        TabItem("All", true)
-        TabItem("Unresolved", false)
-        TabItem("Pending", false)
-        TabItem("Resolved", false)
+        tabs.forEach { tab ->
+            TabItem(
+                text = tab,
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
+                containColor = containColor
+            )
+        }
     }
 }
 
 @Composable
-fun TabItem(text: String, selected: Boolean) {
+fun TabItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    containColor: Color
+) {
     Box(
         modifier = Modifier
             .padding(horizontal = 4.dp)
             .background(
-                if (selected) Color(0xFF1E2BD8) else Color.Transparent,
+                if (selected) containColor else Color.Transparent,
                 RoundedCornerShape(20.dp)
             )
+            .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Text(
@@ -85,7 +115,10 @@ fun TabItem(text: String, selected: Boolean) {
     }
 }
 @Composable
-fun ReviewCard(item: Review) {
+fun ReviewCard(
+    item: Review,
+    containColor: Color
+) {
 
     val statusColor = when (item.status) {
         "Unresolved" -> Color.Red
@@ -102,32 +135,117 @@ fun ReviewCard(item: Review) {
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF2F2F2)
         ),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(5.dp)
     ) {
+
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.department,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = containColor
+                )
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = statusColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = item.status,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            /* ---------- Venue + Type + Date ---------- */
             Text(
                 text = item.venue,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = Color(0xFF1E2BD8)
+                fontSize = 13.sp,
+                color = Color.DarkGray
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Booking Date: ${item.bookingDate}",
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
 
+            Spacer(modifier = Modifier.height(6.dp))
+
+            /* ---------- Issue Category（标签） ---------- */
+            Box(
+                modifier = Modifier
+                    .background(
+                        Color.White,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = item.issueCategory,
+                    fontSize = 11.sp,
+                    color = containColor
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            /* ---------- Comment ---------- */
             Text(
                 text = item.comment,
-                fontSize = 13.sp
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = item.status,
-                fontSize = 12.sp,
-                color = statusColor
+                fontSize = 13.sp,
+                color = Color.Black
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ReviewCardPreview(){
+    ReviewScreen(
+        containColor = Color(0xFF1E2BD8),
+        filteredReviews = listOf(
+            Review(
+                id = "Z47777",
+                department = "CITC",
+                venueType = "CITC",
+                venue = "CITC",
+                bookingDate = "121212",
+                issueCategory = "Equipment",
+                comment = "This is a sample review.",
+                status = "Unresolved"
+            )),
+        selectedTab = "All",
+        onTabSelected = {}
+    )
+}
+@Composable
+fun getContainerColor(
+    currentScreen: AppScreen,
+    isStaff: Boolean
+): Color {
+    return when {
+        currentScreen == AppScreen.AdminLoginScreen -> Color.Black
+        isStaff -> StaffRed
+        else -> StudentBlue
     }
 }

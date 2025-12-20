@@ -57,6 +57,7 @@ fun BookingInfoScreen(
             }
             else -> {}
         }
+        // IMPORTANT: Reset UI state after handling success/error to prevent re-triggering
         if (uiState is MyBookingViewModel.BookingUIState.Success || uiState is MyBookingViewModel.BookingUIState.Error) {
             viewModel.resetUIState()
         }
@@ -159,7 +160,11 @@ fun BookingInfoScreen(
             title = { Text("Cancel Booking") },
             text = { Text("Are you sure you want to cancel this booking?") },
             confirmButton = {
-                TextButton(onClick = { viewModel.cancelBookingWithScope(booking.bookingId) }) {
+                TextButton(
+                    onClick = {
+                        viewModel.cancelBookingWithScope(booking.bookingId)
+                    }
+                ) {
                     Text("Yes", color = Color.Red)
                 }
             },

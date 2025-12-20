@@ -1,7 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
 import android.R.attr.contentDescription
-import android.R.attr.navigationIcon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -19,7 +17,6 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,12 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,10 +48,7 @@ import androidx.room.PrimaryKey
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.ui.theme.Background
 import com.google.firebase.firestore.DocumentId
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.String
-import com.example.tramut.R
 
 @Preview(showBackground = true)
 @Composable
@@ -69,23 +61,9 @@ fun ReviewSubmission_Preview() {
         onCommentChange = {},
         selectedCategory = null,
         onCategorySelected = {},
-        onSubmitReviewClick = {},
-        showSuccessDialog = false,
-        onDialogDismiss = {},
-        onBackReviewPage = {}
+        onSubmitReviewClick = {}
     )
 }
-
-data class Review(
-    @DocumentId
-    val id: String = "",
-    val bookingId: String = "", //（fac-type，bok-date，venue，venuetype）
-    val loginId: String = "",
-    val issueCategory: String = "",
-    val comment: String = "",
-    val status: String = "Unsolved",
-    val department: String = ""
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,60 +75,15 @@ fun ReviewSubmissionScreen(
     onCategorySelected: (String) -> Unit,
     comment: String,
     onCommentChange : (String) -> Unit,
-    onSubmitReviewClick: () -> Unit,
-    showSuccessDialog: Boolean,
-    onDialogDismiss: () -> Unit,
-    onBackReviewPage: () -> Unit
+    onSubmitReviewClick: () -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val canSubmit = selectedBooking != null &&
             !selectedCategory.isNullOrEmpty()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Review",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1427C9)
-                )
-            )
-        },
-        containerColor = Color(0xFFF4F4F4)
-    ) { padding ->
 
         Column(
             modifier = Modifier
                 .background(Background)
-                .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
 
@@ -242,20 +175,6 @@ fun ReviewSubmissionScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
-        if (showSuccessDialog) {
-            SuccessDialog(
-                title = "Review Submitted!",
-                onOk = {
-                    onDialogDismiss()
-                    coroutineScope.launch {
-                        delay(500)
-                        onBackReviewPage()
-                    }
-                },
-                onDismiss = { onDialogDismiss() }
-            )
-        }
     }
 }
 @Composable
@@ -432,60 +351,4 @@ fun IssueCategoryDropdown(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SuccessDialog(
-    title: String = "Success!",
-    onOk: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(
-                onClick = onOk,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                shape = RoundedCornerShape(2.dp)
-            ) {
-                Text("OK", color = Color.White, fontSize = 24.sp)
-            }
-        },
-        text = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .background(Color(0xFF4CAF50), shape = RoundedCornerShape(50)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.correct),
-                        contentDescription = "SuccessAddReview",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(50.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Review Submitted",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(300.dp))
-            }
-        },
-        modifier = Modifier.background(Color.White, shape = RoundedCornerShape(8.dp))
-    )
 }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -93,12 +94,12 @@ import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
+import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
 import com.example.tramut.viewModel.ReviewViewModel
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -211,7 +212,6 @@ enum class AppScreen {
 fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
-    addReview: () -> Unit,
     isStaff: Boolean = false
 ) {
     val containerColor = when {
@@ -532,6 +532,177 @@ fun TopBarScreen(
         AppScreen.UserReview -> {
             TopAppBar(
                 title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { addReview() } ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.ReviewSubmission -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                ),
+                actions = {
+                    IconButton(onClick = { }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+        }
+        AppScreen.UserSetting -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Settings",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.ChangePwd -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Change Password",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.AboutApp -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    App Info",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.Privacy -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Privacy Policy",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.UserReview -> {
+            TopAppBar(
+                title = {
                     Text(
                         text = "Review",
                         color = Color.White,
@@ -587,7 +758,6 @@ fun FBSApp(
     val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
-    val reviewViewModel: ReviewViewModel = viewModel()
 
     val adminsViewModel: AdminsViewModel = viewModel()
     val adminUser = adminsViewModel.adminUser.value
@@ -1207,13 +1377,7 @@ fun FBSApp(
                     }
                 }
 
-                composable(
-                    route = "${AppScreen.StudentBookingSport.name}/{facilityType}/{venue}/{date}",
-                    arguments = listOf(
-                        navArgument("facilityType") { type = NavType.StringType },
-                        navArgument("venue") { type = NavType.StringType },
-                        navArgument("date") { type = NavType.StringType }
-                    )
+                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
 
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
@@ -1314,19 +1478,17 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.CITCTimetable.name) {
-                    val facilityType = "Cyber Centre"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityType/$encodedVenue/$encodedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
                 }
 
                 composable(route = AppScreen.LibraryTimetable.name) {
-                    val facilityType = "Library"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
@@ -1462,59 +1624,7 @@ fun FBSApp(
                         }
                     )
                 }
-
-                composable(route = AppScreen.UserReview.name) {
-                    LaunchedEffect(Unit) {
-                        reviewViewModel.fetchMyReviews()
-                    }
-                    ReviewScreen(
-                        reviews = reviews
-                    )
-                }
-
-                composable(route = AppScreen.ReviewSubmission.name) {
-                    LaunchedEffect(Unit) {
-                        reviewViewModel.fetchMyBookings(currentUser?.loginId)
-                    }
-
-                    var showSuccessDialog by remember { mutableStateOf(false) }
-                    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
-                    var selectedCategory by remember { mutableStateOf<String?>(null) }
-                    var comment by remember { mutableStateOf("") }
-                    val bookings by reviewViewModel.bookings.collectAsState()
-
-                    ReviewSubmissionScreen(
-                        bookings = bookings,
-                        selectedBooking = selectedBooking,
-                        onBookingSelected = { selectedBooking = it },
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { selectedCategory = it },
-                        comment = comment,
-                        onCommentChange = { comment = it },
-                        onSubmitReviewClick = {
-                            if (selectedBooking != null && selectedCategory != null) {
-                                reviewViewModel.submitReview(
-                                    booking = selectedBooking!!,
-                                    category = selectedCategory!!,
-                                    description = comment,
-                                    onSuccess = {
-                                        showSuccessDialog = true
-                                    }
-                                )
-                            }
-                        },
-
-                        showSuccessDialog = showSuccessDialog,
-                        onDialogDismiss = { showSuccessDialog = false },
-                        onBackReviewPage = {
-                            navController.navigate(AppScreen.UserReview.name) {
-                                popUpTo(AppScreen.ReviewSubmission.name) { inclusive = true }
-                            }
-                        }
-                    )
-                }
             }
         }
     }
 }
-
