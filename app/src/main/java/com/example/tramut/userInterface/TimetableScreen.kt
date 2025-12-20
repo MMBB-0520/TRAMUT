@@ -1,6 +1,5 @@
 package com.example.tramut.userInterface
 
-import android.R.attr.rowHeight
 import android.app.DatePickerDialog
 import android.os.Build
 import android.util.Log
@@ -32,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
-import com.example.myfacilitybookingsystem.viewModel.TimetableViewModel
+import com.example.tramut.viewModel.TimetableViewModel
 import java.util.Calendar
 
 @RequiresApi(Build.VERSION_CODES.O)

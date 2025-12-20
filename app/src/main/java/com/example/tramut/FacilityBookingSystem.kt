@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,7 +57,6 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.EditAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement.PostAnnouncementScreen
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
-import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.repo.UsersRepo
@@ -64,12 +64,13 @@ import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
-import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
+import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutManualEntryScreen
 import com.example.tramut.userInterface.check.ManualEntryScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
@@ -77,6 +78,10 @@ import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPassword
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen3
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdatedScreen
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
+import com.example.tramut.userInterface.settings.AboutAppScreen
+import com.example.tramut.userInterface.settings.ChangePasswordScreen
+import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
+import com.example.tramut.userInterface.settings.SettingsScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
@@ -129,6 +134,12 @@ enum class AppScreen {
     StudentScreen,
     StaffScreen,
     AdminScreen,
+
+    UserSetting,
+    AboutApp,
+    ChangePwd,
+    Theme,
+    Privacy,
 
     // Forgot Password Screens
     ForgotPassword1,
@@ -411,6 +422,103 @@ fun TopBarScreen(
                 )
             )
         }
+        AppScreen.UserSetting -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Settings",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.ChangePwd -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Change Password",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.AboutApp -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    App Info",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.Privacy -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Privacy Policy",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
         else -> {}
     }
 }
@@ -456,6 +564,8 @@ fun FBSApp(
     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
+    val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
+
 
     //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -612,10 +722,74 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onSettingsClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserSetting.name)
                         }
                     )
                 }
+                composable(route = AppScreen.UserSetting.name) {
+                    SettingsScreen(
+                        onChangePasswordClick = {
+                            navController.navigate(AppScreen.ChangePwd.name)
+                        },
+                        onThemeClick = {
+                        },
+                        onPrivacyClick = {
+                            navController.navigate(AppScreen.Privacy.name)
+                        },
+                        onAboutClick = {
+                            navController.navigate(AppScreen.AboutApp.name)
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.AboutApp.name) {
+                    AboutAppScreen()
+                }
+                composable(route = AppScreen.Privacy.name) {
+                    PrivacyPolicyScreen()
+                }
+                composable(route = AppScreen.ChangePwd.name) {
+                    var newPassword by rememberSaveable { mutableStateOf("") }
+                    var confirmPassword by rememberSaveable { mutableStateOf("") }
+                    var oldPassword by rememberSaveable { mutableStateOf("") }
+                    val ruleMinLength = forgotPwdViewModel.hasMinLength(newPassword)
+                    val ruleLower = forgotPwdViewModel.hasLowerCase(newPassword)
+                    val ruleUpper = forgotPwdViewModel.hasUpperCase(newPassword)
+                    val ruleNumberSpecial = forgotPwdViewModel.hasNumberOrSpecial(newPassword)
+
+
+                    ChangePasswordScreen(
+                        errorMsg = errorMessage,
+                        oldPassword = oldPassword,
+                        onOldPasswordChange = {
+                            oldPassword = it
+                        },
+                        newPassword = newPassword,
+                        onNewPasswordChange = {
+                            newPassword = it
+                        },
+                        ruleMinLength = ruleMinLength,
+                        ruleLower = ruleLower,
+                        ruleUpper = ruleUpper,
+                        ruleNumberSpecial = ruleNumberSpecial,
+                        confirmPassword = confirmPassword,
+                        onConfirmPasswordChange = {
+                            confirmPassword = it
+                        },
+                        onChangePasswordClick = {
+                            forgotPwdViewModel.changePassword(oldPassword, newPassword) {
+                                navController.navigate(AppScreen.PwdUpdated.name){
+                                    popUpTo(AppScreen.ChangePwd.name)
+                                    { inclusive = true }
+                                }
+                            }
+                        },
+                        onCancelClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
                 // Staff Login Screen
                 composable(route = AppScreen.StaffLoginScreen.name) {
                     var staffId by rememberSaveable { mutableStateOf("") }
@@ -686,7 +860,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onSettingsClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserSetting.name)
                         }
                     )
 
