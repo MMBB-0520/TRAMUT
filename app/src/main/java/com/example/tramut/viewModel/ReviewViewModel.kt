@@ -42,7 +42,7 @@ class ReviewViewModel : ViewModel(){
 
         db.collection("reviews")
             .add(reviewData)
-    }
+}
     fun fetchMyReviews() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {

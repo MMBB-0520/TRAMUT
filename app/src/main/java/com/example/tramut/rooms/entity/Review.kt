@@ -5,7 +5,7 @@ import com.google.firebase.firestore.DocumentId
 data class Review(
     @DocumentId
     val id: String = "",
-    val bookingId: String = "",
+    val bookingId: String = "", //（bok-date，venue，venuetype）
     val bookingDate: String = "",
     val venue: String = "",
     val venueType: String = "",
@@ -13,7 +13,5 @@ data class Review(
     val issueCategory: String = "",
     val comment: String = "",
     val status: String = "Unsolved",
-    val department: String = "",
-    val userId: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val department: String = "" //facilityType
 )

@@ -3,15 +3,12 @@ package com.example.tramut.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tramut.rooms.entity.Booking
-import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 class MyBookingViewModel : ViewModel() {
 
@@ -30,66 +27,24 @@ class MyBookingViewModel : ViewModel() {
 
     private var listenerRegistration: ListenerRegistration? = null
 
-    fun performSystemAssignment(
-        department: String,
-        venueCategory: String,
-        date: String,
-        hour: Int,
-        pax: Long,
-        userId: String,
-        onComplete: (Boolean, String) -> Unit
-    ) {
-        val db = Firebase.firestore
 
-        db.collection("facilities")
-            .whereEqualTo("department", department)
-            .whereEqualTo("category", venueCategory)
-            .whereArrayContains("capacity", pax) // This matches the [4, 5, 6] list
-            .get()
-            .addOnSuccessListener { facilityDocs ->
-                if (facilityDocs.isEmpty) {
-                    onComplete(false, "No room in $venueCategory fits $pax pax.")
-                    return@addOnSuccessListener
-                }
-
-                val matchingIds = facilityDocs.map { it.id }
-
-                db.collection("bookings")
-                    .whereEqualTo("date", date)
-                    .whereEqualTo("hour", hour)
-                    .whereIn("facilityId", matchingIds)
-                    .get()
-                    .addOnSuccessListener { bookingDocs ->
-                        val takenRoomIds = bookingDocs.mapNotNull { it.getString("facilityId") }
-
-                        // 3. Find the first available room ID
-                        val finalVenueId = matchingIds.firstOrNull { it !in takenRoomIds }
-
-                        if (finalVenueId != null) {
-                            saveBooking(finalVenueId, date, hour, userId, onComplete)
-                        } else {
-                            onComplete(false, "All $venueCategory rooms for $pax pax are fully booked.")
-                        }
-                    }
-            }
-            .addOnFailureListener { e ->
-                onComplete(false, "Error: ${e.message}")
-            }
+    fun generate9UniqueDigits(): String {
+        return (0..9)
+            .map { (0..9).random() }
+            .take(9)
+            .joinToString("")
+    }
+    fun LCode(): String {
+        return "L${generate9UniqueDigits()}"
     }
 
-    private fun saveBooking(facilityId: String, date: String, hour: Int, userId: String, onComplete: (Boolean, String) -> Unit) {
-        val bookingData = hashMapOf(
-            "facilityId" to facilityId,
-            "date" to date,
-            "hour" to hour,
-            "userId" to userId,
-            "status" to "Confirmed"
-        )
-        Firebase.firestore.collection("bookings").add(bookingData)
-            .addOnSuccessListener { onComplete(true, "Success") }
-            .addOnFailureListener { onComplete(false, "Failed to save booking") }
+    fun CCode(): String {
+        return "C${generate9UniqueDigits()}"
     }
 
+    fun SCode(): String {
+        return "S${generate9UniqueDigits()}"
+    }
     fun startListening(userId: String) {
         _isLoading.value = true
 
@@ -112,7 +67,6 @@ class MyBookingViewModel : ViewModel() {
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
                         doc.toObject(Booking::class.java)?.copy(
-                            // 确保 bookingNo 有值
                             bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
                         )
                     }
@@ -124,13 +78,13 @@ class MyBookingViewModel : ViewModel() {
     }
 
     // 取消预订的方法
-    suspend fun cancelBooking(bookingId: String): Boolean {
+    suspend fun cancelBooking(bookingNo: String): Boolean {
         return try {
             _uiState.value = BookingUIState.Loading
 
             // 使用 bookingNo 字段查找
             val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingNo", bookingId)  // 改为 bookingNo
+                .whereEqualTo("bookingId", bookingNo)  // 改为 bookingNo
                 .limit(1)
                 .get()
                 .await()
@@ -141,7 +95,7 @@ class MyBookingViewModel : ViewModel() {
 
                 // 更新状态为"cancelled"
                 val updates = hashMapOf<String, Any>(
-                    "status" to "cancelled",
+                    "status" to "Cancelled",
                     // 可选：添加取消时间
                     "cancelledAt" to System.currentTimeMillis()
                 )
@@ -162,12 +116,10 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
-
-
     // ViewModelScope封装的方法，方便在Compose中调用
-    fun cancelBookingWithScope(bookingId: String) {
+    fun cancelBookingWithScope(bookingNo: String) {
         viewModelScope.launch {
-            cancelBooking(bookingId)
+            cancelBooking(bookingNo)
         }
     }
 
@@ -179,7 +131,6 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration?.remove()
         listenerRegistration = null
     }
-
 
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()

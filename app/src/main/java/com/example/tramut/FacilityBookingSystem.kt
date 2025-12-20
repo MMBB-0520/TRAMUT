@@ -1,5 +1,6 @@
 package com.example.tramut
 
+import android.R.attr.description
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -12,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,11 +63,13 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.Adm
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.EditFacilityScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
@@ -72,6 +77,7 @@ import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutManualEntryScreen
 import com.example.tramut.userInterface.check.ManualEntryScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.loginTheme.StaffLoginScreen
 import com.example.tramut.userInterface.loginTheme.StudentLoginScreen
 import com.example.tramut.userInterface.loginTheme.bottomChooseBar
@@ -79,21 +85,30 @@ import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPassword
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ForgetPasswordScreen3
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.PasswordUpdatedScreen
 import com.example.tramut.userInterface.loginTheme.forgotPwdTheme.ResetPasswordScreen
+import com.example.tramut.userInterface.settings.AboutAppScreen
+import com.example.tramut.userInterface.settings.ChangePasswordScreen
+import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
+import com.example.tramut.userInterface.settings.SettingsScreen
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
+import com.example.tramut.userInterface.studentTheme.ReviewScreen
+import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
 import com.example.tramut.viewModel.ReviewViewModel
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.collections.map
+
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import kotlin.collections.map
@@ -134,6 +149,12 @@ enum class AppScreen {
     StudentScreen,
     StaffScreen,
     AdminScreen,
+
+    UserSetting,
+    AboutApp,
+    ChangePwd,
+    Theme,
+    Privacy,
 
     // Forgot Password Screens
     ForgotPassword1,
@@ -199,6 +220,7 @@ enum class AppScreen {
 fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
+    addReview: () -> Unit,
     isStaff: Boolean = false
 ) {
     val containerColor = when {
@@ -419,6 +441,134 @@ fun TopBarScreen(
                 )
             )
         }
+        AppScreen.UserSetting -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Settings",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.ChangePwd -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Change Password",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.AboutApp -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    App Info",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.Privacy -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Privacy Policy",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.UserReview -> {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Review",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { addReview() } ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E2BD8)
+                )
+            )
+        }
         else -> {}
     }
 }
@@ -446,7 +596,6 @@ fun FBSApp(
     val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
-
     val reviewViewModel: ReviewViewModel = viewModel()
 
     val adminsViewModel: AdminsViewModel = viewModel()
@@ -468,23 +617,24 @@ fun FBSApp(
     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
+    val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
+    val reviews by reviewViewModel.reviews.collectAsState()
+    val bookings by reviewViewModel.bookings.collectAsState()
+
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
-        val route = backStackEntry?.destination?.route
-        val baseRoute = route?.substringBefore("/")?.substringBefore("?") ?: ""
-        AppScreen.valueOf(baseRoute)
+        AppScreen.valueOf(backStackEntry?.destination?.route ?: "")
     } catch (e: Exception) {
         AppScreen.MainSystem
     }
-
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
             TopBarScreen(
                 currentScreen = currentScreen,
-                hasPopBack = { navController.popBackStack() }
+                hasPopBack = { navController.popBackStack() },
+                addReview = { navController.navigate(AppScreen.ReviewSubmission.name) }
             )
         },
         bottomBar = {
@@ -620,13 +770,77 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onFeedbackClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserReview.name)
                         },
                         onSettingsClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserSetting.name)
                         }
                     )
                 }
+                composable(route = AppScreen.UserSetting.name) {
+                    SettingsScreen(
+                        onChangePasswordClick = {
+                            navController.navigate(AppScreen.ChangePwd.name)
+                        },
+                        onThemeClick = {
+                        },
+                        onPrivacyClick = {
+                            navController.navigate(AppScreen.Privacy.name)
+                        },
+                        onAboutClick = {
+                            navController.navigate(AppScreen.AboutApp.name)
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.AboutApp.name) {
+                    AboutAppScreen()
+                }
+                composable(route = AppScreen.Privacy.name) {
+                    PrivacyPolicyScreen()
+                }
+                composable(route = AppScreen.ChangePwd.name) {
+                    var newPassword by rememberSaveable { mutableStateOf("") }
+                    var confirmPassword by rememberSaveable { mutableStateOf("") }
+                    var oldPassword by rememberSaveable { mutableStateOf("") }
+                    val ruleMinLength = forgotPwdViewModel.hasMinLength(newPassword)
+                    val ruleLower = forgotPwdViewModel.hasLowerCase(newPassword)
+                    val ruleUpper = forgotPwdViewModel.hasUpperCase(newPassword)
+                    val ruleNumberSpecial = forgotPwdViewModel.hasNumberOrSpecial(newPassword)
+
+
+                    ChangePasswordScreen(
+                        errorMsg = errorMessage,
+                        oldPassword = oldPassword,
+                        onOldPasswordChange = {
+                            oldPassword = it
+                        },
+                        newPassword = newPassword,
+                        onNewPasswordChange = {
+                            newPassword = it
+                        },
+                        ruleMinLength = ruleMinLength,
+                        ruleLower = ruleLower,
+                        ruleUpper = ruleUpper,
+                        ruleNumberSpecial = ruleNumberSpecial,
+                        confirmPassword = confirmPassword,
+                        onConfirmPasswordChange = {
+                            confirmPassword = it
+                        },
+                        onChangePasswordClick = {
+                            forgotPwdViewModel.changePassword(oldPassword, newPassword) {
+                                navController.navigate(AppScreen.PwdUpdated.name){
+                                    popUpTo(AppScreen.ChangePwd.name)
+                                    { inclusive = true }
+                                }
+                            }
+                        },
+                        onCancelClick = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+
                 // Staff Login Screen
                 composable(route = AppScreen.StaffLoginScreen.name) {
                     var staffId by rememberSaveable { mutableStateOf("") }
@@ -697,7 +911,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onSettingsClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserSetting.name)
                         }
                     )
 
@@ -800,6 +1014,7 @@ fun FBSApp(
                 ) { backStackEntry ->
                     val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport Facilities"
 
+                    // Pass to 'initialDepartment'
                     TimetableScreen(
                         initialDepartment = departmentName,
                         onNavigateBack = { navController.popBackStack() },
@@ -1105,7 +1320,7 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                            navController.navigate("${AppScreen. StudentBookingSport.name}/$selectedVenue/$selectedDate")
                         }
                     )
                     // Library Booking Screen
@@ -1177,7 +1392,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckInManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "_empty_", we pass an empty string to the screen
+                    // If the ID is "empty", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
@@ -1233,7 +1448,7 @@ fun FBSApp(
                 composable(
                     route = "${AppScreen.CheckOutManual.name}/{bookingId}"
                 ) { backStackEntry ->
-                    // If the ID is "_empty_", we pass an empty string to the screen
+                    // If the ID is "empty", we pass an empty string to the screen
                     val arg = backStackEntry.arguments?.getString("bookingId") ?: ""
                     val bookingId = if (arg == "empty") "" else arg
 
@@ -1261,6 +1476,7 @@ fun FBSApp(
                             }
                         },
                         onBackClicked = {
+                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
                             navController.navigate(AppScreen.AdminMenuScreen.name)
                         }
                     )
@@ -1288,7 +1504,7 @@ fun FBSApp(
                         selectedBooking = selectedBooking,
                         onBookingSelected = {
                             selectedBooking = it
-                        },
+                                            },
                         selectedCategory = selectedCategory,
                         onCategorySelected = {
                             selectedCategory = it
@@ -1306,6 +1522,7 @@ fun FBSApp(
                         }
                     )
                 }
+
             }
         }
     }

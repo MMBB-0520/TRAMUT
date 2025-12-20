@@ -1,4 +1,4 @@
-package com.example.myfacilitybookingsystem.viewModel
+package com.example.tramut.viewModel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
