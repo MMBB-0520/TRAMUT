@@ -86,19 +86,17 @@ import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
 import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
-import com.example.tramut.userInterface.userTheme.UserAddReviewScreen
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
 import com.example.tramut.viewModel.MyBookingViewModel
+import com.example.tramut.viewModel.ReviewViewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
+import com.example.tramut.userInterface.studentTheme.ReviewScreen
+import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
+import kotlin.collections.map
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -144,6 +142,9 @@ enum class AppScreen {
     ResetPwd,
     PwdUpdated,
 
+    UserReview,
+    ReviewSubmission,
+
     // Details under Home tab
     AnnouncementDetail,
 
@@ -181,8 +182,6 @@ enum class AppScreen {
     StudentBookingFacility,
     StudentBookingSport,
     StudentAvailabilityChart,
-    MyBookings,
-    UserReview,
 
     CheckInSuccess,
     CheckOutSuccess,
@@ -448,6 +447,8 @@ fun FBSApp(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
 
+    val reviewViewModel: ReviewViewModel = viewModel()
+
     val adminsViewModel: AdminsViewModel = viewModel()
     val adminUser = adminsViewModel.adminUser.value
     val currentAdminDept = adminUser?.department ?: "General"
@@ -468,7 +469,6 @@ fun FBSApp(
     val emailError by forgotPwdViewModel.emailError.collectAsState()
     val lastRequestedEmail by forgotPwdViewModel.lastRequestedEmail.collectAsState()
 
-    //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
         val route = backStackEntry?.destination?.route
@@ -998,36 +998,28 @@ fun FBSApp(
                             .get()
                             .addOnSuccessListener { doc ->
                                 if (doc.exists()) {
-                                    booking = Booking(
-                                        bookingId = doc.getString("bookingId") ?: doc.id,
-                                        userId = doc.getString("userId") ?: "",
-                                        timeslotId = doc.getString("timeslotId") ?: "",
-                                        facility = doc.getString("facility") ?: "",
-                                        venue = doc.getString("venue") ?: "",
-                                        level = doc.getString("level") ?: "",
-                                        building = doc.getString("building") ?: "",
-                                        date = doc.getString("date") ?: "",
-                                        duration = doc.getString("duration") ?: "",
-                                        startTime = doc.getString("startTime") ?: "",
-                                        endTime = doc.getString("endTime") ?: "",
-                                        checkIn = doc.getString("checkIn") ?: "",
-                                        checkOut = doc.getString("checkOut") ?: "",
-                                        bookingNo = doc.getString("bookingNo") ?: doc.id,
-                                        status = doc.getString("status") ?: "Booked",
-                                        members = (doc.get("members") as? List<Map<String,String>>)?.map { it["first"]!! to it["second"]!! } ?: emptyList()
+                                    // 使用 toObject 自动转换整个对象
+                                    val b = doc.toObject(Booking::class.java)?.copy(
+                                        // 确保 bookingId 和 bookingNo 正确（如果文档 ID 就是编号）
+                                        bookingId = doc.id,
+                                        bookingNo = doc.getString("bookingNo") ?: doc.id
                                     )
+                                    booking = b
                                 }
                             }
                     }
 
-                    booking?.let { BookingInfoScreen(
-                        it,
-                        navController = navController
-                    ) }
+                    booking?.let {
+                        BookingInfoScreen(
+                            booking = it,
+                            navController = navController
+                        )
+                    }
                 }
 
                 composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
+
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
                     val date = backStackEntry.arguments?.getString("date") ?: ""
                     val facilityType = when {
@@ -1036,10 +1028,7 @@ fun FBSApp(
                         else -> "Sports"
                     }
 
-
-
                     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
-
 
                     BookSportScreen(
                         facilityType = facilityType,
@@ -1050,7 +1039,7 @@ fun FBSApp(
                                 launchSingleTop = true
                             }
                         },
-                        onSubmit = { venueType, date, startTime, endTime, pax, members ->
+                        onSubmit = { venueType, date, startTime, endTime, pax, members, lvl, build ->
                             val bookingId = UUID.randomUUID().toString()
                             val bookingData = hashMapOf(
                                 "bookingId" to bookingId,
@@ -1062,9 +1051,10 @@ fun FBSApp(
                                 "endTime" to endTime,
                                 "duration" to "$startTime - $endTime",
                                 "pax" to pax,
-                                "members" to members.map { it.first to it.second },
+                                "members" to members.map { it.id to it.name },
                                 "status" to "Booked",
-                                "timestamp" to System.currentTimeMillis()
+                                "level" to lvl,
+                                "building" to build
                             )
 
                             FirebaseFirestore.getInstance()
@@ -1073,6 +1063,7 @@ fun FBSApp(
                                 .set(bookingData)
                                 .addOnSuccessListener {
                                     navController.navigate(AppScreen.StudentBooking.name) {
+                                        // Clear the back stack so user can't go back to booking form
                                         popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
                                         launchSingleTop = true
                                     }
@@ -1081,43 +1072,10 @@ fun FBSApp(
                                     Log.e("Firebase", "Failed to save booking", it)
                                 }
                         },
-
                         isStaff = isStaffLoggedIn,
-                        userRepository = usersRepo,
-                        MyBookingViewModel = viewModel(),
-                        userId = currentUser?.loginId ?: ""
+                        userRepository = usersRepo
                     )
                 }
-
-                composable(route = "${AppScreen.UserReview.name}/{bookingId}",
-                    arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val bookingId = backStackEntry.arguments?.getString("bookingId")
-
-                    if (bookingId != null) {
-                        UserAddReviewScreen(bookingId = bookingId, onNavigateBack = { navController.popBackStack() })
-                    } else {
-                        LaunchedEffect(Unit) { navController.popBackStack() }
-                    }
-                }
-
-            composable(route = AppScreen.MyBookings.name) {
-                val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-                val userId = auth.currentUser?.uid
-
-                if (userId != null) {
-                    MyBookingScreen(
-                        navController = navController,
-                        userId = userId
-                    )
-                } else {
-                    LaunchedEffect(Unit) {
-                        navController.navigate(AppScreen.StudentLoginScreen.name) {
-                            popUpTo(AppScreen.MyBookings.name) { inclusive = true }
-                        }
-                    }
-                }
-            }
 
                 composable(
                     route = "${AppScreen.StudentMyBooking.name}/{userId}",
@@ -1303,8 +1261,48 @@ fun FBSApp(
                             }
                         },
                         onBackClicked = {
-                            // Optional: Define where the back arrow goes (or hide it in the screen logic)
                             navController.navigate(AppScreen.AdminMenuScreen.name)
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.UserReview.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyReviews()
+                    }
+                    ReviewScreen(
+                        reviews = reviews
+                    )
+                }
+
+                composable(route = AppScreen.ReviewSubmission.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyBookings(currentUser?.loginId)
+                    }
+                    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
+                    var selectedCategory by remember { mutableStateOf<String?>(null) }
+                    var comment by remember { mutableStateOf("") }
+
+                    ReviewSubmissionScreen(
+                        bookings = bookings,
+                        selectedBooking = selectedBooking,
+                        onBookingSelected = {
+                            selectedBooking = it
+                        },
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = {
+                            selectedCategory = it
+                        },
+                        comment = comment,
+                        onCommentChange = {
+                            comment = it
+                        },
+                        onSubmitReviewClick = {
+                            reviewViewModel.submitReview(
+                                booking = selectedBooking!!,
+                                category = selectedCategory!!,
+                                description = comment
+                            )
                         }
                     )
                 }

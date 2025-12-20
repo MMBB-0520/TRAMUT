@@ -62,6 +62,7 @@ class MyBookingViewModel : ViewModel() {
                     .addOnSuccessListener { bookingDocs ->
                         val takenRoomIds = bookingDocs.mapNotNull { it.getString("facilityId") }
 
+                        // 3. Find the first available room ID
                         val finalVenueId = matchingIds.firstOrNull { it !in takenRoomIds }
 
                         if (finalVenueId != null) {

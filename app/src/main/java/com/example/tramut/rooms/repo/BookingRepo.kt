@@ -2,12 +2,40 @@ package com.example.tramut.rooms.repo
 
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 
 class BookingRepo {
 
     val db = FirebaseFirestore.getInstance()
+
+    private fun saveNewBooking(
+        facilityId: String,
+        venueName: String,
+        date: String,
+        startTime: String,
+        endTime: String,
+        hoursList: List<Int>,
+        userId: String,
+        onComplete: (Boolean, String) -> Unit
+    ) {
+        val bookingData = hashMapOf(
+            "facilityId" to facilityId,
+            "venueName" to venueName,
+            "date" to date,
+            "startTime" to startTime,
+            "endTime" to endTime,
+            "hoursList" to hoursList,
+            "userId" to userId,
+            "status" to "Confirmed",
+            "bookingStatus" to "Confirmed"
+        )
+
+        Firebase.firestore.collection("bookings").add(bookingData)
+            .addOnSuccessListener { onComplete(true, "Successfully assigned to $venueName") }
+    }
 
     suspend fun getFacilitiesByCategory(category: String): List<Facility> {
         return try {

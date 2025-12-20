@@ -96,7 +96,7 @@ class EntryViewModel : ViewModel() {
 
                 // Check if the ID exists inside the members list (assuming List<Pair<String, String>> or similar)
                 // Adjust ".first" depending on your Member data class structure
-                val isMember = booking.members.any { it.first == userId }
+                val isMember = booking.members.any { it.studentId == userId }
 
                 val isParticipant = isOwner || isMember
 
@@ -220,7 +220,7 @@ class EntryViewModel : ViewModel() {
     // Helper: Check if User is Booker or Member
     private fun isAuthorized(booking: Booking, id: String): Boolean {
         // Matches Booker OR Matches any member in the list
-        return booking.userId == id || booking.members.any { it.first == id }
+        return booking.userId == id || booking.members.any { it.studentId == id }
     }
 
     // Helper: Check if it is too early to check in

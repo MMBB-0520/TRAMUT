@@ -6,16 +6,14 @@ data class Review(
     @DocumentId
     val id: String = "",
     val bookingId: String = "",
-    val userId: String = "",
-    val userName: String = "",
-
+    val bookingDate: String = "",
+    val venue: String = "",
+    val venueType: String = "",
+    val loginId: String = "",
     val issueCategory: String = "",
     val comment: String = "",
     val status: String = "Unsolved",
-
-    val venue: String = "",
-    val venueType: String = "",
     val department: String = "",
-    val bookingDate: String = "",
+    val userId: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

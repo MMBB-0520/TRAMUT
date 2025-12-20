@@ -1,18 +1,12 @@
 package com.example.tramut.rooms.entity
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "Booking")
 data class Booking(
-
-    @PrimaryKey
     val bookingId: String = "",
     val userId: String = "",
     val timeslotId: String = "",
     val facility: String = "",
     val venue: String = "",
-    val finalVenue :String = "",
     val level: String = "",
     val building: String = "",
     val date: String = "",
@@ -23,5 +17,11 @@ data class Booking(
     val checkOut: String = "",
     val bookingNo: String = "",
     val status: String = "Booked",
-    val members: List<Pair<String,String>> = emptyList()
+    val finalVenue: String = "",
+    val members: List<Member> = emptyList()
+)
+
+data class Member(
+    val id: String = "",
+    val name: String = ""
 )

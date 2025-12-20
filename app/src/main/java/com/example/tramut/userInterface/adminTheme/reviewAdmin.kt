@@ -149,16 +149,14 @@ fun AdminReviewItem(review: Review, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 StatusBadge(status = review.status)
-                Text(review.bookingDate, color = Color.Gray, fontSize = 12.sp)
+                Text("Reported on: ${review.timestamp}", fontSize = 12.sp)
             }
-            Spacer(Modifier.height(8.dp))
             Text(review.venue, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            Text(review.issueCategory, color = Color(0xFFD32F2F), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(review.issueCategory, color = Color.Red, fontSize = 14.sp)
 
-            HorizontalDivider(Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = Color.LightGray)
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-            Text("From ${review.userName}:", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(review.comment, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Color.DarkGray)
+            Text(review.comment, fontSize = 14.sp, color = Color.DarkGray)
         }
     }
 }
@@ -171,7 +169,7 @@ fun ReviewDetailContent(review: Review, onStatusUpdate: (String) -> Unit) {
 
         DetailLine("Venue", review.venue)
         DetailLine("Category", review.issueCategory)
-        DetailLine("Reported By", review.userName)
+        DetailLine("Reported By", review.userId)
 
         Spacer(Modifier.height(16.dp))
         Text("STUDENT COMMENT", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)

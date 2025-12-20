@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
-import com.example.myfacilitybookingsystem.viewModel.TimetableViewModel
+import com.example.tramut.viewModel.TimetableViewModel
 
 @Composable
 fun TimetableGrid(
