@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Review
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,40 +28,34 @@ class ReviewViewModel : ViewModel(){
         val docRef = db.collection("reviews").document() // 先生成 ID
 
         val reviewData = hashMapOf(
-            "id" to docRef.id,
-            "userId" to user.uid,
+            "reviewId" to docRef.id,
             "bookingId" to booking.bookingId,
+            "bookingDate" to booking.date,
             "venue" to booking.venue,
+            "venueType" to booking.venue,
+            "loginId" to userId,
             "issueCategory" to category,
             "comment" to description,
-            "status" to "Unsolved",
-            "timestamp" to System.currentTimeMillis()
+            "status" to "Unresolved",
+            "department" to booking.facility
         )
 
-        db.collection("reviews").document(docRef.id).set(reviewData)
-    }
-
-    fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
-        db.collection("reviews").document(reviewId)
-            .update("status", newStatus)
+        db.collection("reviews")
+            .add(reviewData)
             .addOnSuccessListener {
-                onSuccess()
+                onReviewSubmitted()
             }
-            .addOnFailureListener { e ->
-                Log.e("ReviewViewModel", "Error updating status", e)
-            }
-    }
-    fun fetchMyReviews() {
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        if (currentUser == null) {
-            Log.e("Review", "用户未登录")
+            .addOnFailureListener {}
+}
+    fun fetchMyReviews(userId: String?) {
+        if (userId.isNullOrBlank()) {
             _reviews.value = emptyList()
             return
         }
 
         FirebaseFirestore.getInstance()
             .collection("reviews") // 确保这里的名字和数据库一模一样
-            .whereEqualTo("userId", currentUser.uid)
+            .whereEqualTo("loginId", userId)
             .addSnapshotListener { snapshot, error -> // 建议用监听器，实时更新
                 if (error != null) {
                     Log.e("Review", "获取失败: ${error.message}")
