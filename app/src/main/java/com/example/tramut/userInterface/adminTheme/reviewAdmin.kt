@@ -169,7 +169,6 @@ fun ReviewDetailContent(review: Review, onStatusUpdate: (String) -> Unit) {
 
         DetailLine("Venue", review.venue)
         DetailLine("Category", review.issueCategory)
-        DetailLine("Reported By", review.userId)
 
         Spacer(Modifier.height(16.dp))
         Text("STUDENT COMMENT", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)

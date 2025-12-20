@@ -29,20 +29,29 @@ class ReviewViewModel : ViewModel(){
         val docRef = db.collection("reviews").document() // 先生成 ID
 
         val reviewData = hashMapOf(
-            "reviewId" to docRef.id,
+            "id" to docRef.id,
             "userId" to user.uid,
             "bookingId" to booking.bookingId,
-            "facility" to booking.facility,
             "venue" to booking.venue,
-            "date" to booking.date,
-            "category" to category,
-            "description" to description,
-            "status" to "Unresolved"
+            "issueCategory" to category,
+            "comment" to description,
+            "status" to "Unsolved",
+            "timestamp" to System.currentTimeMillis()
         )
 
-        db.collection("reviews")
-            .add(reviewData)
-}
+        db.collection("reviews").document(docRef.id).set(reviewData)
+    }
+
+    fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
+        db.collection("reviews").document(reviewId)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                Log.e("ReviewViewModel", "Error updating status", e)
+            }
+    }
     fun fetchMyReviews() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {

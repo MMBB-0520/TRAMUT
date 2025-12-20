@@ -337,9 +337,11 @@ fun IssueCategoryDropdown(
     onCategorySelected: (String) -> Unit
 ) {
     val categories = listOf(
-        "Dirty Issue",
-        "Broken Facility",
-        "Safety Issue",
+        "Damage/Broken Items",
+        "Network/Technology Issues",
+        "Plumbing/Ventilation Issues",
+        "Electrical/Lighting Issues",
+        "Cleanliness & Safety",
         "Other"
     )
 
