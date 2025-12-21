@@ -96,11 +96,11 @@ fun EditFacilityScreen(
 
     val categoryOptions = remember(adminDepartment) {
         val baseOptions = when (adminDepartment) {
-            "Sport Facilities" -> listOf(
+            "Sports" -> listOf(
                 "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal"
             )
             "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "CITC" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            "Cyber Center" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
             else -> emptyList()
         }
         baseOptions + "Others"
@@ -173,9 +173,6 @@ fun EditFacilityScreen(
 
             if (selectedFacility != null) {
 
-                // =================================================================
-                // --- 2. FACILITY DETAILS SECTION (NO CARD - LINE STYLE) ---
-                // =================================================================
                 Text("Facility Details", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(Modifier.height(8.dp))
 
@@ -217,23 +214,19 @@ fun EditFacilityScreen(
                         }
                     }
                 }
+
                 Spacer(Modifier.height(16.dp))
 
-                // Capacity Logic (Matching AdminAddFacilityScreen)
-                if (adminDepartment != "Sport Facilities") {
-                    LabeledInput("Capacity (List, e.g., 6, 7, 8)") {
+                if (adminDepartment != "Sports") {
+                    LabeledInput("Capacity (List, e.g., 4, 5, 6)") {
                         LineTextField(
-                            viewModel.formCapacity.value,
-                            { newValue -> if (newValue.all { c -> c.isDigit() || c == ',' || c == ' ' }) { viewModel.formCapacity.value = newValue } },
-                            "Enter numbers separated by commas"
-                        )
-                    }
-                } else {
-                    LabeledInput("Capacity (Single Number, e.g., 1)") {
-                        LineTextField(
-                            viewModel.formCapacity.value,
-                            { newValue -> if (newValue.all { c -> c.isDigit() } && newValue.length <= 2) { viewModel.formCapacity.value = newValue.take(2) } },
-                            "Enter a single number (e.g., 1)"
+                            value = viewModel.formCapacity.value,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() || it == ',' || it == ' ' }) {
+                                    viewModel.formCapacity.value = newValue
+                                }
+                            },
+                            placeholder = "Enter numbers separated by commas"
                         )
                     }
                 }
@@ -405,7 +398,6 @@ fun EditFacilityScreen(
                                 }
                             }
                         } else {
-                            // --- DATE RANGE MODE (FULL DAY CLOSURE) (Matching AdminAddFacilityScreen) ---
                             Text("Close Facility for a period of time (Full Days).", fontSize = 12.sp, color = Color.Gray)
                             Spacer(Modifier.height(12.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -431,7 +423,6 @@ fun EditFacilityScreen(
                         }
                         Spacer(Modifier.height(16.dp))
 
-                        // ADD EXCEPTION BUTTON (Matching AdminAddFacilityScreen)
                         Button(
                             onClick = {
                                 if (!isRangeMode) {
@@ -468,7 +459,6 @@ fun EditFacilityScreen(
                     }
                 }
 
-                // LIST ADDED CLOSURES (Matching AdminAddFacilityScreen)
                 if (specialClosuresMap.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text("Scheduled Closures:", fontWeight = FontWeight.Bold)
@@ -495,12 +485,12 @@ fun EditFacilityScreen(
                     Spacer(Modifier.height(24.dp))
                 }
 
-
+                Spacer(Modifier.height(16.dp))
                 // =================================================================
                 // --- 5. ACTION BUTTONS ---
                 // =================================================================
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp)) {
-                    // DELETE BUTTON
+
                     Button(
                         onClick = { showDeleteFacilityDialog = true },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
@@ -510,12 +500,12 @@ fun EditFacilityScreen(
                         Text("Delete")
                     }
 
-                    // UPDATE BUTTON
                     Button(
                         onClick = {
                             selectedFacility?.id?.let { id ->
                                 if (viewModel.formName.value.isBlank()) Toast.makeText(context, "Missing Name", Toast.LENGTH_SHORT).show()
                                 else if (viewModel.formCategory.value.isBlank()) Toast.makeText(context, "Missing Category", Toast.LENGTH_SHORT).show()
+
                                 else if (viewModel.formStartTime.value.isEmpty() || viewModel.formEndTime.value.isEmpty()) Toast.makeText(context, "Missing Hours", Toast.LENGTH_SHORT).show()
                                 else if (start >= end) Toast.makeText(context, "Start time must be before End time", Toast.LENGTH_SHORT).show()
                                 else {
@@ -523,7 +513,7 @@ fun EditFacilityScreen(
                                         docId = id,
                                         department = adminDepartment,
                                         dailyBreakHours = dailyBreakHours.toList().sorted(),
-                                        specialClosures = specialClosuresMap.toMap()
+                                        specialClosures = specialClosuresMap.toMap(),
                                     ) { success, errorMsg ->
                                         if (success) {
                                             showSuccessDialog = true

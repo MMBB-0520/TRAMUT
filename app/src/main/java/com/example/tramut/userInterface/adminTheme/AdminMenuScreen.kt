@@ -65,7 +65,7 @@ fun AdminMainScreen(
                         .background(Color.LightGray, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color.Black)
+                    CircularProgressIndicator(color = BlueMain)
                 }
             } else {
                 AdminProfileCard(
@@ -131,7 +131,7 @@ fun AdminMainScreen(
             AdminMenuButton(
                 text = "Reviews",
                 icon = Icons.Default.Star,
-                onClick = { navController.navigate(AppScreen.ViewTimetable.name) }
+                onClick = { navController.navigate(AppScreen.AdminReview.name) }
             )
             Spacer(modifier = Modifier.height(40.dp))
 
@@ -165,7 +165,7 @@ fun AdminProfileCard(name: String, dept: String, email: String) {
             ){
                 Text(
                     text = (name).take(1).uppercase(),
-                    color = Color.Black,
+                    color = StaffRed,
                     fontWeight = FontWeight.Bold,
                     fontSize = 30.sp,
                     modifier = Modifier.align(Alignment.Center)

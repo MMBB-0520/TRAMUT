@@ -105,19 +105,20 @@ fun BookingInfoScreen(
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                Divider(color = Color.LightGray)
+            Divider(color = Color.LightGray)
 
-                BookingDetailRow("Facility", booking.facility)
-                BookingDetailRow("Booking No.", booking.bookingNo)
-                BookingDetailRow("Date", booking.date)
-                BookingDetailRow("Duration", booking.duration)
-                BookingDetailRow("Venue / Room No.", booking.venue)
-                BookingDetailRow("Level", level)
-                BookingDetailRow("Building", building)
-                BookingDetailRow("Check-in", booking.checkIn)
-                BookingDetailRow("Check-out", booking.checkOut)
-                BookingDetailRow("Status", booking.status)
-            }
+            BookingDetailRow("Facility", booking.facility)
+            BookingDetailRow("Booking No.", booking.bookingNo)
+            BookingDetailRow("Date", booking.date)
+            BookingDetailRow("Duration", booking.duration)
+            BookingDetailRow("Venue", booking.venue)
+            BookingDetailRow("Court/Room No.", booking.finalVenue)
+            BookingDetailRow("Level", level)
+            BookingDetailRow("Building", building)
+            BookingDetailRow("Check-in", booking.checkIn)
+            BookingDetailRow("Check-out", booking.checkOut)
+            BookingDetailRow("Status", booking.status)
+        }
 
             Spacer(modifier = Modifier.height(24.dp))
 

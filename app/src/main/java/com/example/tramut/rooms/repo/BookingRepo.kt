@@ -5,26 +5,14 @@ import com.example.tramut.rooms.entity.Booking
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
+// In your BookingRepo.kt file
 class BookingRepo {
+    private val firestore = FirebaseFirestore.getInstance()
 
-    val db = FirebaseFirestore.getInstance()
-
-    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
-        return try {
-            db.collection("facilities")
-                .whereEqualTo("category", category)
-                .get()
-                .await()
-                .toObjects(Facility::class.java)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    // Fetch existing bookings for a specific date
+    // 1. Fetch bookings by date
     suspend fun getBookingsByDate(date: String): List<Booking> {
         return try {
-            db.collection("bookings")
+            firestore.collection("bookings")
                 .whereEqualTo("date", date)
                 .get()
                 .await()
@@ -34,13 +22,29 @@ class BookingRepo {
         }
     }
 
-    // Save the finalized booking
-    suspend fun saveBooking(booking: Booking): Result<Unit> {
+    // 2. Fetch facilities (If you don't have a separate FacilityRepo)
+    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
         return try {
-            db.collection("bookings").add(booking).await()
-            Result.success(Unit)
+            firestore.collection("facilities")
+                .whereEqualTo("category", category)
+                .get()
+                .await()
+                .toObjects(Facility::class.java)
         } catch (e: Exception) {
-            Result.failure(e)
+            emptyList()
+        }
+    }
+
+    // 3. The Save function that returns the 'success' boolean
+    suspend fun saveBooking(booking: Booking): Boolean {
+        return try {
+            firestore.collection("bookings")
+                .document(booking.bookingId)
+                .set(booking)
+                .await()
+            true // If no exception, it was a success
+        } catch (e: Exception) {
+            false
         }
     }
 }

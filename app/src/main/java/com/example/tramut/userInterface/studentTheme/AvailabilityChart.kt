@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.viewModel.TimetableViewModel
 import com.example.tramut.userInterface.LegendItem
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -35,7 +36,8 @@ import java.util.*
 fun AvailabilityChartScreen(
     selectedFacilityFromPrevious: String,
     viewModel: TimetableViewModel = viewModel(),
-    onBookNow: (String, String) -> Unit = { _, _ -> }
+    onBookNow: (String, String) -> Unit = { _, _ -> },
+    onBackFacility: () -> Unit = {}
 ) {
     // Reuse the date logic
     val today = java.time.LocalDate.now()
@@ -96,7 +98,6 @@ fun AvailabilityChartScreen(
         selectedCategory = categoryOptions.first()
     }
 
-    // Load data when category or date changes
     LaunchedEffect(selectedCategory, selectedDate) {
         val facilityQuery = if (selectedCategory.startsWith("All")) {
             selectedFacilityFromPrevious
@@ -104,13 +105,17 @@ fun AvailabilityChartScreen(
             selectedCategory
         }
         val isCategoryQuery = !selectedCategory.startsWith("All")
+        val firebaseFormattedDate = formatForFirebase(selectedDate)
 
-        // Call the consolidated fetch function
+        // 1. Load the list of courts/rooms
         viewModel.fetchTimetableData(
             identifier = facilityQuery,
             isCategory = isCategoryQuery,
-            date = selectedDate
+            date = firebaseFormattedDate
         )
+
+        // 2. Start watching for Blue squares (Bookings)
+        viewModel.listenToBookingsForDate(firebaseFormattedDate)
     }
 
     // Initialize with first date
@@ -147,6 +152,20 @@ fun AvailabilityChartScreen(
                 Text("Book Now")
             }
         }
+                Button(
+                    onClick = {
+                        val firebaseDate = formatForFirebase(selectedDate)
+                        val selectedHours = listOf(9)
+                        onBookNow(selectedVenue, firebaseDate)
+                    },
+                    enabled = true,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0D47A1)
+                    )
+                ) {
+                    Text("Book Now")
+                }
+            }
 
         // Date selector - Custom 3-day selector for AvailabilityChartScreen
         Box(
@@ -288,7 +307,6 @@ fun AvailabilityChartScreen(
     }
 }
 
-// Custom TimetableGrid for AvailabilityChartScreen with selection capability
 @Composable
 fun AvailabilityChartTimetableGrid(
     facilities: List<Facility>,
@@ -484,15 +502,20 @@ fun UnderlinedFloatingLabelDropdown(
     }
 }
 
-private fun formatDateForDisplay(dateStr: String): String {
+private fun formatForFirebase(dateStr: String): String {
     return try {
+        // Input format from your dateList: "2025-12-23"
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
         val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = outputFormat.parse(dateStr)
+        val date = inputFormat.parse(dateStr)
         date?.let { outputFormat.format(it) } ?: dateStr
     } catch (e: Exception) {
         dateStr
     }
 }
+
+
 
 // Department Dropdown (reused from TimetableScreen)
 @Composable

@@ -5,7 +5,10 @@ import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
+
 class TimetableRepository {
+
+
     private val db = FirebaseFirestore.getInstance()
     private val bookingsCollection = db.collection("bookings")
     private val facilitiesCollection = db.collection("facilities")
@@ -20,6 +23,7 @@ class TimetableRepository {
 
             snapshot.documents.mapNotNull { doc ->
                 doc.toObject(Facility::class.java)?.copy(id = doc.id)
+
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -56,18 +60,17 @@ class TimetableRepository {
         }
     }
 
+    // Inside your Repository
     suspend fun saveBooking(booking: Booking): Boolean {
         return try {
-            // If bookingId is missing, generate one
-            val id = if (booking.bookingId.isEmpty()) bookingsCollection.document().id else booking.bookingId
-
-            val finalBooking = booking.copy(bookingId = id)
-
-            bookingsCollection.document(id).set(finalBooking).await()
-            true
+            FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .document(booking.bookingId)
+                .set(booking)
+                .await() // This "waits" for Firebase to finish and returns void
+            true // If it reaches here, it succeeded
         } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            false // If there is a network error, it returns false
         }
     }
 }

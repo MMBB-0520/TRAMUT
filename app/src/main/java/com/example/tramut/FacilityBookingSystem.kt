@@ -70,6 +70,8 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
@@ -104,6 +106,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.collections.map
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -139,7 +142,9 @@ enum class AppScreen {
     StaffLoginScreen,
     AdminLoginScreen,
 
-    UserScreen,
+    StudentScreen,
+    StaffScreen,
+    AdminScreen,
 
     UserSetting,
     AboutApp,
@@ -374,6 +379,7 @@ fun TopBarScreen(
                 )
             )
         }
+
         AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {
@@ -780,6 +786,7 @@ fun FBSApp(
     val containerColor = getContainerColor(isStudentLoggedIn,isStaffLoggedIn)
 
 
+    //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
         AppScreen.valueOf(backStackEntry?.destination?.route ?: "")
@@ -1255,7 +1262,7 @@ fun FBSApp(
                         },
                         onSubmitClick = {
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
-                                navController.navigate(AppScreen.PwdUpdated.name) {
+                                navController.navigate(AppScreen.PwdUpdated.name){
                                     popUpTo(AppScreen.ResetPwd.name)
                                     { inclusive = true }
                                 }
