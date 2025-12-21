@@ -69,6 +69,8 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
@@ -104,7 +106,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
@@ -138,6 +139,7 @@ enum class AppScreen {
     StaffLoginScreen,
     AdminLoginScreen,
 
+    AdminScreen,
     UserScreen,
 
     UserSetting,
@@ -373,6 +375,7 @@ fun TopBarScreen(
                 )
             )
         }
+
         AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {
@@ -632,8 +635,8 @@ fun FBSApp(
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
-
     var password by remember { mutableStateOf("") }
+
 
     val studentIdValid by loginViewModel.studentIdValid.collectAsState()
     val staffIdValid by loginViewModel.staffIdValid.collectAsState()
@@ -1010,15 +1013,18 @@ fun FBSApp(
                     route = "${AppScreen.ViewTimetable.name}/{departmentName}",
                     arguments = listOf(navArgument("departmentName") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val departmentName =
-                        backStackEntry.arguments?.getString("departmentName") ?: "Sport"
+                    val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport"
 
                     // Pass to 'initialDepartment'
                     TimetableScreen(
                         initialDepartment = departmentName,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToBooking = { facilityId, hour, date ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityId/$date/$hour")
+                        }
                     )
                 }
+
 
                 // Forgot Password Screen
                 composable(route = AppScreen.ForgotPassword1.name) {
@@ -1061,13 +1067,7 @@ fun FBSApp(
                             forgotPwdViewModel.resendResetEmail()
                         },
                         onContinueResetClick = {
-                            navController.navigate(
-                                "${AppScreen.ResetPwd.name}?oobCode=${
-                                    Uri.encode(
-                                        oobCode
-                                    )
-                                }"
-                            ) {
+                            navController.navigate("${AppScreen.ResetPwd.name}?oobCode=${Uri.encode(oobCode)}") {
                                 popUpTo(AppScreen.ForgotPassword3.name)
                                 { inclusive = true }
                             }
@@ -1218,8 +1218,7 @@ fun FBSApp(
                     }
                 }
 
-                composable(
-                    route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
 
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
@@ -1307,7 +1306,7 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                            navController.navigate("${AppScreen. StudentBookingSport.name}/$selectedVenue/$selectedDate")
                         }
                     )
                     // Library Booking Screen
@@ -1326,10 +1325,8 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue =
-                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate =
-                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
@@ -1339,10 +1336,8 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue =
-                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate =
-                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
@@ -1353,10 +1348,8 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Sports Facilities",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue =
-                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate =
-                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )

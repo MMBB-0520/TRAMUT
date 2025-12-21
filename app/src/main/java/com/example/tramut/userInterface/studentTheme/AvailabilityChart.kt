@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.viewModel.TimetableViewModel
 import com.example.tramut.userInterface.LegendItem
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -97,7 +98,6 @@ fun AvailabilityChartScreen(
         selectedCategory = categoryOptions.first()
     }
 
-    // Load data when category or date changes
     LaunchedEffect(selectedCategory, selectedDate) {
         val facilityQuery = if (selectedCategory.startsWith("All")) {
             selectedFacilityFromPrevious
@@ -105,13 +105,17 @@ fun AvailabilityChartScreen(
             selectedCategory
         }
         val isCategoryQuery = !selectedCategory.startsWith("All")
+        val firebaseFormattedDate = formatForFirebase(selectedDate)
 
-        // Call the consolidated fetch function
+        // 1. Load the list of courts/rooms
         viewModel.fetchTimetableData(
             identifier = facilityQuery,
             isCategory = isCategoryQuery,
-            date = selectedDate
+            date = firebaseFormattedDate
         )
+
+        // 2. Start watching for Blue squares (Bookings)
+        viewModel.listenToBookingsForDate(firebaseFormattedDate)
     }
 
     // Initialize with first date
@@ -136,7 +140,9 @@ fun AvailabilityChartScreen(
 
                 Button(
                     onClick = {
-                        onBookNow(selectedVenue, selectedDate)
+                        val firebaseDate = formatForFirebase(selectedDate)
+                        val selectedHours = listOf(9)
+                        onBookNow(selectedVenue, firebaseDate)
                     },
                     enabled = true,
                     colors = ButtonDefaults.buttonColors(
@@ -287,7 +293,6 @@ fun AvailabilityChartScreen(
         }
 }
 
-// Custom TimetableGrid for AvailabilityChartScreen with selection capability
 @Composable
 fun AvailabilityChartTimetableGrid(
     facilities: List<Facility>,
@@ -483,8 +488,21 @@ fun UnderlinedFloatingLabelDropdown(
     }
 }
 
+private fun formatForFirebase(dateStr: String): String {
+    return try {
+        // Input format from your dateList: "2025-12-23"
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
+        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val date = inputFormat.parse(dateStr)
+        date?.let { outputFormat.format(it) } ?: dateStr
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
 // Helper function to format date for display (yyyy-MM-dd -> dd / MMM / yyyy (EEE))
-private fun formatDateForDisplay(dateStr: String): String {
+fun formatDateForDisplay(dateStr: String): String {
     return try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
@@ -494,6 +512,8 @@ private fun formatDateForDisplay(dateStr: String): String {
         dateStr
     }
 }
+
+
 
 // Department Dropdown (reused from TimetableScreen)
 @Composable

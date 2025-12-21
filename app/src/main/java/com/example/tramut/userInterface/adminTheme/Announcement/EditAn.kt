@@ -45,7 +45,7 @@ fun EditAnnouncementScreen(
 
     // Define options based on department
     val venueOptions = when (adminDepartment) {
-        "Sport" -> listOf("All Sport Facilities", "Badminton Court", "Squash Court", "Gym")
+        "Sports" -> listOf("All Sport Facilities", "Badminton Court", "Squash Court", "Gym")
         "Library" -> listOf("All Library Rooms", "Discussion Room", "Study Cube")
         else -> listOf("General", "Auditorium", "Meeting Room")
     }
