@@ -84,7 +84,8 @@ import com.example.tramut.userInterface.settings.AboutAppScreen
 import com.example.tramut.userInterface.settings.ChangePasswordScreen
 import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
 import com.example.tramut.userInterface.settings.SettingsScreen
-import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
+import com.example.tramut.userInterface.settings.ThemeSelectionScreen
+import com.example.tramut.userInterface.settings.ThemeViewModel
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
@@ -92,6 +93,7 @@ import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
+import com.example.tramut.userInterface.studentTheme.UserMenuScreen
 import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
@@ -783,6 +785,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.ChangePwd.name)
                         },
                         onThemeClick = {
+                            navController.navigate(AppScreen.Theme.name)
                         },
                         onPrivacyClick = {
                             navController.navigate(AppScreen.Privacy.name)
@@ -794,7 +797,7 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.Theme.name) {
-                    com.example.tramut.userInterface.settings.ThemeSelectionScreen(
+                    ThemeSelectionScreen(
                         viewModel = themeViewModel,
                         onBackClick = { navController.popBackStack() }
                     )

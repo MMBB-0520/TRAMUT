@@ -378,7 +378,7 @@ fun AvailabilityChartTimetableGrid(
                             lineHeight = 11.sp,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            color = if (isSelected) Color(0xFF0D47A1) else MaterialTheme.colorScheme.background
+                            color = if (isSelected) Color(0xFF0D47A1) else MaterialTheme.colorScheme.onBackground
                         )
                     }
 

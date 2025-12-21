@@ -64,7 +64,7 @@ fun LineStaticInput(text: String, onClick: () -> Unit = {}, icon: ImageVector? =
     Box(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(top = 16.dp, bottom = 8.dp)) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = text, fontSize = 16.sp, color = if (text.startsWith("Select") || text.startsWith("Pick")) Color.Gray else Color.Black)
+                Text(text = text, fontSize = 16.sp, color = if (text.startsWith("Select") || text.startsWith("Pick")) Color.Gray else MaterialTheme.colorScheme.onBackground)
                 if (icon != null) Icon(icon, null, tint = Color.Gray)
             }
             Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Color.Gray)

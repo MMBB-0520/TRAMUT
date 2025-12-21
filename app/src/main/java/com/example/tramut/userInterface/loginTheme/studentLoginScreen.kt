@@ -84,7 +84,7 @@ fun StudentLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Person,
                     contentDescription = "ID Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 when (idValid) {
@@ -117,7 +117,7 @@ fun StudentLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Lock,
                     contentDescription = "Lock Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibility_off

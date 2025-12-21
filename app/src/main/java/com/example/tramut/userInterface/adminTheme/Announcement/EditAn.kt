@@ -77,6 +77,7 @@ fun EditAnnouncementScreen(
             Column(
                 modifier = Modifier
                     .padding(padding)
+                    .background(MaterialTheme.colorScheme.background)
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {

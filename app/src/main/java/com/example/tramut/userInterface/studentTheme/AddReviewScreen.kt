@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Badge
@@ -26,6 +23,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -249,9 +247,9 @@ fun BookingIdDropdown(
 
                 Icon(
                     imageVector = if (expanded)
-                        Icons.Default.KeyboardArrowUp
+                        Icons.Filled.KeyboardArrowUp
                     else
-                        Icons.Default.KeyboardArrowDown,
+                        Icons.Filled.KeyboardArrowDown,
                     contentDescription = null
                 )
             }
@@ -326,9 +324,9 @@ fun IssueCategoryDropdown(
                 )
                 Icon(
                     imageVector = if (expanded)
-                        Icons.Default.KeyboardArrowUp
+                        Icons.Filled.KeyboardArrowUp
                     else
-                        Icons.Default.KeyboardArrowDown,
+                        Icons.Filled.KeyboardArrowDown,
                     contentDescription = null
                 )
             }

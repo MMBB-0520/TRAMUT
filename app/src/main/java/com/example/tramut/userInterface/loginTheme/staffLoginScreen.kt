@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -83,7 +84,7 @@ fun StaffLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Person,
                     contentDescription = "ID Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 when (idValid) {
@@ -115,7 +116,7 @@ fun StaffLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Lock,
                     contentDescription = "Lock Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibility_off
