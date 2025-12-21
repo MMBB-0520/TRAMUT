@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
@@ -40,6 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
 import com.example.tramut.userInterface.studentTheme.FacilityData
+import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +49,7 @@ fun BookSportScreen(
     facilityType: String,
     selectedDateFromPrevious: String = "",
     onBackFacilityPage: () -> Unit,
-    onSubmit: (String, String, String, String, Int, List<Pair<String, String>>) -> Unit,
+    onSubmit: (String, String, String, String, Int, List<Member>, String, String) -> Unit,
     isStaff: Boolean = false,
     userRepository: UsersRepo
 ) {
@@ -74,7 +76,7 @@ fun BookSportScreen(
         if (validPax != pax) {
             numberOfPax = validPax.toString()
         }
-        MutableList(validPax) { index -> Pair("", "") }
+        MutableList(validPax) { Member(id = "", name = "") }
     }
 
     // 使用 ViewModel 获取场地列表
@@ -279,7 +281,7 @@ fun BookSportScreen(
         val totalMembers = numberOfPax.toIntOrNull() ?: 1
         val membersToValidate = if (totalMembers > 1) {
             members.subList(1, minOf(totalMembers, members.size))
-                .filter { it.first.isNotBlank() }
+                .filter { it.id.isNotBlank() }
         } else {
             emptyList()
         }
@@ -287,7 +289,7 @@ fun BookSportScreen(
         if (membersToValidate.isEmpty()) return true
 
         // 检查重复ID
-        val loginIds = membersToValidate.map { it.first }
+        val loginIds = membersToValidate.map { it.id }
         val duplicateIds = loginIds.groupingBy { it }
             .eachCount()
             .filter { it.value > 1 }
@@ -616,7 +618,7 @@ fun BookSportScreen(
 
                                 for (index in 0 until membersToShow) {
                                     val memberIndex = index + 1
-                                    val member = if (memberIndex < members.size) members[memberIndex] else Pair("", "")
+                                    val member = members[memberIndex]
 
                                     Row(
                                         modifier = Modifier
@@ -632,14 +634,11 @@ fun BookSportScreen(
                                                 modifier = Modifier.padding(bottom = 4.dp)
                                             )
                                             LineTextField(
-                                                value = member.first,
+                                                value = member.id,
                                                 onValueChange = { newId ->
                                                     if (memberIndex < members.size) {
-                                                        val updatedList = members.toMutableList()
-                                                        updatedList[memberIndex] = Pair(newId, member.second)
-                                                        for (i in updatedList.indices) {
-                                                            members[i] = updatedList[i]
-                                                        }
+                                                        // 更新对象属性
+                                                        members[memberIndex] = members[memberIndex].copy(id = newId)
                                                     }
                                                 },
                                                 label = "ID"
@@ -656,14 +655,10 @@ fun BookSportScreen(
                                                 modifier = Modifier.padding(bottom = 4.dp)
                                             )
                                             LineTextField(
-                                                value = member.second,
+                                                value = member.name,
                                                 onValueChange = { newName ->
                                                     if (memberIndex < members.size) {
-                                                        val updatedList = members.toMutableList()
-                                                        updatedList[memberIndex] = Pair(member.first, newName)
-                                                        for (i in updatedList.indices) {
-                                                            members[i] = updatedList[i]
-                                                        }
+                                                        members[memberIndex] = members[memberIndex].copy(name = newName)
                                                     }
                                                 },
                                                 label = "Name"
@@ -815,7 +810,7 @@ fun BookSportScreen(
                         val totalMembers = numberOfPax.toIntOrNull() ?: 1
                         val membersToValidate = if (totalMembers > 1 && showMemberDetails) {
                             members.subList(1, minOf(totalMembers, members.size))
-                                .filter { it.first.isNotBlank() }
+                                .filter { it.id.isNotBlank() }
                         } else {
                             emptyList()
                         }
@@ -924,8 +919,12 @@ fun BookSportScreen(
             }
 
             if (showSuccessDialog) {
+                val bookingViewModel: MyBookingViewModel = viewModel() // 获取计算工具
+
                 SuccessDialog(
                     onOk = {
+                        val level = bookingViewModel.getLevelForVenue(selectedVenue)
+                        val building = bookingViewModel.getBuildingForVenue(selectedVenue)
                         showSuccessDialog = false
                         val pax = numberOfPax.toIntOrNull() ?: 1
                         val currentMembers = if (pax > 1 && showMemberDetails) {
@@ -933,7 +932,7 @@ fun BookSportScreen(
                         } else {
                             emptyList()
                         }
-                        onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers)
+                        onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers, level, building)
 
                         coroutineScope.launch  {
                             delay(500)

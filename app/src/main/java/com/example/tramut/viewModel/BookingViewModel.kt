@@ -27,6 +27,24 @@ class MyBookingViewModel : ViewModel() {
 
     private var listenerRegistration: ListenerRegistration? = null
 
+
+    fun generate9UniqueDigits(): String {
+        return (0..9)
+            .map { (0..9).random() }
+            .take(9)
+            .joinToString("")
+    }
+    fun LCode(): String {
+        return "L${generate9UniqueDigits()}"
+    }
+
+    fun CCode(): String {
+        return "C${generate9UniqueDigits()}"
+    }
+
+    fun SCode(): String {
+        return "S${generate9UniqueDigits()}"
+    }
     fun startListening(userId: String) {
         _isLoading.value = true
 
@@ -49,7 +67,6 @@ class MyBookingViewModel : ViewModel() {
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
                         doc.toObject(Booking::class.java)?.copy(
-                            // 确保 bookingNo 有值
                             bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
                         )
                     }
@@ -61,13 +78,13 @@ class MyBookingViewModel : ViewModel() {
     }
 
     // 取消预订的方法
-    suspend fun cancelBooking(bookingId: String): Boolean {
+    suspend fun cancelBooking(bookingNo: String): Boolean {
         return try {
             _uiState.value = BookingUIState.Loading
 
             // 使用 bookingNo 字段查找
             val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingNo", bookingId)  // 改为 bookingNo
+                .whereEqualTo("bookingId", bookingNo)  // 改为 bookingNo
                 .limit(1)
                 .get()
                 .await()
@@ -78,7 +95,7 @@ class MyBookingViewModel : ViewModel() {
 
                 // 更新状态为"cancelled"
                 val updates = hashMapOf<String, Any>(
-                    "status" to "cancelled",
+                    "status" to "Cancelled",
                     // 可选：添加取消时间
                     "cancelledAt" to System.currentTimeMillis()
                 )
@@ -100,9 +117,9 @@ class MyBookingViewModel : ViewModel() {
     }
 
     // ViewModelScope封装的方法，方便在Compose中调用
-    fun cancelBookingWithScope(bookingId: String) {
+    fun cancelBookingWithScope(bookingNo: String) {
         viewModelScope.launch {
-            cancelBooking(bookingId)
+            cancelBooking(bookingNo)
         }
     }
 

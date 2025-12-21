@@ -156,7 +156,7 @@ fun BookingInfoScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.cancelBookingWithScope(booking.bookingNo)
+                        viewModel.cancelBookingWithScope(booking.bookingId)
                     }
                 ) {
                     Text("Yes", color = Color.Red)
