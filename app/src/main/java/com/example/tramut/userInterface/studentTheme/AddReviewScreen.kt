@@ -26,6 +26,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -83,7 +84,7 @@ fun ReviewSubmissionScreen(
 
         Column(
             modifier = Modifier
-                .background(Background)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp)
         ) {
 
@@ -147,6 +148,7 @@ fun ReviewSubmissionScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .height(180.dp),
                 shape = RoundedCornerShape(6.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -319,6 +321,7 @@ fun IssueCategoryDropdown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

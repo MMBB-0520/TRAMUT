@@ -676,7 +676,7 @@ fun BookSportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(color = MaterialTheme.colorScheme.onBackground, shape = RoundedCornerShape(8.dp))
+                        .background(color = MaterialTheme.colorScheme.background, shape = RoundedCornerShape(8.dp))
                         .padding(12.dp)
                 ) {
                     Column {
@@ -995,7 +995,7 @@ fun DropdownUnderlinedTextFieldSimple(
                         text = if (hasValue) value else label,
                         fontSize = if (hasValue) 16.sp else 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = if (hasValue) Color.Black else Color.Gray,
+                        color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
@@ -1079,7 +1079,7 @@ fun LineTextField(
                         .focusRequester(focusRequester),
                     textStyle = LocalTextStyle.current.copy(
                         fontSize = if (hasValue) 16.sp else 14.sp,
-                        color = if (hasValue) Color.Black else Color.Gray
+                        color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray
                     ),
                     keyboardOptions = keyboardOptions,
                     singleLine = singleLine,

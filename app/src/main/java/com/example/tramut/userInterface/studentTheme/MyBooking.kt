@@ -77,6 +77,7 @@ fun MyBookingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -111,7 +112,7 @@ fun MyBookingScreen(
         when {
             isLoading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -119,7 +120,7 @@ fun MyBookingScreen(
             }
             filteredBookings.isEmpty() -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
                     contentAlignment = Alignment.Center
                 ) {
                     val emptyMessage = when (selectedTab) {
@@ -133,7 +134,7 @@ fun MyBookingScreen(
             }
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -195,14 +196,15 @@ fun MyBookingItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.background
         ),
         shape = MaterialTheme.shapes.medium
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp).background(MaterialTheme.colorScheme.background)) {
             // 状态标签和设施类型
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -225,7 +227,7 @@ fun MyBookingItem(
                 text = booking.venue.ifBlank { "Unknown Venue" },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -242,7 +244,7 @@ fun MyBookingItem(
                         Text(
                             text = booking.date,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
@@ -256,7 +258,7 @@ fun MyBookingItem(
                         Text(
                             text = booking.duration,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }

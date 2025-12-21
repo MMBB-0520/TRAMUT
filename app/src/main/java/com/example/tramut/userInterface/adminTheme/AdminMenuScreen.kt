@@ -176,9 +176,9 @@ fun AdminProfileCard(name: String, dept: String, email: String) {
             Spacer(modifier = Modifier.width(18.dp))
 
             Column {
-                Text(name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(dept, color = Color.White, fontSize = 14.sp)
-                Text(email, color = Color.White, fontSize = 12.sp)
+                Text(name, color = MaterialTheme.colorScheme.background, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(dept, color = MaterialTheme.colorScheme.background, fontSize = 14.sp)
+                Text(email, color = MaterialTheme.colorScheme.background, fontSize = 12.sp)
             }
         }
     }

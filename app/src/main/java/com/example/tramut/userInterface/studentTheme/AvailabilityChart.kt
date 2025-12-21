@@ -152,6 +152,7 @@ fun AvailabilityChartScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(vertical = 8.dp)
             ) {
                 UnderlinedFloatingLabelDropdown(
@@ -308,14 +309,14 @@ fun AvailabilityChartTimetableGrid(
     val verticalScroll = rememberScrollState()
     val horizontalScroll = rememberScrollState()
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         // Header Row
         Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
             Box(
                 modifier = Modifier
                     .width(venueColWidth)
                     .height(rowHeight)
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -328,7 +329,7 @@ fun AvailabilityChartTimetableGrid(
                     modifier = Modifier
                         .width(timeColWidth)
                         .height(rowHeight)
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.background)
                         .border(1.dp, borderColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -345,6 +346,7 @@ fun AvailabilityChartTimetableGrid(
         Column(
             modifier = Modifier
                 .verticalScroll(verticalScroll)
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxHeight()
         ) {
             facilities.forEach { facility ->
@@ -357,7 +359,7 @@ fun AvailabilityChartTimetableGrid(
                             .width(venueColWidth)
                             .height(rowHeight)
                             .background(
-                                if (isSelected) Color(0xFFE3F2FD) else Color.White
+                                if (isSelected) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.background
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
@@ -376,7 +378,7 @@ fun AvailabilityChartTimetableGrid(
                             lineHeight = 11.sp,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            color = if (isSelected) Color(0xFF0D47A1) else Color.Black
+                            color = if (isSelected) Color(0xFF0D47A1) else MaterialTheme.colorScheme.background
                         )
                     }
 
@@ -446,7 +448,7 @@ fun UnderlinedFloatingLabelDropdown(
                         text = if (hasValue) formatDateForDisplay(value) else label,
                         fontSize = if (hasValue) 16.sp else 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = if (hasValue) Color.Black else Color.Gray,
+                        color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
@@ -548,7 +550,7 @@ fun DepartmentDropdownLineStyle(
             modifier = Modifier
                 .width(dropdownWidth.value)
                 .heightIn(max = 200.dp)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,6 +42,7 @@ fun ReviewScreen(
     Column(
         modifier = Modifier
             .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         ReviewTabs(
@@ -76,7 +78,7 @@ fun ReviewTabs(
 
     Row(
         modifier = Modifier
-            .background(Color(0xFFEDEDED), RoundedCornerShape(20.dp))
+            .background((MaterialTheme.colorScheme.background), RoundedCornerShape(20.dp))
             .padding(4.dp)
     ) {
         tabs.forEach { tab ->
@@ -109,7 +111,7 @@ fun TabItem(
     ) {
         Text(
             text = text,
-            color = if (selected) Color.White else Color.Black,
+            color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
             fontSize = 12.sp
         )
     }
@@ -141,6 +143,7 @@ fun ReviewCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
 
@@ -194,7 +197,7 @@ fun ReviewCard(
             Box(
                 modifier = Modifier
                     .background(
-                        Color.White,
+                        MaterialTheme.colorScheme.background,
                         RoundedCornerShape(8.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -212,7 +215,7 @@ fun ReviewCard(
             Text(
                 text = item.comment,
                 fontSize = 13.sp,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }

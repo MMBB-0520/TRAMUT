@@ -282,7 +282,7 @@ fun TimetableGrid(
                 modifier = Modifier
                     .width(venueColWidth)
                     .height(rowHeight)
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -295,7 +295,7 @@ fun TimetableGrid(
                     modifier = Modifier
                         .width(timeColWidth)
                         .height(rowHeight)
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.background)
                         .border(1.dp, borderColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -321,7 +321,7 @@ fun TimetableGrid(
                         modifier = Modifier
                             .width(venueColWidth)
                             .height(rowHeight)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.background)
                             .border(1.dp, borderColor),
                         contentAlignment = Alignment.CenterStart
                     ) {
@@ -411,7 +411,7 @@ fun DepartmentDropdownLineStyle(
             modifier = Modifier
                 .width(dropdownWidth.value)
                 .heightIn(max = 200.dp)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
