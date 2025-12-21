@@ -84,7 +84,7 @@ import com.example.tramut.userInterface.settings.AboutAppScreen
 import com.example.tramut.userInterface.settings.ChangePasswordScreen
 import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
 import com.example.tramut.userInterface.settings.SettingsScreen
-import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
+import com.example.tramut.userInterface.studentTheme.UserMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
@@ -92,7 +92,6 @@ import com.example.tramut.userInterface.studentTheme.FacilityBookScreen
 import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
-import com.example.tramut.userInterface.studentTheme.StudentMenuScreen
 import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
@@ -102,7 +101,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import kotlin.collections.map
 
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
@@ -138,8 +136,7 @@ enum class AppScreen {
     StaffLoginScreen,
     AdminLoginScreen,
 
-    StudentScreen,
-    StaffScreen,
+    UserScreen,
 
     UserSetting,
     AboutApp,
@@ -212,7 +209,7 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     addReview: () -> Unit,
-    isStaff: Boolean = false
+    isStaff: Boolean
 ) {
     val containerColor = when {
         currentScreen == AppScreen.AdminLoginScreen -> Color.Black
@@ -652,6 +649,7 @@ fun FBSApp(
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
     val reviews by reviewViewModel.reviews.collectAsState()
     val bookings by reviewViewModel.bookings.collectAsState()
+    val containerColor = getContainerColor(isStudentLoggedIn, isStaffLoggedIn)
 
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -666,7 +664,8 @@ fun FBSApp(
             TopBarScreen(
                 currentScreen = currentScreen,
                 hasPopBack = { navController.popBackStack() },
-                addReview = { navController.navigate(AppScreen.ReviewSubmission.name) }
+                addReview = { navController.navigate(AppScreen.ReviewSubmission.name) },
+                isStaff = isStaffLoggedIn
             )
         },
         bottomBar = {
@@ -675,8 +674,7 @@ fun FBSApp(
                 AppScreen.StudentLoginScreen,
                 AppScreen.StaffLoginScreen,
                 AppScreen.AdminLoginScreen,
-                AppScreen.StudentScreen,
-                AppScreen.StaffScreen,
+                AppScreen.UserScreen,
 
                 )
 
@@ -684,9 +682,21 @@ fun FBSApp(
                 bottomChooseBar(
                     selectedIndex = when (currentScreen) {
                         AppScreen.HomeScreen -> 0
-                        AppScreen.StudentLoginScreen, AppScreen.StudentScreen -> 1
-                        AppScreen.StaffLoginScreen, AppScreen.StaffScreen -> 2
+
+                        AppScreen.StudentLoginScreen -> 1
+
+                        AppScreen.StaffLoginScreen -> 2
+
+                        AppScreen.UserScreen -> {
+                            when {
+                                isStudentLoggedIn -> 1
+                                isStaffLoggedIn -> 2
+                                else -> 0
+                            }
+                        }
+
                         AppScreen.AdminLoginScreen -> 3
+
                         else -> 0
                     },
                     onItemSelected = { index ->
@@ -694,7 +704,7 @@ fun FBSApp(
                             0 -> navController.navigate(AppScreen.HomeScreen.name)
                             1 -> {
                                 if (isStudentLoggedIn) {
-                                    navController.navigate(AppScreen.StudentScreen.name)
+                                    navController.navigate(AppScreen.UserScreen.name)
                                 } else {
                                     navController.navigate(AppScreen.StudentLoginScreen.name)
                                 }
@@ -702,7 +712,7 @@ fun FBSApp(
 
                             2 -> {
                                 if (isStaffLoggedIn) {
-                                    navController.navigate(AppScreen.StaffScreen.name)
+                                    navController.navigate(AppScreen.UserScreen.name)
                                 } else {
                                     navController.navigate(AppScreen.StaffLoginScreen.name)
                                 }
@@ -751,7 +761,7 @@ fun FBSApp(
                         onLoginClick = {
                             loginViewModel.login(studentId, pwd, "Student") { success ->
                                 if (success) {
-                                    navController.navigate(AppScreen.StudentScreen.name) {
+                                    navController.navigate(AppScreen.UserScreen.name) {
                                         popUpTo(AppScreen.StudentLoginScreen.name) {
                                             inclusive = true
                                         }
@@ -765,50 +775,7 @@ fun FBSApp(
                     )
                 }
 
-                // Student Main Screen
-                composable(route = AppScreen.StudentScreen.name) {
-                    var logOutConfirm by rememberSaveable { mutableStateOf(false) }
 
-                    if (logOutConfirm) {
-                        AlertDialog(
-                            onDismissRequest = { logOutConfirm = false },
-                            title = { Text("Confirm Logout") },
-                            text = { Text("Are you sure you want to logout?") },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    logOutConfirm = false
-                                    loginViewModel.logout()
-                                    navController.navigate(AppScreen.MainSystem.name)
-                                }) { Text("Yes") }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { logOutConfirm = false }) { Text("No") }
-                            },
-                            properties = DialogProperties(dismissOnClickOutside = false)
-                        )
-                    }
-
-                    StudentMenuScreen(
-                        name = currentUser?.username ?: "",
-                        studentId = currentUser?.loginId ?: "",
-                        email = currentUser?.email ?: "",
-                        onLogoutClick = { logOutConfirm = true },
-                        onMyBookingClick = {
-                            navController.navigate(
-                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
-                            )
-                        },
-                        onFacilityBookingClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
-                        },
-                        onFeedbackClick = {
-                            navController.navigate(AppScreen.UserReview.name)
-                        },
-                        onSettingsClick = {
-                            navController.navigate(AppScreen.UserSetting.name)
-                        }
-                    )
-                }
                 composable(route = AppScreen.UserSetting.name) {
                     SettingsScreen(
                         onChangePasswordClick = {
@@ -890,7 +857,7 @@ fun FBSApp(
                         onLoginClick = {
                             loginViewModel.login(staffId, pwd, "Staff") { success ->
                                 if (success) {
-                                    navController.navigate(AppScreen.StaffScreen.name) {
+                                    navController.navigate(AppScreen.UserScreen.name) {
                                         popUpTo(AppScreen.StaffLoginScreen.name) {
                                             inclusive = true
                                         }
@@ -903,8 +870,8 @@ fun FBSApp(
                         }
                     )
                 }
-                // Staff Main Screen
-                composable(route = AppScreen.StaffScreen.name) {
+                // User Main Screen
+                composable(route = AppScreen.UserScreen.name) {
                     var logOutConfirm by rememberSaveable { mutableStateOf(false) }
 
                     if (logOutConfirm) {
@@ -926,9 +893,10 @@ fun FBSApp(
                         )
                     }
 
-                    StaffMenuScreen(
+                    UserMenuScreen(
+                        containColor = containerColor,
                         name = currentUser?.username ?: "",
-                        staffId = currentUser?.loginId ?: "",
+                        loginId = currentUser?.loginId ?: "",
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
@@ -940,7 +908,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onFeedbackClick = {
-                            navController.navigate(AppScreen.StudentBooking.name)
+                            navController.navigate(AppScreen.UserReview.name)
                         },
                         onSettingsClick = {
                             navController.navigate(AppScreen.UserSetting.name)
@@ -951,8 +919,7 @@ fun FBSApp(
 
                 // 1. ADMIN LOGIN
                 composable(route = AppScreen.AdminLoginScreen.name) {
-                    var adminId by rememberSaveable { mutableStateOf("") }
-                    var pwd by remember { mutableStateOf(password) }
+
                     AdminLoginScreen(
                         viewModel = adminsViewModel,
                         onLoginSuccess = {
@@ -1502,7 +1469,6 @@ fun FBSApp(
                     }
                     var selectedTab by remember { mutableStateOf("All") }
                     val filteredReviews = reviewViewModel.filterByStatus(reviews, selectedTab)
-                    val containerColor = getContainerColor(currentScreen, isStaffLoggedIn)
                     ReviewScreen(
                         selectedTab = selectedTab,
                         onTabSelected = { selectedTab = it },
@@ -1518,6 +1484,7 @@ fun FBSApp(
                     var selectedBooking by remember { mutableStateOf<Booking?>(null) }
                     var selectedCategory by remember { mutableStateOf<String?>(null) }
                     var comment by remember { mutableStateOf("") }
+                    val submitSuccess by reviewViewModel.submitSuccess.collectAsState()
 
                     ReviewSubmissionScreen(
                         bookings = bookings,
@@ -1539,9 +1506,14 @@ fun FBSApp(
                                 booking = selectedBooking!!,
                                 category = selectedCategory!!,
                                 description = comment
-                            ){
-                                navController.popBackStack()
-                            }
+                            )
+                        },
+                        submitSuccess = submitSuccess,
+                        onOk = {
+                            navController.popBackStack()
+                        },
+                        onDismiss = {
+                            navController.popBackStack()
                         }
                     )
                 }

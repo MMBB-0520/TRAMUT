@@ -1,6 +1,8 @@
 package com.example.tramut.viewModel
 
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Review
@@ -15,13 +17,14 @@ class ReviewViewModel : ViewModel(){
     private val _bookings = MutableStateFlow<List<Booking>>(emptyList())
     val bookings: StateFlow<List<Booking>> = _bookings
     private val db = FirebaseFirestore.getInstance()
+    private val _submitSuccess = MutableStateFlow(false)
+    val submitSuccess: StateFlow<Boolean> = _submitSuccess
 
     fun submitReview(
         userId: String?,
         booking: Booking,
         category: String,
-        description: String,
-        onReviewSubmitted: () -> Unit
+        description: String
     ) {
         if (userId.isNullOrBlank()) {
             Log.e("Review", "User ID is null or blank")
@@ -45,9 +48,13 @@ class ReviewViewModel : ViewModel(){
         db.collection("reviews")
             .add(reviewData)
             .addOnSuccessListener {
-                onReviewSubmitted()
+                _submitSuccess.value = true
+
             }
-            .addOnFailureListener {}
+            .addOnFailureListener {
+                _submitSuccess.value = false
+            }
+
 }
     fun fetchMyReviews(userId: String?) {
         if (userId.isNullOrBlank()) {
