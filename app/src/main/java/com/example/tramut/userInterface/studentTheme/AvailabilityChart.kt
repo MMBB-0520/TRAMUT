@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.viewModel.TimetableViewModel
 import com.example.tramut.userInterface.LegendItem
+import com.example.tramut.userInterface.formatDateForDisplay
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
@@ -305,7 +306,6 @@ fun AvailabilityChartScreen(
             }
         }
     }
-}
 
 @Composable
 fun AvailabilityChartTimetableGrid(

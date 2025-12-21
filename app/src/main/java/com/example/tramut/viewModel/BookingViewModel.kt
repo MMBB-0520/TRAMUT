@@ -7,7 +7,7 @@ import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.BookingRepo
 import com.example.tramut.rooms.repo.TimetableRepository
-import com.example.tramut.userInterface.studentTheme.formatDateForDisplay
+import com.example.tramut.userInterface.formatDateForDisplay
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration

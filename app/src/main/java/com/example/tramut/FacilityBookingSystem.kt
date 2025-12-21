@@ -163,6 +163,7 @@ enum class AppScreen {
     ReviewSubmission,
     AdminViewReview,
     UpdateReviewStatus,
+    UserScreen,
 
     // Details under Home tab
     AnnouncementDetail,

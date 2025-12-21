@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.MembersValidationResult
@@ -44,7 +45,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
 import com.example.tramut.viewModel.MyBookingViewModel
-import com.example.tramut.viewModel.RoomViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
