@@ -777,6 +777,7 @@ fun FBSApp(
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
     val reviews by reviewViewModel.reviews.collectAsState()
     val bookings by reviewViewModel.bookings.collectAsState()
+    val containerColor = getContainerColor(isStudentLoggedIn,isStaffLoggedIn)
 
 
     val backStackEntry by navController.currentBackStackEntryAsState()
