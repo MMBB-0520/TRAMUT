@@ -96,11 +96,11 @@ fun EditFacilityScreen(
 
     val categoryOptions = remember(adminDepartment) {
         val baseOptions = when (adminDepartment) {
-            "Sport Facilities" -> listOf(
+            "Sports" -> listOf(
                 "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal"
             )
             "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "CITC" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            "Cyber Center" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
             else -> emptyList()
         }
         baseOptions + "Others"
@@ -217,7 +217,7 @@ fun EditFacilityScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                if (adminDepartment != "Sport Facilities") {
+                if (adminDepartment != "Sports") {
                     LabeledInput("Capacity (List, e.g., 4, 5, 6)") {
                         LineTextField(
                             value = viewModel.formCapacity.value,

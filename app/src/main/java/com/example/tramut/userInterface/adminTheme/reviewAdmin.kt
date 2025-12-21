@@ -68,7 +68,7 @@ fun AdminReviewScreen(
         val matchesCategory = selectedCategory == "All Issues" || review.issueCategory == selectedCategory
         val matchesStatus = selectedStatus == "All Status" || review.status == selectedStatus
         matchesCategory && matchesStatus
-    }.sortedByDescending { it.timestamp }
+    }
 
     Scaffold(
         topBar = {
@@ -124,15 +124,7 @@ fun AdminReviewScreen(
                 sheetState = sheetState,
                 containerColor = Color.White
             ) {
-                ReviewDetailContent(
-                    review = selectedReview!!,
-                    onStatusUpdate = { newStatus ->
-                        viewModel.updateStatus(selectedReview!!.id, newStatus) {
-                            showSheet = false
-                            Toast.makeText(context, "Marked as $newStatus", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
+
             }
         }
     }
@@ -149,7 +141,6 @@ fun AdminReviewItem(review: Review, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 StatusBadge(status = review.status)
-                Text("Reported on: ${review.timestamp}", fontSize = 12.sp)
             }
             Text(review.venue, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text(review.issueCategory, color = Color.Red, fontSize = 14.sp)

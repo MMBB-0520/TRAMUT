@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Review
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,16 +16,17 @@ class ReviewViewModel : ViewModel(){
     private val db = FirebaseFirestore.getInstance()
 
     fun submitReview(
+        userId: String?,
         booking: Booking,
         category: String,
-        description: String
+        description: String,
+        onReviewSubmitted: () -> Unit
     ) {
-
-        val user = FirebaseAuth.getInstance().currentUser ?: run {
+        if (userId.isNullOrBlank()) {
+            Log.e("Review", "User ID is null or blank")
             return
         }
         val docRef = db.collection("reviews").document() // 先生成 ID
-
         val reviewData = hashMapOf(
             "reviewId" to docRef.id,
             "bookingId" to booking.bookingId,
@@ -90,8 +90,8 @@ class ReviewViewModel : ViewModel(){
                         Booking(
                             bookingId = doc.id, // 或者 doc.getString("bookingId") ?: ""
                             facility = doc.getString("facility") ?: "",
-                            date = doc.getString("date") ?: "",
                             venue = doc.getString("venue") ?: "",
+                            date = doc.getString("date") ?: "",
                             // members 留空，不拿它，这样就不会因为类型不匹配崩溃
                         )
                     } catch (e: Exception) {

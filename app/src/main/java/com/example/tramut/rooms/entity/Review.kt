@@ -13,6 +13,5 @@ data class Review(
     val issueCategory: String = "",
     val comment: String = "",
     val status: String = "Unresolved",
-    val department: String = "", //facilityType
-    val timestamp: Long = System.currentTimeMillis()
+    val department: String = "" //facilityType
 )

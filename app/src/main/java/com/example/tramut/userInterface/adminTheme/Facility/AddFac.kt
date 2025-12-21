@@ -82,12 +82,12 @@ fun AdminAddFacilityScreen(
     }
     val venueOptions = remember(adminDepartment) {
         val baseOptions = when (adminDepartment) {
-            "Sport Facilities" -> listOf(
+            "Sports" -> listOf(
                 "Badminton","Squash","Gym","Guest/Karaoke Room","Swimming Pool","Snooker","Pickleball","Table Tennis","Tennis","Futsal"
             )
             "Library" -> listOf("Discussion Room","Discussion Room with PC","Individual Study Room"
             )
-            "CITC" -> listOf("All Discussion Room", "Discussion Room (1 PC)","Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]"
+            "Cyber Cente" -> listOf("All Discussion Room", "Discussion Room (1 PC)","Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]"
             )
             else -> listOf("Error")
         }
@@ -169,7 +169,7 @@ fun AdminAddFacilityScreen(
             }
             Spacer(Modifier.height(16.dp))
 
-            if (adminDepartment != "Sport Facilities") {
+            if (adminDepartment != "Sports") {
                 LabeledInput("Capacity (List, e.g., 4, 5, 6)") {
                     LineTextField(
                         viewModel.formCapacity.value,

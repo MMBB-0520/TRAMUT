@@ -381,6 +381,7 @@ fun TopBarScreen(
                 )
             )
         }
+
         AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {

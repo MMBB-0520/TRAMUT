@@ -60,17 +60,17 @@ class TimetableRepository {
         }
     }
 
+    // Inside your Repository
     suspend fun saveBooking(booking: Booking): Boolean {
         return try {
-            val id = if (booking.bookingId.isEmpty()) bookingsCollection.document().id else booking.bookingId
-
-            val finalBooking = booking.copy(bookingId = id)
-
-            bookingsCollection.document(id).set(finalBooking).await()
-            true
+            FirebaseFirestore.getInstance()
+                .collection("bookings")
+                .document(booking.bookingId)
+                .set(booking)
+                .await() // This "waits" for Firebase to finish and returns void
+            true // If it reaches here, it succeeded
         } catch (e: Exception) {
-            e.printStackTrace()
-            false
+            false // If there is a network error, it returns false
         }
     }
 }
