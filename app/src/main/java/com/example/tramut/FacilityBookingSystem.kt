@@ -82,6 +82,7 @@ import com.example.tramut.userInterface.settings.AboutAppScreen
 import com.example.tramut.userInterface.settings.ChangePasswordScreen
 import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
 import com.example.tramut.userInterface.settings.SettingsScreen
+import com.example.tramut.userInterface.settings.ThemeViewModel
 import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
@@ -528,7 +529,8 @@ fun TopBarScreen(
 @Composable
 fun FBSApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    themeViewModel: ThemeViewModel
 ) {
 
     val context = LocalContext.current
@@ -732,6 +734,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.ChangePwd.name)
                         },
                         onThemeClick = {
+                            navController.navigate(AppScreen.Theme.name)
                         },
                         onPrivacyClick = {
                             navController.navigate(AppScreen.Privacy.name)
@@ -739,6 +742,13 @@ fun FBSApp(
                         onAboutClick = {
                             navController.navigate(AppScreen.AboutApp.name)
                         }
+                    )
+                }
+
+                composable(route = AppScreen.Theme.name) {
+                    com.example.tramut.userInterface.settings.ThemeSelectionScreen(
+                        viewModel = themeViewModel,
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 

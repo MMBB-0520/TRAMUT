@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,7 +48,7 @@ fun StudentMenuScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(20.dp)
     ) {
         Spacer(modifier = Modifier.height(52.dp))
@@ -123,7 +124,7 @@ fun MenuButton(title: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = title, fontSize = 14.sp, color = Color.Black)
+        Text(text = title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground)
         Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
     }
 }

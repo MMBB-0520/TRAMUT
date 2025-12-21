@@ -77,7 +77,7 @@ fun AdminLoginScreen(
     var showPassword by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxWidth().background(Background).padding(16.dp)
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.tarumt),

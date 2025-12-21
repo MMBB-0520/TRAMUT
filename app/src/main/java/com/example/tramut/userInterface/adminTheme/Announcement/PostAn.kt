@@ -101,6 +101,7 @@ fun PostAnnouncementScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(scrollState)
                 .padding(20.dp)
                 .imePadding(),
@@ -112,7 +113,7 @@ fun PostAnnouncementScreen(
             LabeledInput("Venue Type") {
                 Box {
                     StaticInputText(uiState.venueType.ifEmpty { "Select Venue" }, { isVenueExpanded = true }, Icons.Default.ArrowDropDown)
-                    DropdownMenu(isVenueExpanded, { isVenueExpanded = false }, Modifier.background(Color.White)) {
+                    DropdownMenu(isVenueExpanded, { isVenueExpanded = false }, Modifier.background(MaterialTheme.colorScheme.background)) {
                         venueOptions.forEach { opt -> DropdownMenuItem({ Text(opt) }, { viewModel.onVenueChange(opt); isVenueExpanded = false }) }
                     }
                 }

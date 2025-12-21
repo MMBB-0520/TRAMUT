@@ -49,6 +49,7 @@ fun AdminMainScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .padding(20.dp) // Updated padding to match Student Theme
                 .verticalScroll(scrollState)
@@ -154,7 +155,7 @@ fun AdminProfileCard(name: String, dept: String, email: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color= Color.Black, RoundedCornerShape(12.dp))
+            .background(color = MaterialTheme.colorScheme.onBackground, RoundedCornerShape(12.dp))
             .padding(20.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -198,7 +199,7 @@ fun AdminMenuButton(text: String, icon: ImageVector, onClick: () -> Unit) {
         Icon(icon, contentDescription = null, tint = Color.Gray)
         Spacer(modifier = Modifier.width(16.dp))
 
-        Text(text = text, fontSize = 14.sp, color = Color.Black)
+        Text(text = text, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground)
         Spacer(modifier = Modifier.weight(1f))
 
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.Black)
@@ -215,7 +216,7 @@ fun ExpandableAdminMenu(title: String, icon: ImageVector, options: List<Pair<Str
             .fillMaxWidth()
             .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Row(
             modifier = Modifier
@@ -228,7 +229,7 @@ fun ExpandableAdminMenu(title: String, icon: ImageVector, options: List<Pair<Str
             Icon(icon, contentDescription = null, tint = Color.Gray)
             Spacer(modifier = Modifier.width(16.dp))
 
-            Text(title, fontSize = 14.sp, color = Color.Black)
+            Text(title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground,)
             Spacer(modifier = Modifier.weight(1f))
 
             Icon(Icons.Default.ArrowDropDown, "Drop Down", modifier = Modifier.rotate(rotationState), tint = Color.Black)

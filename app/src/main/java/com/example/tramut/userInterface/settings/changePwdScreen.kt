@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +52,7 @@ fun ChangePasswordScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 34.dp)
     ) {
 

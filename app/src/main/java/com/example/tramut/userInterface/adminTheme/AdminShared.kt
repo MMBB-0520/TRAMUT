@@ -37,7 +37,7 @@ fun LabeledInput(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 8.dp)

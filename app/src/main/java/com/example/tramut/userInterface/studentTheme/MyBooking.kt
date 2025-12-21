@@ -71,7 +71,7 @@ fun MyBookingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // 标签页选择器 - 没有标题
         Row(

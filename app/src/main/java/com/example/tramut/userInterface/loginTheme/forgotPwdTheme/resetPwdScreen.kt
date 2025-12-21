@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,7 +56,7 @@ fun ResetPasswordScreen (
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 34.dp)
     ) {
         Spacer(modifier = Modifier.height(50.dp))

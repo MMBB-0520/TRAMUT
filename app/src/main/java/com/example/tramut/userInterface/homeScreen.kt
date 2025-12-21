@@ -25,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,7 +78,7 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(20.dp)
     ) {
 
@@ -116,7 +117,7 @@ fun HomeScreen(
             text = "Facility Booking",
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             style = TextStyle(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.5f),
@@ -130,7 +131,7 @@ fun HomeScreen(
             text = "System",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             style = TextStyle(
                 shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.5f),
@@ -197,13 +198,15 @@ fun AnnouncementCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.background(MaterialTheme.colorScheme.background)
+            .padding(14.dp)) {
 
             Row(verticalAlignment = Alignment.CenterVertically) {
 
                 Text(
                     text = announcement.title,
                     fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )

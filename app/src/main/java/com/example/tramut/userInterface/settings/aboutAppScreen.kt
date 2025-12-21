@@ -1,6 +1,7 @@
 package com.example.tramut.userInterface.settings
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,7 +26,9 @@ import com.example.tramut.R
 @Composable
 fun AboutAppScreen(
 ){
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier
+        .background(MaterialTheme.colorScheme.background)
+        .fillMaxWidth()) {
         Image(
             painter = painterResource(id = R.drawable.tarumt),
             contentDescription = "Logo",

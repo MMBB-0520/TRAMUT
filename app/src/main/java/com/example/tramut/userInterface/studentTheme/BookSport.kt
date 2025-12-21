@@ -338,6 +338,7 @@ fun BookSportScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
@@ -680,7 +681,7 @@ fun BookSportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFEFEFEF), shape = RoundedCornerShape(8.dp))
+                        .background(color = MaterialTheme.colorScheme.onBackground, shape = RoundedCornerShape(8.dp))
                         .padding(12.dp)
                 ) {
                     Column {
@@ -760,7 +761,7 @@ fun BookSportScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {

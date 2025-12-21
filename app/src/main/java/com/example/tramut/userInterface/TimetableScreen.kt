@@ -96,6 +96,7 @@ fun TimetableScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {

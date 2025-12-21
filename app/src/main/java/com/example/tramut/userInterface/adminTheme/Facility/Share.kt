@@ -24,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -97,6 +98,7 @@ fun AddSuccessDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(vertical = 8.dp)
             ) {
                 Box(
@@ -281,7 +283,7 @@ fun FacilityDropdownSelector(
             onDismissRequest = { expanded = false },
             modifier = Modifier
                 .width(dropdownWidth)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
                 .heightIn(max = 300.dp)
         ) {
             options.forEach { facility ->

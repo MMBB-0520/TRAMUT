@@ -78,7 +78,7 @@ fun BookingInfoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(MaterialTheme.colorScheme.background)
     ) {
 
         Spacer(modifier = Modifier.height(16.dp))

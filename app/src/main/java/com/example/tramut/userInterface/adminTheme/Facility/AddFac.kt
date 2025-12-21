@@ -118,6 +118,7 @@ fun AdminAddFacilityScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
@@ -147,7 +148,7 @@ fun AdminAddFacilityScreen(
                             expanded = isCategoryExpanded,
                             onDismissRequest = { isCategoryExpanded = false },
                             modifier = Modifier.width(with(LocalDensity.current) { categoryWidth.toDp() })
-                                .background(Color.White).heightIn(max = 250.dp)
+                                .background(MaterialTheme.colorScheme.background).heightIn(max = 250.dp)
                         ) {
                             venueOptions.forEach { opt ->
                                 DropdownMenuItem(text = { Text(opt) }, onClick = {
@@ -191,7 +192,7 @@ fun AdminAddFacilityScreen(
                                 expanded = isStartTimeExpanded,
                                 onDismissRequest = { isStartTimeExpanded = false },
                                 modifier = Modifier.width(with(LocalDensity.current) { startTimeWidth.toDp() })
-                                    .background(Color.White).heightIn(max = 250.dp)
+                                    .background(MaterialTheme.colorScheme.background).heightIn(max = 250.dp)
                             ) {
                                 allTimeSlots.forEach { time ->
                                     DropdownMenuItem(text = { Text(time) }, onClick = {
@@ -217,7 +218,7 @@ fun AdminAddFacilityScreen(
                                 expanded = isEndTimeExpanded,
                                 onDismissRequest = { isEndTimeExpanded = false },
                                 modifier = Modifier.width(with(LocalDensity.current) { endTimeWidth.toDp() })
-                                    .background(Color.White).heightIn(max = 250.dp)
+                                    .background(MaterialTheme.colorScheme.background).heightIn(max = 250.dp)
                             ) {
                                 availableEndTimes.forEach { time ->
                                     DropdownMenuItem(text = { Text(time) }, onClick = {
@@ -302,7 +303,7 @@ fun AdminAddFacilityScreen(
             Spacer(Modifier.height(12.dp))
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {

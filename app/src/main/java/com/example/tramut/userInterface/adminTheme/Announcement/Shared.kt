@@ -79,6 +79,7 @@ fun AnnouncementCard(item: Announcement, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -162,7 +163,7 @@ fun AnnouncementDetailScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             // 2. Error State
@@ -180,6 +181,7 @@ fun AnnouncementDetailScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                         .verticalScroll(rememberScrollState())
                         .padding(20.dp)
                 ) {

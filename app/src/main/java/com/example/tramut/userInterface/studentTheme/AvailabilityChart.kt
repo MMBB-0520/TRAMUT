@@ -122,6 +122,7 @@ fun AvailabilityChartScreen(
     }
         Column(
             modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
@@ -171,6 +172,7 @@ fun AvailabilityChartScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(vertical = 8.dp)
                 ) {
                     DepartmentDropdownLineStyle(
@@ -190,6 +192,7 @@ fun AvailabilityChartScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(bottom = 8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0xFFE3F2FD)
@@ -198,6 +201,7 @@ fun AvailabilityChartScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -221,7 +225,7 @@ fun AvailabilityChartScreen(
             Column(modifier = Modifier.weight(1f)) {
                 // Header
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -463,7 +467,7 @@ fun UnderlinedFloatingLabelDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
         ) {
             items.forEach { item ->
                 DropdownMenuItem(

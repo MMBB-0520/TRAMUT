@@ -130,6 +130,7 @@ fun EditFacilityScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 8.dp)
         ) {
@@ -138,12 +139,12 @@ fun EditFacilityScreen(
             // --- 1. SELECTION SECTION (RETAIN CARD) ---
             // =================================================================
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
                 elevation = CardDefaults.cardElevation(2.dp),
                 shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).background(MaterialTheme.colorScheme.background)
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(16.dp).background(MaterialTheme.colorScheme.background)) {
                     Text("Select Facility to Edit", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(8.dp))
 
@@ -200,7 +201,7 @@ fun EditFacilityScreen(
                             DropdownMenu(
                                 expanded = isCategoryExpanded,
                                 onDismissRequest = { isCategoryExpanded = false },
-                                modifier = Modifier.width(with(density) { categoryWidth.toDp() }).background(Color.White).heightIn(max = 250.dp)
+                                modifier = Modifier.width(with(density) { categoryWidth.toDp() }).background(MaterialTheme.colorScheme.background).heightIn(max = 250.dp)
                             ) {
                                 categoryOptions.forEach { opt ->
                                     DropdownMenuItem(text = { Text(opt) }, onClick = {
@@ -261,7 +262,7 @@ fun EditFacilityScreen(
                                 DropdownMenu(
                                     expanded = isStartTimeExpanded,
                                     onDismissRequest = { isStartTimeExpanded = false },
-                                    modifier = Modifier.width(with(density) { startTimeWidth.toDp() }).background(Color.White).heightIn(max = 250.dp)
+                                    modifier = Modifier.width(with(density) { startTimeWidth.toDp() }).background(MaterialTheme.colorScheme.background).heightIn(max = 250.dp)
                                 ) {
                                     timeSlots.forEach { time ->
                                         DropdownMenuItem(text = { Text(time) }, onClick = {
@@ -346,11 +347,11 @@ fun EditFacilityScreen(
                 Spacer(Modifier.height(12.dp))
 
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
                     elevation = CardDefaults.cardElevation(2.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(16.dp).background(MaterialTheme.colorScheme.background)) {
                         // Mode Toggle (Matching AdminAddFacilityScreen)
                         Row(
                             modifier = Modifier.fillMaxWidth().background(Color(0xFFEEEEF2), RoundedCornerShape(8.dp)).padding(4.dp)
