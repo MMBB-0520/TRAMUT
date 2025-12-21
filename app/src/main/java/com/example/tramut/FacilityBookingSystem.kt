@@ -1478,17 +1478,19 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.CITCTimetable.name) {
+                    val facilityType = "Cyber Centre"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityType/$encodedVenue/$encodedDate")
                         }
                     )
                 }
 
                 composable(route = AppScreen.LibraryTimetable.name) {
+                    val facilityType = "Library"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
