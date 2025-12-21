@@ -65,7 +65,6 @@ fun MyBookingScreen(
         return
     }
 
-    val containerColor = if (isStaff) StaffRed else StudentBlue
     val bookingList by viewModel.bookingList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var selectedTab by remember { mutableStateOf(BookingTab.ALL) }

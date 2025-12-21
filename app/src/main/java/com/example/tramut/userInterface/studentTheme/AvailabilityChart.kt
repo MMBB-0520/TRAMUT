@@ -484,12 +484,10 @@ fun UnderlinedFloatingLabelDropdown(
     }
 }
 
-// Helper function to format date for display (yyyy-MM-dd -> dd / MMM / yyyy (EEE))
 private fun formatDateForDisplay(dateStr: String): String {
     return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = inputFormat.parse(dateStr)
+        val date = outputFormat.parse(dateStr)
         date?.let { outputFormat.format(it) } ?: dateStr
     } catch (e: Exception) {
         dateStr

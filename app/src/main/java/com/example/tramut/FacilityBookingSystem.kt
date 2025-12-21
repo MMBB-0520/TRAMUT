@@ -212,6 +212,7 @@ enum class AppScreen {
 fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
+    addReview: () -> Unit,
     isStaff: Boolean = false
 ) {
     val containerColor = when {
@@ -758,6 +759,8 @@ fun FBSApp(
     val forgotPwdViewModel: ForgotPwdViewModel = viewModel(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
+
+    val reviewViewModel: ReviewViewModel = viewModel() //加这个
 
     val adminsViewModel: AdminsViewModel = viewModel()
     val adminUser = adminsViewModel.adminUser.value
@@ -1323,13 +1326,16 @@ fun FBSApp(
                         userId = currentUser?.loginId ?: "",
 
                         onCITCABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Cyber Centre Discussion Room/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Cyber Centre/Select Venue/$today")
                         },
                         onLibraryABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Library Discussion Room/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Library/Select Venue/$today")
                         },
                         onSportsABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Sports Facilities/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Sport Facilities/Select Venue/$today")
                         },
 
                         onCITCTTClick = {
@@ -1377,7 +1383,12 @@ fun FBSApp(
                     }
                 }
 
-                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(route = AppScreen.StudentBookingSport.name + "/{facilityType}/{venue}/{date}",
+                    arguments = listOf(
+                        navArgument("facilityType") { type = NavType.StringType },
+                        navArgument("venue") { type = NavType.StringType },
+                        navArgument("date") { type = NavType.StringType }
+                    )
                 ) { backStackEntry ->
 
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
@@ -1623,6 +1634,58 @@ fun FBSApp(
                         onBackClicked = {
                             // Optional: Define where the back arrow goes (or hide it in the screen logic)
                             navController.navigate(AppScreen.AdminMenuScreen.name)
+                        }
+                    )
+                }
+
+                composable(route = AppScreen.UserReview.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyReviews(currentUser?.loginId)
+                    }
+                    var selectedTab by remember { mutableStateOf("All") }
+                    val filteredReviews = reviewViewModel.filterByStatus(reviews, selectedTab)
+                    val containerColor = getContainerColor(currentScreen, isStaffLoggedIn)
+                    ReviewScreen(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it },
+                        filteredReviews = filteredReviews,
+                        containColor = containerColor
+                    )
+                }
+
+
+                composable(route = AppScreen.ReviewSubmission.name) {
+                    LaunchedEffect(Unit) {
+                        reviewViewModel.fetchMyBookings(currentUser?.loginId)
+                    }
+                    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
+                    var selectedCategory by remember { mutableStateOf<String?>(null) }
+                    var comment by remember { mutableStateOf("") }
+
+
+                    ReviewSubmissionScreen(
+                        bookings = bookings,
+                        selectedBooking = selectedBooking,
+                        onBookingSelected = {
+                            selectedBooking = it
+                        },
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = {
+                            selectedCategory = it
+                        },
+                        comment = comment,
+                        onCommentChange = {
+                            comment = it
+                        },
+                        onSubmitReviewClick = {
+                            reviewViewModel.submitReview(
+                                userId = currentUser?.loginId,
+                                booking = selectedBooking!!,
+                                category = selectedCategory!!,
+                                description = comment
+                            ){
+                                navController.popBackStack()
+                            }
                         }
                     )
                 }

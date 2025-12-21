@@ -85,6 +85,14 @@ class FacilityViewModel : ViewModel() {
 
         val finalCapacity = if (capacityListToSave.isEmpty()) listOf(1L) else capacityListToSave
 
+        val category = formCategory.value
+        val roomNo = formName.value
+
+        if (category.isBlank() || roomNo.isBlank()) {
+            onResult(false, "Missing category or room name")
+            return
+        }
+
         val facilityData = hashMapOf(
             "name" to formName.value,
             "category" to formCategory.value,
@@ -97,7 +105,10 @@ class FacilityViewModel : ViewModel() {
             "specialClosures" to specialClosures
         )
 
-        Firebase.firestore.collection("facilities")
+        Firebase.firestore
+            .collection("facilities")
+            .document(category)
+            .collection("rooms")
             .add(facilityData)
             .addOnSuccessListener {
                 clearForm()
