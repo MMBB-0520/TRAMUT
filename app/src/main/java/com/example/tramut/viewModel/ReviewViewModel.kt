@@ -1,13 +1,12 @@
 package com.example.tramut.viewModel
 
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Review
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -49,13 +48,15 @@ class ReviewViewModel : ViewModel(){
             .add(reviewData)
             .addOnSuccessListener {
                 _submitSuccess.value = true
-
             }
             .addOnFailureListener {
                 _submitSuccess.value = false
             }
 
 }
+    fun resetSubmitSuccess() {
+        _submitSuccess.value = false
+    }
     fun fetchMyReviews(userId: String?) {
         if (userId.isNullOrBlank()) {
             _reviews.value = emptyList()
@@ -63,22 +64,19 @@ class ReviewViewModel : ViewModel(){
         }
 
         FirebaseFirestore.getInstance()
-            .collection("reviews") // 确保这里的名字和数据库一模一样
+            .collection("reviews")
             .whereEqualTo("loginId", userId)
-            .addSnapshotListener { snapshot, error -> // 建议用监听器，实时更新
+            .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e("Review", "获取失败: ${error.message}")
+                    Log.e("Review", "Error fetching reviews: ${error.message}")
                     return@addSnapshotListener
                 }
 
                 val list = snapshot?.documents?.mapNotNull { doc ->
-                    Log.d("Review", "抓取到原始数据: ${doc.data}")
-                    // 注意：不要用 doc.id 覆盖 userId，除非你想保存文档 ID
                     doc.toObject(Review::class.java)
                 } ?: emptyList()
 
                 _reviews.value = list
-                Log.d("Review", "列表长度: ${list.size}")
             }
     }
 
@@ -116,6 +114,14 @@ class ReviewViewModel : ViewModel(){
     }
 
 
+    fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
+        Firebase.firestore.collection("reviews")
+            .document(reviewId)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+    }
     fun filterByStatus(
         reviews: List<Review>,
         selectedTab: String
