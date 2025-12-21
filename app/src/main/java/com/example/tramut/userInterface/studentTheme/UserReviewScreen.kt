@@ -41,7 +41,6 @@ fun ReviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
             .background(MaterialTheme.colorScheme.background)
     ) {
 
@@ -56,7 +55,8 @@ fun ReviewScreen(
         Text(
             text = selectedTab,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp
+            fontSize = 18.sp,
+            modifier = Modifier.padding(start = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -132,17 +132,17 @@ fun ReviewCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .padding(horizontal = 6.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(5.dp)
     ) {
 
         Column(
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(16.dp)
         ) {
 
