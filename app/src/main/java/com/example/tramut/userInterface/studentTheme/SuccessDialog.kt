@@ -71,3 +71,67 @@ fun SuccessDialog(
         modifier = Modifier.background(Color.White, shape = RoundedCornerShape(8.dp))
     )
 }
+
+@Composable
+fun SuccessDialogShared(
+    contentDescription: String,
+    onOk: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = onOk,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                shape = RoundedCornerShape(2.dp)
+            ) {
+                Text("OK", color = Color.White, fontSize = 24.sp)
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .background(Color(0xFF4CAF50), shape = RoundedCornerShape(50)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.correct),
+                        contentDescription = "Success",
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = contentDescription,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(300.dp))
+            }
+        },
+        modifier = Modifier.background(Color.White, shape = RoundedCornerShape(8.dp))
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SuccessDialogPreview() {
+    SuccessDialog(
+        onOk = {},
+        onDismiss = {}
+    )
+}
