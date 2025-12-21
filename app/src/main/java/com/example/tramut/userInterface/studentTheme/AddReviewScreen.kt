@@ -26,7 +26,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -51,22 +50,7 @@ import com.example.tramut.ui.theme.Background
 import com.google.firebase.firestore.DocumentId
 import kotlin.String
 
-@Preview(showBackground = true)
-@Composable
-fun ReviewSubmission_Preview() {
-    ReviewSubmissionScreen(
-        bookings = emptyList(),
-        selectedBooking = null,
-        onBookingSelected = {},
-        comment = "",
-        onCommentChange = {},
-        selectedCategory = null,
-        onCategorySelected = {},
-        onSubmitReviewClick = {}
-    )
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewSubmissionScreen(
     bookings: List<Booking>,
@@ -76,7 +60,10 @@ fun ReviewSubmissionScreen(
     onCategorySelected: (String) -> Unit,
     comment: String,
     onCommentChange : (String) -> Unit,
-    onSubmitReviewClick: () -> Unit
+    onSubmitReviewClick: () -> Unit,
+    submitSuccess: Boolean,
+    onOk: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val canSubmit = selectedBooking != null &&
             !selectedCategory.isNullOrEmpty()
@@ -177,7 +164,15 @@ fun ReviewSubmissionScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-    }
+            if (submitSuccess) {
+                SuccessDialogShared(
+                    contentDescription = "Review Submitted",
+                    onOk = onOk,
+                    onDismiss = onDismiss
+                )
+            }
+
+        }
 }
 @Composable
 fun InfoField(label: String, value: String) {

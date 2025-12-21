@@ -1,6 +1,5 @@
 package com.example.tramut.userInterface.studentTheme
 
-import android.R.attr.text
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,11 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Review
+import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 
@@ -41,6 +39,7 @@ fun ReviewScreen(
 
     Column(
         modifier = Modifier
+            .background(Background)
             .padding(16.dp)
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -221,34 +220,15 @@ fun ReviewCard(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ReviewCardPreview(){
-    ReviewScreen(
-        containColor = Color(0xFF1E2BD8),
-        filteredReviews = listOf(
-            Review(
-                id = "Z47777",
-                department = "CITC",
-                venueType = "CITC",
-                venue = "CITC",
-                bookingDate = "121212",
-                issueCategory = "Equipment",
-                comment = "This is a sample review.",
-                status = "Unresolved"
-            )),
-        selectedTab = "All",
-        onTabSelected = {}
-    )
-}
+
 @Composable
 fun getContainerColor(
-    currentScreen: AppScreen,
+    isStudent: Boolean,
     isStaff: Boolean
 ): Color {
     return when {
-        currentScreen == AppScreen.AdminLoginScreen -> Color.Black
+        isStudent -> StudentBlue
         isStaff -> StaffRed
-        else -> StudentBlue
+        else -> Color.Black
     }
 }
