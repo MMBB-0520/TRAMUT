@@ -75,8 +75,7 @@ class EntryViewModel : ViewModel() {
     private suspend fun findActiveBookingForUser(userId: String): Booking? {
         // 1. FIX: Match the exact format in your Firestore image
         // Pattern: "dd / MMM / yyyy (EEE)" -> "17 / Dec / 2025 (Wed)"
-        // We use Locale.US to ensure "Dec" and "Wed" are in English, regardless of phone settings
-        val databaseDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.US)
+        val databaseDateFormat = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.US)
         val todayDate = databaseDateFormat.format(Date())
 
         return try {
@@ -227,7 +226,7 @@ class EntryViewModel : ViewModel() {
     private fun isTooEarly(booking: Booking): Boolean {
         return try {
             // Use the format that matches your database
-            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+            val dbDateFormat = SimpleDateFormat("yyyy / MMM / dd (EEE) h:mm a", Locale.US)
 
             // Combine Date + StartTime (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
             val bookingStartStr = "${booking.date} ${booking.startTime}"
@@ -247,14 +246,13 @@ class EntryViewModel : ViewModel() {
     }
 
     // Helper: Check 15-min expiry
-    // Inside EntryViewModel
     private fun isBookingExpired(booking: Booking): Boolean {
         if (booking.status.equals("Cancelled", ignoreCase = true)) return true
         if (booking.status.equals("Completed", ignoreCase = true)) return true
 
         return try {
             // MATCH THE DATABASE FORMAT HERE TOO
-            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+            val dbDateFormat = SimpleDateFormat("yyyy / MMM / dd (EEE) h:mm a", Locale.US)
 
             // Combine DB date + DB start time (e.g. "17 / Dec / 2025 (Wed) 1:00 PM")
             val bookingDateTimeStr = "${booking.date} ${booking.startTime}"
@@ -272,7 +270,7 @@ class EntryViewModel : ViewModel() {
     private fun isCheckoutLate(booking: Booking): Boolean {
         return try {
             // Use the same date format as the rest of your app
-            val dbDateFormat = SimpleDateFormat("dd / MMM / yyyy (EEE) h:mm a", Locale.US)
+            val dbDateFormat = SimpleDateFormat("yyyy / MMM / dd (EEE) h:mm a", Locale.US)
 
             // 1. Construct the full End Date/Time string
             // NOTE: Ensure your Booking entity has an 'endTime' field.

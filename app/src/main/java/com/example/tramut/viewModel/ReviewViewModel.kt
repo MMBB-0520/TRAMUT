@@ -36,7 +36,7 @@ class ReviewViewModel : ViewModel(){
             "bookingId" to booking.bookingId,
             "bookingDate" to booking.date,
             "venue" to booking.venue,
-            "venueType" to booking.venue,
+            "venueType" to booking.finalVenue,
             "loginId" to userId,
             "issueCategory" to category,
             "comment" to description,

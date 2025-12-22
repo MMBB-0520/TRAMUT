@@ -184,11 +184,11 @@ fun BookSportScreen(
             emptyList()
         )
     }
+    val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
     // book for 3 days
     val dateList = remember {
         val calendar = Calendar.getInstance()
-        val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
         List(3) { i ->
             calendar.time = Date() // set to today
@@ -201,7 +201,22 @@ fun BookSportScreen(
     LaunchedEffect(selectedDateFromPrevious, selectedVenueFromPrevious) {
 
         if (selectedDateFromPrevious.isNotEmpty()) {
-            selectedDate = selectedDateFromPrevious.replace("+", " ")
+
+            // ① 先保留你这句（不能删）
+            val cleaned = selectedDateFromPrevious.replace("+", " ")
+
+            // ② 再转成你 dateList 用的格式
+            try {
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+                val outputFormat =
+                    SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
+
+                val parsedDate = inputFormat.parse(cleaned)
+
+                selectedDate = outputFormat.format(parsedDate!!)
+            } catch (e: Exception) {
+                selectedDate = cleaned // 兜底
+            }
         }
 
         if (selectedVenueFromPrevious.isNotEmpty()) {
@@ -852,6 +867,7 @@ fun BookSportScreen(
                     onClick = {
                         if (!termsAccepted) return@Button
 
+                        // 1. 必填项非空检查 (Date, Time, Venue, Pax)
                         val isBasicFieldsMissing = selectedDate.isEmpty() ||
                                 selectedStartTime.isEmpty() ||
                                 selectedEndTime.isEmpty() ||
@@ -864,7 +880,7 @@ fun BookSportScreen(
                             return@Button
                         }
 
-                        // for Cyber Centre / Library
+                        // 2. (for Cyber Centre / Library)
                         if (showMemberDetails) {
                             val totalPax = numberOfPax.toIntOrNull() ?: 1
                             if (totalPax > 1) {
@@ -874,18 +890,14 @@ fun BookSportScreen(
                                 }
 
                                 if (filledMembers.size < requiredMemberCount) {
-                                    validationErrorMessage =
-                                        "Please fill in all member details for $totalPax pax."
+                                    validationErrorMessage = "Please fill in all member details for $totalPax pax."
                                     showValidationError = true
                                     return@Button
                                 }
                             }
                         }
 
-                        val (isValidTime, timeMsg) = validateTimes(
-                            selectedStartTime,
-                            selectedEndTime
-                        )
+                        val (isValidTime, timeMsg) = validateTimes(selectedStartTime, selectedEndTime)
                         if (!isValidTime) {
                             timeErrorMessage = timeMsg
                             showTimeErrorDialog = true
@@ -898,11 +910,12 @@ fun BookSportScreen(
                             emptyList()
                         }
 
-                        isVerifying = true
-                        coroutineScope.launch {
-                            if (membersToValidate.size > 1) {
-                                val result =
-                                    userRepository.validateMembersWithDuplicates(membersToValidate)
+                        // 5. 后端验证逻辑
+                        if (membersToValidate.size > 1) {
+                            isVerifying = true
+                            coroutineScope.launch {
+                                val result = userRepository.validateMembersWithDuplicates(membersToValidate)
+                                isVerifying = false
 
                                 when (result) {
                                     is MembersValidationResult.Success -> {
@@ -910,120 +923,47 @@ fun BookSportScreen(
                                         val mismatchDetails = StringBuilder()
 
                                         membersToValidate.forEach { inputMember ->
-                                            val dbMember =
-                                                result.members.find { it.id == inputMember.id }
-                                            if (dbMember != null && !dbMember.name.equals(
-                                                    inputMember.name,
-                                                    ignoreCase = true
-                                                )
-                                            ) {
+                                            val dbMember = result.members.find { it.id == inputMember.id }
+                                            if (dbMember != null && !dbMember.name.equals(inputMember.name, ignoreCase = true)) {
                                                 allInfoMatched = false
                                                 mismatchDetails.append("ID ${inputMember.id}: Name mismatch with records.\n")
                                             }
                                         }
 
                                         if (allInfoMatched) {
-                                            val pax = numberOfPax.toIntOrNull() ?: 1
-                                            val currentMembers =
-                                                if (pax > 1 && members.size > 1) members.drop(1)
-                                                    .take(pax - 1) else emptyList()
-                                            val currentUserId =
-                                                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-                                                    ?: ""
-
-                                            bookingViewModel.manualAutoAssignAndSave(
-                                                category = selectedVenue,
-                                                date = selectedDate,
-                                                startTime = selectedStartTime,
-                                                endTime = selectedEndTime,
-                                                userId = currentUserId,
-                                                pax = pax,
-                                                members = currentMembers,
-                                                level = bookingViewModel.getLevelForVenue(
-                                                    selectedVenue
-                                                ),
-                                                building = bookingViewModel.getBuildingForVenue(
-                                                    selectedVenue
-                                                ),
-                                                onResult = { success, message ->
-                                                    isVerifying = false
-                                                    if (success) {
-                                                        validationSuccess = true
-                                                        showSuccessDialog = true
-                                                    } else {
-                                                        validationErrorMessage = message
-                                                        showValidationError = true
-                                                    }
-                                                }
-                                            )
+                                            validationSuccess = true
+                                            showSuccessDialog = true
                                         } else {
-                                            isVerifying = false
                                             validationErrorMessage = mismatchDetails.toString()
                                             showValidationError = true
                                         }
                                     }
-
                                     is MembersValidationResult.DuplicatesFound -> {
-                                        isVerifying = false
-                                        validationErrorMessage =
-                                            "Duplicate IDs: ${result.duplicates.joinToString()}"
+                                        validationErrorMessage = "Duplicate IDs: ${result.duplicates.joinToString()}"
                                         showValidationError = true
                                     }
-
                                     is MembersValidationResult.InvalidIds -> {
-                                        isVerifying = false
-                                        validationErrorMessage =
-                                            "ID not found: ${result.invalidIds.joinToString()}"
+                                        validationErrorMessage = "ID not found: ${result.invalidIds.joinToString()}"
                                         showValidationError = true
                                     }
-
                                     is MembersValidationResult.Error -> {
-                                        isVerifying = false
                                         validationErrorMessage = result.errorMessage
                                         showValidationError = true
                                     }
                                 }
-                            } else {
-                                val pax = numberOfPax.toIntOrNull() ?: 1
-                                val currentUserId =
-                                    com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-                                        ?: ""
-
-                                bookingViewModel.manualAutoAssignAndSave(
-                                    category = selectedVenue,
-                                    date = selectedDate,
-                                    startTime = selectedStartTime,
-                                    endTime = selectedEndTime,
-                                    userId = currentUserId,
-                                    pax = pax,
-                                    members = emptyList(),
-                                    level = bookingViewModel.getLevelForVenue(selectedVenue),
-                                    building = bookingViewModel.getBuildingForVenue(selectedVenue),
-                                    onResult = { success, message ->
-                                        isVerifying = false
-                                        if (success) {
-                                            validationSuccess = true
-                                            showSuccessDialog = true
-                                        } else {
-                                            validationErrorMessage = message
-                                            showValidationError = true
-                                        }
-                                    }
-                                )
                             }
+                        } else {
+                            validationSuccess = true
+                            showSuccessDialog = true
                         }
                     },
                     enabled = termsAccepted && !isVerifying,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = containerColor)
-                ) {
+                ){
                     if (isVerifying) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
                             Spacer(Modifier.width(8.dp))
                             Text("VERIFYING...", color = Color.White)
                         }
@@ -1032,6 +972,8 @@ fun BookSportScreen(
                     }
                 }
             }
+
+
 
             if (showTimeErrorDialog) {
                 AlertDialog(
