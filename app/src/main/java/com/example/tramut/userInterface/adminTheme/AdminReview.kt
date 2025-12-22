@@ -85,7 +85,7 @@ fun AdminReviewScreen(
         },
         containerColor = Color(0xFFEEEEF2)
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp)) {
 
             // --- DROPDOWN FILTERS ---
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -123,7 +123,7 @@ fun AdminReviewScreen(
             ModalBottomSheet(
                 onDismissRequest = { showSheet = false },
                 sheetState = sheetState,
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.background
             ) {
                 ReviewDetailContent(
                     review = selectedReview!!,
@@ -143,7 +143,7 @@ fun AdminReviewScreen(
 fun AdminReviewItem(review: Review, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         elevation = CardDefaults.cardElevation(2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -185,7 +185,7 @@ fun ReviewDetailContent(review: Review, onStatusUpdate: (String) -> Unit) {
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(8.dp),
                 border = BorderStroke(1.dp, Color(0xFFFFC107))
-            ) { Text("Pending", color = Color.Black) }
+            ) { Text("Pending", color = MaterialTheme.colorScheme.onBackground) }
 
             Button(
                 onClick = { onStatusUpdate("Solved") },
@@ -230,7 +230,7 @@ fun LineDropdownField(label: String, currentSelection: String, options: List<Str
     var width by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
         Text(label, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Box(
             modifier = Modifier.fillMaxWidth()
@@ -260,7 +260,7 @@ fun LineDropdownField(label: String, currentSelection: String, options: List<Str
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.width(width).background(Color.White)
+            modifier = Modifier.width(width).background(MaterialTheme.colorScheme.background)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
