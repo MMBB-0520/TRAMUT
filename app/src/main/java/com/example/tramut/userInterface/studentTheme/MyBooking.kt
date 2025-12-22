@@ -49,7 +49,6 @@ enum class BookingTab {
 @Composable
 fun MyBookingScreen(
     navController: NavController,
-    isStaff: Boolean = false,
     viewModel: MyBookingViewModel = viewModel(),
     userId: String
 ) {
@@ -86,7 +85,7 @@ fun MyBookingScreen(
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                BookingTab.values().forEach { tab ->
+                BookingTab.entries.forEach { tab ->
                     BookingTabButton(
                         tab = tab,
                         isSelected = selectedTab == tab,

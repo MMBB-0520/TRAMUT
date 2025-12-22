@@ -142,7 +142,6 @@ enum class AppScreen {
     StaffLoginScreen,
     AdminLoginScreen,
 
-    AdminScreen,
     UserScreen,
 
     UserSetting,
@@ -346,36 +345,6 @@ fun TopBarScreen(
                 )
             )
         }
-        AppScreen.StudentBookingDetails -> {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = hasPopBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                        )
-                    }
-                },
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            text = "Booking Information",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
-                    titleContentColor = Color.White
-                )
-            )
-        }
         AppScreen.StudentBookingSport -> {
             TopAppBar(
                 navigationIcon = {
@@ -569,134 +538,6 @@ fun TopBarScreen(
                         )
                     }
                 }
-            )
-        }
-        AppScreen.UserSetting -> {
-            TopAppBar(
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
-                    )
-                },
-                title = {
-                    Box {
-                        Text(
-                            text = "    Settings",
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF512DA8),
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.ChangePwd -> {
-            TopAppBar(
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
-                    )
-                },
-                title = {
-                    Box {
-                        Text(
-                            text = "    Change Password",
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF512DA8),
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.AboutApp -> {
-            TopAppBar(
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
-                    )
-                },
-                title = {
-                    Box {
-                        Text(
-                            text = "    App Info",
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF512DA8),
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.Privacy -> {
-            TopAppBar(
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
-                    )
-                },
-                title = {
-                    Box {
-                        Text(
-                            text = "    Privacy Policy",
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF512DA8),
-                    titleContentColor = Color.White
-                )
-            )
-        }
-        AppScreen.UserReview -> {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Review",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { addReview() } ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E2BD8)
-                )
             )
         }
         else -> {}
@@ -1313,6 +1154,7 @@ fun FBSApp(
                     booking?.let {
                         BookingInfoScreen(
                             booking = it,
+                            containerColor = containerColor,
                             navController = navController
                         )
                     }

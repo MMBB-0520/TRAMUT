@@ -27,11 +27,9 @@ import com.example.tramut.viewModel.MyBookingViewModel
 fun BookingInfoScreen(
     booking: Booking,
     navController: NavHostController,
-    isStaff: Boolean = false,
+    containerColor: Color,
     viewModel: MyBookingViewModel = viewModel()
 ) {
-    val containerColor = if (isStaff) StaffRed else StudentBlue
-
     var showCancelDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
