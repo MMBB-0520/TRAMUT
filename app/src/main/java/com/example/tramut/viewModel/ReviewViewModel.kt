@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Review
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -14,19 +16,21 @@ class ReviewViewModel : ViewModel(){
     private val _bookings = MutableStateFlow<List<Booking>>(emptyList())
     val bookings: StateFlow<List<Booking>> = _bookings
     private val db = FirebaseFirestore.getInstance()
+    private val _submitSuccess = MutableStateFlow(false)
+    val submitSuccess: StateFlow<Boolean> = _submitSuccess
 
     fun submitReview(
         userId: String?,
         booking: Booking,
         category: String,
-        description: String,
-        onReviewSubmitted: () -> Unit
+        description: String
     ) {
         if (userId.isNullOrBlank()) {
             Log.e("Review", "User ID is null or blank")
             return
         }
         val docRef = db.collection("reviews").document() // 先生成 ID
+
         val reviewData = hashMapOf(
             "reviewId" to docRef.id,
             "bookingId" to booking.bookingId,
@@ -43,10 +47,16 @@ class ReviewViewModel : ViewModel(){
         db.collection("reviews")
             .add(reviewData)
             .addOnSuccessListener {
-                onReviewSubmitted()
+                _submitSuccess.value = true
             }
-            .addOnFailureListener {}
+            .addOnFailureListener {
+                _submitSuccess.value = false
+            }
+
 }
+    fun resetSubmitSuccess() {
+        _submitSuccess.value = false
+    }
     fun fetchMyReviews(userId: String?) {
         if (userId.isNullOrBlank()) {
             _reviews.value = emptyList()
@@ -54,22 +64,19 @@ class ReviewViewModel : ViewModel(){
         }
 
         FirebaseFirestore.getInstance()
-            .collection("reviews") // 确保这里的名字和数据库一模一样
+            .collection("reviews")
             .whereEqualTo("loginId", userId)
-            .addSnapshotListener { snapshot, error -> // 建议用监听器，实时更新
+            .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e("Review", "获取失败: ${error.message}")
+                    Log.e("Review", "Error fetching reviews: ${error.message}")
                     return@addSnapshotListener
                 }
 
                 val list = snapshot?.documents?.mapNotNull { doc ->
-                    Log.d("Review", "抓取到原始数据: ${doc.data}")
-                    // 注意：不要用 doc.id 覆盖 userId，除非你想保存文档 ID
                     doc.toObject(Review::class.java)
                 } ?: emptyList()
 
                 _reviews.value = list
-                Log.d("Review", "列表长度: ${list.size}")
             }
     }
 
@@ -90,8 +97,8 @@ class ReviewViewModel : ViewModel(){
                         Booking(
                             bookingId = doc.id, // 或者 doc.getString("bookingId") ?: ""
                             facility = doc.getString("facility") ?: "",
-                            venue = doc.getString("venue") ?: "",
                             date = doc.getString("date") ?: "",
+                            venue = doc.getString("venue") ?: "",
                             // members 留空，不拿它，这样就不会因为类型不匹配崩溃
                         )
                     } catch (e: Exception) {
@@ -107,6 +114,14 @@ class ReviewViewModel : ViewModel(){
     }
 
 
+    fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
+        Firebase.firestore.collection("reviews")
+            .document(reviewId)
+            .update("status", newStatus)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+    }
     fun filterByStatus(
         reviews: List<Review>,
         selectedTab: String

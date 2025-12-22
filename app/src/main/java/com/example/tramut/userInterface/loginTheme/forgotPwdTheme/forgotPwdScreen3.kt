@@ -99,7 +99,7 @@ fun ForgetPasswordScreen3 (
                     fontSize = 15.sp,
                     color = Color.Gray
                 )
-                          },
+            },
             modifier = Modifier
                 .fillMaxWidth(),
             singleLine = true

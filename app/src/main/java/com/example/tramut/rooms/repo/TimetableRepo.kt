@@ -15,7 +15,6 @@ class TimetableRepository {
 
     suspend fun getFacilitiesByDepartment(department: String): List<Facility> {
         return try {
-            // Fetch ALL facilities that belong to "Library" (or "Sports", etc.)
             val snapshot = facilitiesCollection
                 .whereEqualTo("department", department) // Ensure your Firestore field is "department"
                 .get()
@@ -60,17 +59,61 @@ class TimetableRepository {
         }
     }
 
-    // Inside your Repository
+    // --- FUNCTION 1: FOR SPORTS ---
+    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
+        return try {
+            val snapshot = facilitiesCollection
+                .whereEqualTo("category", category)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { it.toObject(Facility::class.java)?.copy(id = it.id) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getFacilitiesByCategory(category: String, pax: Int? = null): List<Facility> {
+        return try {
+            val snapshot = db.collection("facilities")
+                .whereEqualTo("category", category)
+                .get()
+                .await()
+
+            val allFacilities = snapshot.toObjects(Facility::class.java)
+
+            if (pax == null) {
+                allFacilities
+            } else {
+                allFacilities.filter { facility ->
+                    facility.capacity.any { it >= pax }
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    // --- FUNCTION 3: FOR BOOKINGS ---
+    // Change name to match what your ViewModel calls (getBookingsByDate)
+    suspend fun getBookingsByDate(date: String): List<Booking> {
+        return try {
+            val snapshot = bookingsCollection
+                .whereEqualTo("date", date)
+                .get().await()
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Booking::class.java)?.copy(bookingId = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // --- FUNCTION 4: SAVE ---
     suspend fun saveBooking(booking: Booking): Boolean {
         return try {
-            FirebaseFirestore.getInstance()
-                .collection("bookings")
-                .document(booking.bookingId)
-                .set(booking)
-                .await() // This "waits" for Firebase to finish and returns void
-            true // If it reaches here, it succeeded
+            bookingsCollection.document(booking.bookingId).set(booking).await()
+            true
         } catch (e: Exception) {
-            false // If there is a network error, it returns false
+            false
         }
     }
 }

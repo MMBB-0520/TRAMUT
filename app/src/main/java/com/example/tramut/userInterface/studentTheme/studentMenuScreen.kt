@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,12 +32,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tramut.ui.theme.Background
-import com.example.tramut.ui.theme.BlueMain
+import com.example.tramut.ui.theme.StaffRed
 
 @Composable
-fun StudentMenuScreen(
+fun UserMenuScreen(
+    containColor: Color,
     name: String,
-    studentId: String,
+    loginId: String,
     email: String,
     onMyBookingClick: () -> Unit = {},
     onFacilityBookingClick: () -> Unit = {},
@@ -55,7 +57,7 @@ fun StudentMenuScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background((BlueMain), RoundedCornerShape(12.dp))
+                .background((containColor), RoundedCornerShape(12.dp))
                 .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -67,7 +69,7 @@ fun StudentMenuScreen(
                 ){
                     Text(
                         text = (name).take(1).uppercase(),
-                        color = BlueMain,
+                        color = containColor,
                         fontWeight = FontWeight.Bold,
                         fontSize = 30.sp,
                         modifier = Modifier.align(Alignment.Center)
@@ -81,7 +83,7 @@ fun StudentMenuScreen(
                         color = Color.White,
                         fontSize = 18.sp)
                     Spacer(modifier = Modifier.width(1.dp))
-                    Text(studentId,
+                    Text(loginId,
                         color = Color.White,
                         fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(1.dp))
@@ -93,6 +95,7 @@ fun StudentMenuScreen(
         }
 
         Spacer(modifier = Modifier.height(49.dp))
+
 
         MenuButton("My Booking", onClick = onMyBookingClick)
         Spacer(modifier = Modifier.height(40.dp))
@@ -149,13 +152,15 @@ fun LogoutButton(onClick: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    StudentMenuScreen(
+    UserMenuScreen(
+        containColor = StaffRed,
         name = "John Doe",
-        studentId = "123456",
+        loginId = "123456",
         email = "william.henry.harrison@example-pet-store.com",
         onMyBookingClick = {},
         onFacilityBookingClick = {},
         onFeedbackClick = {},
         onSettingsClick = {},
+        onLogoutClick = {}
     )
 }

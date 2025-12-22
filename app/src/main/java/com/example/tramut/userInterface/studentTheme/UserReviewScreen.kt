@@ -15,17 +15,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Review
+import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 
@@ -39,6 +40,7 @@ fun ReviewScreen(
 
     Column(
         modifier = Modifier
+            .background(Background)
             .padding(16.dp)
     ) {
 
@@ -71,7 +73,7 @@ fun ReviewTabs(
     onTabSelected: (String) -> Unit,
     containColor: Color
 ) {
-    val tabs = listOf("All", "Unresolved", "Pending", "Resolved")
+    val tabs = listOf("All", "Unsolved", "Pending", "Solved")
 
     Row(
         modifier = Modifier
@@ -113,138 +115,113 @@ fun TabItem(
         )
     }
 }
+
+
 @Composable
 fun ReviewCard(
     item: Review,
     containColor: Color
 ) {
-
-    val statusColor = when (item.status) {
-        "Unresolved" -> Color.Red
-        "Pending" -> Color(0xFFFF9800)
-        "Resolved" -> Color(0xFF4CAF50)
-        else -> Color.Gray
-    }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF2F2F2)
         ),
-        elevation = CardDefaults.cardElevation(5.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.department,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = containColor
-                )
+                Status(status = item.status)
 
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = statusColor.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = item.status,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = statusColor
-                    )
-                }
+                Text(
+                    text = item.bookingDate,
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            /* ---------- Venue + Type + Date ---------- */
+            // Venue Title
             Text(
                 text = item.venue,
-                fontSize = 13.sp,
-                color = Color.DarkGray
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color.Black
             )
 
+            // Category (Uses the theme's containColor for consistency)
             Text(
-                text = "Booking Date: ${item.bookingDate}",
-                fontSize = 12.sp,
-                color = Color.Gray
+                text = item.issueCategory,
+                color = containColor,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                thickness = 0.5.dp,
+                color = Color.LightGray
+            )
 
-            /* ---------- Issue Category（标签） ---------- */
-            Box(
-                modifier = Modifier
-                    .background(
-                        Color.White,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = item.issueCategory,
-                    fontSize = 11.sp,
-                    color = containColor
-                )
-            }
+            // Bottom section: Department and Comment
+            Text(
+                text = "Department: ${item.department}",
+                fontSize = 11.sp,
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold
+            )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            /* ---------- Comment ---------- */
             Text(
                 text = item.comment,
-                fontSize = 13.sp,
-                color = Color.Black
+                fontSize = 14.sp,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                color = Color.DarkGray
             )
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun ReviewCardPreview(){
-    ReviewScreen(
-        containColor = Color(0xFF1E2BD8),
-        filteredReviews = listOf(
-            Review(
-                id = "Z47777",
-                department = "CITC",
-                venueType = "CITC",
-                venue = "CITC",
-                bookingDate = "121212",
-                issueCategory = "Equipment",
-                comment = "This is a sample review.",
-                status = "Unresolved"
-            )),
-        selectedTab = "All",
-        onTabSelected = {}
-    )
+fun Status(status: String) {
+    val (bgColor, textColor) = when (status) {
+        "Solved" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
+        "Pending" -> Color(0xFFFFF3E0) to Color(0xFFEF6C00)
+        else -> Color(0xFFFFEBEE) to Color(0xFFC62828)
+    }
+    Surface(color = bgColor, shape = RoundedCornerShape(4.dp)) {
+        Text(
+            text = status.uppercase(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            color = textColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
 }
+
 @Composable
 fun getContainerColor(
-    currentScreen: AppScreen,
+    isStudent: Boolean,
     isStaff: Boolean
 ): Color {
     return when {
-        currentScreen == AppScreen.AdminLoginScreen -> Color.Black
+        isStudent -> StudentBlue
         isStaff -> StaffRed
-        else -> StudentBlue
+        else -> Color.Black
     }
 }

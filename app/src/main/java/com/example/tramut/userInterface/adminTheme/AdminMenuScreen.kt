@@ -131,7 +131,7 @@ fun AdminMainScreen(
             AdminMenuButton(
                 text = "Reviews",
                 icon = Icons.Default.Star,
-                onClick = { navController.navigate(AppScreen.AdminReview.name) }
+                onClick = { navController.navigate(AppScreen.AdminViewReview.name) }
             )
             Spacer(modifier = Modifier.height(40.dp))
 

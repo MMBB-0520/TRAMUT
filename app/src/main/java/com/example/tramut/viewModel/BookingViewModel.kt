@@ -2,12 +2,10 @@ package com.example.tramut.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.BookingRepo
-import com.example.tramut.rooms.repo.TimetableRepository
-import com.example.tramut.userInterface.studentTheme.formatDateForDisplay
+import com.example.tramut.userInterface.formatDateForDisplay
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +29,6 @@ class MyBookingViewModel : ViewModel() {
     val uiState: StateFlow<BookingUIState> = _uiState
 
     private var listenerRegistration: ListenerRegistration? = null
-
 
     fun generate9UniqueDigits(): String {
         return (0..9)
@@ -63,6 +60,7 @@ class MyBookingViewModel : ViewModel() {
                 }
             }
     }
+
 
     fun startListening(userId: String) {
         _isLoading.value = true
@@ -120,54 +118,47 @@ class MyBookingViewModel : ViewModel() {
         level: String,
         building: String,
         onResult: (Boolean, String) -> Unit,
-
     ) {
         viewModelScope.launch {
-            // 1. FORMAT THE DATE (Crucial for the Blue Color update)
             val firestoreDate = formatDateForDisplay(date)
-
             val startH = parseTo24Hour(startTime)
             val endH = parseTo24Hour(endTime)
-            if (startH >= endH) {
-                onResult(false, "Invalid time range")
-                return@launch
-            }
             val requestedHours = (startH until endH).toList()
 
-            // 2. Fetch data using the formatted date
-            val facilities = repo.getFacilitiesByCategory(category)
+            // CHANGE THIS LINE: Use the new repo function with pax
+            val facilities = repo.getFacilitiesByCategoryAndCapacity(category, pax)
             val existingBookings = repo.getBookingsByDate(firestoreDate)
+            val department = getDepartmentFromVenue(category)
 
-            // 3. Search logic (Finding an available court)
+            // Find the first facility in the size-filtered list that is not overlapped
             val availableFacility = facilities.find { facility ->
                 val bookingsForThisFacility = existingBookings.filter {
                     it.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
                 }
                 val isOverlap = bookingsForThisFacility.any { b ->
-                    b.hoursList.any { it in requestedHours }
+                    b.hoursList.any { it in requestedHours } && b.status != "Cancelled"
                 }
                 !isOverlap
             }
 
-            // 4. CREATE THE OBJECT (Fixed with all 19 fields)
             if (availableFacility != null) {
                 val newBooking = Booking(
                     bookingId = firestore.collection("bookings").document().id,
                     userId = userId,
-                    timeslotId = "", // ADDED: Provide empty string if not used
-                    facility = category,
+                    timeslotId = "",
+                    facility = department,
                     venue = category,
                     level = level,
                     building = building,
                     duration = "$startTime - $endTime",
                     startTime = startTime,
                     endTime = endTime,
-                    checkIn = "",  // ADDED: Missing field
-                    checkOut = "", // ADDED: Missing field
+                    checkIn = "",
+                    checkOut = "",
                     bookingNo = LCode(),
                     members = members,
                     status = "Confirmed",
-                    date = firestoreDate, // Using the formatted date for Blue status
+                    date = firestoreDate,
                     finalVenue = availableFacility.name,
                     hoursList = requestedHours,
                     pax = pax
@@ -186,7 +177,31 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
+    fun getDepartmentFromVenue(venue: String): String {
+        // 1. Define your data lists exactly as you provided them
+        val sportsCategories = setOf(
+            "Badminton", "Squash", "Gym", "Guest/Karaoke Room",
+            "Swimming Pool", "Snooker", "Pickleball", "Table Tennis",
+            "Tennis", "Futsal"
+        )
 
+        val libraryCategories = setOf(
+            "Discussion Room", "Discussion Room with PC", "Individual Study Room"
+        )
+
+        val cyberCategories = setOf(
+            "Discussion Room (1 PC)", "Discussion Room (2 PCs)",
+            "Discussion Room with Projector (2 PCs)"
+        )
+
+        // 2. Check which "bucket" the venue belongs to
+        return when (venue) {
+            in sportsCategories -> "Sports"
+            in libraryCategories -> "Library"
+            in cyberCategories -> "Cyber Centre"
+            else -> "General"
+        }
+    }
 
     private val repo = BookingRepo()
 
@@ -245,6 +260,7 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration?.remove()
         listenerRegistration = null
     }
+
 
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()
@@ -325,6 +341,7 @@ class MyBookingViewModel : ViewModel() {
             else -> "Not specified"
         }
     }
+
 
     override fun onCleared() {
         super.onCleared()

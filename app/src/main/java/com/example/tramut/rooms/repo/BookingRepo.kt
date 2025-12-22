@@ -9,7 +9,6 @@ import kotlinx.coroutines.tasks.await
 class BookingRepo {
     private val firestore = FirebaseFirestore.getInstance()
 
-    // 1. Fetch bookings by date
     suspend fun getBookingsByDate(date: String): List<Booking> {
         return try {
             firestore.collection("bookings")
@@ -22,11 +21,11 @@ class BookingRepo {
         }
     }
 
-    // 2. Fetch facilities (If you don't have a separate FacilityRepo)
-    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
+    suspend fun getFacilitiesByCategoryAndCapacity(category: String, minCapacity: Int): List<Facility> {
         return try {
             firestore.collection("facilities")
                 .whereEqualTo("category", category)
+                .whereGreaterThanOrEqualTo("capacity", minCapacity) // Filter by size
                 .get()
                 .await()
                 .toObjects(Facility::class.java)
@@ -35,14 +34,15 @@ class BookingRepo {
         }
     }
 
-    // 3. The Save function that returns the 'success' boolean
+
+
     suspend fun saveBooking(booking: Booking): Boolean {
         return try {
             firestore.collection("bookings")
                 .document(booking.bookingId)
                 .set(booking)
                 .await()
-            true // If no exception, it was a success
+            true
         } catch (e: Exception) {
             false
         }

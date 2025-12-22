@@ -36,6 +36,7 @@ class TimetableViewModel(
     private val _uiState = MutableStateFlow(TimetableUiState())
     val uiState = _uiState.asStateFlow()
 
+
     private var facilityListener: ListenerRegistration? = null
 
     init {
@@ -74,7 +75,6 @@ class TimetableViewModel(
                     isLoading = false
                 )
 
-                // Start listening for real-time bookings on this date
                 listenToBookingsForDate(date)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
@@ -95,37 +95,31 @@ class TimetableViewModel(
     private var bookingsListener: ListenerRegistration? = null
 
 
-    fun autoAssignFacilityId(category: String, date: String, hour: Int): String? {
-        val currentFacilities = uiState.value.facilitiesList.filter {
-            it.category.equals(category, ignoreCase = true)
-        }
-        val currentBookings = uiState.value.allBookings
-
-        val availableFacility = currentFacilities.find { facility ->
-            val isOccupied = currentBookings.any { b ->
-                // ADD .trim() to prevent spacing issues
-                b.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true) &&
-                        b.date == date &&
-                        hour in b.hoursList &&
-                        b.status != "Cancelled"
-            }
-            !isOccupied
-        }
-        return availableFacility?.id
-    }
-
-    // Updates allBookings in real-time
     fun loadBookingsForDate(dateString: String) {
-        db.collection("bookings")
+        // 1. Remove/Stop the previous listener if it exists
+        bookingsListener?.remove()
+
+        // 2. Start the new real-time listener
+        bookingsListener = db.collection("bookings")
             .whereEqualTo("date", dateString)
-            .addSnapshotListener { snapshot, _ -> // <--- addSnapshotListener is the key!
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("Timetable", "Listen failed.", error)
+                    return@addSnapshotListener
+                }
+
                 if (snapshot != null) {
+                    // Convert documents to Booking objects
                     val bookings = snapshot.toObjects(Booking::class.java)
-                    _uiState.update { it.copy(allBookings = bookings) }
+
+                    // 3. Update the UI state so the screen re-draws
+                    _uiState.update { it.copy(allBookings = bookings, isLoading = false) }
+
+                    Log.d("Timetable", "Received ${bookings.size} bookings for $dateString")
                 }
             }
     }
-    // Inside TimetableViewModel
+
     fun listenToBookings(date: String) {
         db.collection("bookings")
             .whereEqualTo("date", date)
@@ -137,25 +131,42 @@ class TimetableViewModel(
 
     private val firestore = FirebaseFirestore.getInstance()
 
-
-
-
     fun getSlotStatus(facility: Facility, hour: Int): String {
-        // 1. Get the current list of bookings for THIS date
-        val currentBookings = _allBookings.value
+        val selectedDate = uiState.value.selectedDate // Format: "2023-12-25"
+        val currentBookings = uiState.value.allBookings
 
-        // 2. Look for a match
-        val isBooked = currentBookings.any { booking ->
-            // Use .trim() and .lowercase() to prevent "Badminton " matching "Badminton" failure
-            val venueMatch = booking.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
+        // --- 1. PRIORITY: CLOSED (Operating Hours) ---
+        // If the building isn't open, it doesn't matter if it's booked or maintained
+        val startHour = facility.startTime.split(":")[0].toIntOrNull() ?: 8
+        val endHour = facility.endTime.split(":")[0].toIntOrNull() ?: 22
+        if (hour < startHour || hour >= endHour) return "Closed"
 
-            // Ensure the hour (Int) is actually in the hoursList
-            val timeMatch = booking.hoursList.contains(hour)
+        // --- 2. PRIORITY: MAINTENANCE (Daily Breaks & Special Closures) ---
+        // Check if the current hour is a standard break (like 1pm-2pm every day)
+        if (facility.dailyBreakHours.contains(hour)) return "Maintenance"
 
-            venueMatch && timeMatch
+        // Check if the current date is in the special closures map
+        if (facility.specialClosures.containsKey(selectedDate)) {
+            val closedHours = facility.specialClosures[selectedDate] ?: emptyList()
+            if (closedHours.contains(hour)) return "Maintenance"
         }
 
-        return if (isBooked) "Booked" else "Available"
+        // --- 3. PRIORITY: BOOKED (Student Bookings) ---
+        val isBooked = currentBookings.any { booking ->
+            // Check both fields to ensure we don't miss the match
+            val venueMatch = (booking.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)) ||
+                    (booking.venue.trim().equals(facility.name.trim(), ignoreCase = true))
+
+            val timeMatch = booking.hoursList.contains(hour)
+            val isActive = booking.status != "Cancelled"
+
+            venueMatch && timeMatch && isActive
+        }
+
+        if (isBooked) return "Booked"
+
+        // --- 4. DEFAULT: AVAILABLE ---
+        return "Available"
     }
 
     fun updateDate(newDate: String) {
