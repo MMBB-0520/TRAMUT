@@ -120,36 +120,28 @@ class MyBookingViewModel : ViewModel() {
         level: String,
         building: String,
         onResult: (Boolean, String) -> Unit,
-
     ) {
         viewModelScope.launch {
-            // 1. FORMAT THE DATE (Crucial for the Blue Color update)
             val firestoreDate = formatDateForDisplay(date)
-
             val startH = parseTo24Hour(startTime)
             val endH = parseTo24Hour(endTime)
-            if (startH >= endH) {
-                onResult(false, "Invalid time range")
-                return@launch
-            }
             val requestedHours = (startH until endH).toList()
 
-            // 2. Fetch data using the formatted date
-            val facilities = repo.getFacilitiesByCategory(category)
+            // CHANGE THIS LINE: Use the new repo function with pax
+            val facilities = repo.getFacilitiesByCategoryAndCapacity(category, pax)
             val existingBookings = repo.getBookingsByDate(firestoreDate)
 
-            // 3. Search logic (Finding an available court)
+            // Find the first facility in the size-filtered list that is not overlapped
             val availableFacility = facilities.find { facility ->
                 val bookingsForThisFacility = existingBookings.filter {
                     it.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
                 }
                 val isOverlap = bookingsForThisFacility.any { b ->
-                    b.hoursList.any { it in requestedHours }
+                    b.hoursList.any { it in requestedHours } && b.status != "Cancelled"
                 }
                 !isOverlap
             }
 
-            // 4. CREATE THE OBJECT (Fixed with all 19 fields)
             if (availableFacility != null) {
                 val newBooking = Booking(
                     bookingId = firestore.collection("bookings").document().id,

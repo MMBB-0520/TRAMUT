@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -88,7 +89,6 @@ import com.example.tramut.userInterface.settings.AboutAppScreen
 import com.example.tramut.userInterface.settings.ChangePasswordScreen
 import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
 import com.example.tramut.userInterface.settings.SettingsScreen
-import com.example.tramut.userInterface.staffTheme.StaffMenuScreen
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
@@ -182,7 +182,6 @@ enum class AppScreen {
     AddFac,
     EditFac,
     ViewTimetable,
-    AdminReview,
 
     // Booking
     CITCBooking,
@@ -653,6 +652,7 @@ fun FBSApp(
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
     val reviews by reviewViewModel.reviews.collectAsState()
     val bookings by reviewViewModel.bookings.collectAsState()
+    val containerColor = getContainerColor(isStudentLoggedIn,isStaffLoggedIn)
 
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -1029,7 +1029,7 @@ fun FBSApp(
                 }
 
                 //review
-                composable(AppScreen.AdminReview.name) {
+                composable(AppScreen.AdminViewReview.name) {
                     if (loggedInAdminDept != "Loading...") {
                         AdminReviewScreen(
                             adminDepartment = loggedInAdminDept,
