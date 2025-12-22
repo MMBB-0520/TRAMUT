@@ -164,7 +164,14 @@ fun ReviewSubmissionScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-    }
+            if (submitSuccess) {
+                SuccessDialogShared(
+                    contentDescription = "Review Submitted",
+                    onOk = onOk,
+                    onDismiss = onDismiss
+                )
+            }
+        }
 }
 @Composable
 fun InfoField(label: String, value: String) {
@@ -278,6 +285,7 @@ fun IssueCategoryDropdown(
     onCategorySelected: (String) -> Unit
 ) {
     val categories = listOf(
+        "All Issues",
         "Damage/Broken Items",
         "Network/Technology Issues",
         "Plumbing/Ventilation Issues",

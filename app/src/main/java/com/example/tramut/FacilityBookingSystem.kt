@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -70,6 +71,7 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
@@ -106,7 +108,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import kotlin.collections.map
-
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -379,7 +380,6 @@ fun TopBarScreen(
                 )
             )
         }
-
         AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {
@@ -768,6 +768,8 @@ fun FBSApp(
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
+    var loggedInAdminDept by remember { mutableStateOf("") }
+
 
     var password by remember { mutableStateOf("") }
 
@@ -786,7 +788,6 @@ fun FBSApp(
     val containerColor = getContainerColor(isStudentLoggedIn,isStaffLoggedIn)
 
 
-    //33333333333333333333333333333333
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
         AppScreen.valueOf(backStackEntry?.destination?.route ?: "")
@@ -1148,17 +1149,31 @@ fun FBSApp(
                     arguments = listOf(navArgument("departmentName") { type = NavType.StringType })
                 ) { backStackEntry ->
                     val departmentName =
-                        backStackEntry.arguments?.getString("departmentName") ?: "Sport"
+                        backStackEntry.arguments?.getString("departmentName") ?: "Sports"
 
                     // Pass to 'initialDepartment'
                     TimetableScreen(
                         initialDepartment = departmentName,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToBooking = { facilityId, hour, date ->
-                            // 这里替换成你定义的路由路径
-                            navController.navigate("booking/$facilityId/$hour/$date")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityId/$date/$hour")
                         }
                     )
+                }
+
+                //review
+                composable(AppScreen.AdminViewReview.name) {
+                    if (loggedInAdminDept != "Loading...") {
+                        AdminReviewScreen(
+                            adminDepartment = loggedInAdminDept,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        // Optional: Show a progress bar while waiting for the department name
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
 
                 // Forgot Password Screen
@@ -1631,7 +1646,6 @@ fun FBSApp(
                     )
                 }
 
-
                 composable(route = AppScreen.ReviewSubmission.name) {
                     LaunchedEffect(Unit) {
                         reviewViewModel.fetchMyBookings(currentUser?.loginId)
@@ -1688,6 +1702,7 @@ fun FBSApp(
                         }
                     }
                 }
+
             }
         }
     }
