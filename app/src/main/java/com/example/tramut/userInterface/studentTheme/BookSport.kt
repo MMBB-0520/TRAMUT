@@ -98,6 +98,7 @@ fun BookSportScreen(
 
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
+    val bookingViewModel: MyBookingViewModel = viewModel()
 
     val venueState by venueViewModel.uiState.collectAsState()
     val context = LocalContext.current

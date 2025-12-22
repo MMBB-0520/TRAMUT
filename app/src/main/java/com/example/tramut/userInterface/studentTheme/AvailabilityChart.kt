@@ -493,21 +493,6 @@ fun UnderlinedFloatingLabelDropdown(
     }
 }
 
-private fun formatForFirebase(dateStr: String): String {
-    return try {
-        // Input format from your dateList: "2025-12-23"
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-        // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
-        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = inputFormat.parse(dateStr)
-        date?.let { outputFormat.format(it) } ?: dateStr
-    } catch (e: Exception) {
-        dateStr
-    }
-}
-
-
-
 // Department Dropdown (reused from TimetableScreen)
 @Composable
 fun DepartmentDropdownLineStyle(
