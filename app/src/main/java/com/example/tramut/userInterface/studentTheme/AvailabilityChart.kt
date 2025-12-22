@@ -24,9 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
+import com.example.tramut.userInterface.DepartmentDropdownLineStyle
 import com.example.tramut.viewModel.TimetableViewModel
 import com.example.tramut.userInterface.LegendItem
 import com.example.tramut.userInterface.formatDateForDisplay
+import com.example.tramut.userInterface.formatForFirebase
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
@@ -88,6 +90,7 @@ fun AvailabilityChartScreen(
                 "Discussion Room (2 PCs)",
                 "Discussion Room with Projector (2 PCs)"
             )
+
             else -> listOf("All $selectedFacilityFromPrevious Facilities")
         }
     }
@@ -125,6 +128,9 @@ fun AvailabilityChartScreen(
             selectedDate = dateList[0]
         }
     }
+
+    val canBook = selectedDate.isNotEmpty() && selectedVenue.isNotEmpty()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -137,36 +143,20 @@ fun AvailabilityChartScreen(
                 .padding(bottom = 16.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
-            val isVenueSelected = selectedVenue.isNotEmpty()
-
             Button(
                 onClick = {
-                    if (selectedVenue.isNotEmpty()) {
-                        onBookNow(selectedVenue, selectedDate)
-                    }
+                    onBookNow(selectedVenue, selectedDate)
                 },
-                enabled = selectedVenue.isNotEmpty(),
+                enabled = canBook,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0D47A1)
+                    containerColor = Color(0xFF0D47A1),
+                    disabledContainerColor = Color(0xFFB0BEC5)
                 )
             ) {
                 Text("Book Now")
             }
+
         }
-                Button(
-                    onClick = {
-                        val firebaseDate = formatForFirebase(selectedDate)
-                        val selectedHours = listOf(9)
-                        onBookNow(selectedVenue, firebaseDate)
-                    },
-                    enabled = true,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0D47A1)
-                    )
-                ) {
-                    Text("Book Now")
-                }
-            }
 
         // Date selector - Custom 3-day selector for AvailabilityChartScreen
         Box(
@@ -306,6 +296,7 @@ fun AvailabilityChartScreen(
             }
         }
     }
+}
 
 @Composable
 fun AvailabilityChartTimetableGrid(

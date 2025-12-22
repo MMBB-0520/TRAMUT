@@ -70,7 +70,6 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
-import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen

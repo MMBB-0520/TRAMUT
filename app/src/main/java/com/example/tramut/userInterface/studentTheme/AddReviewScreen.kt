@@ -50,24 +50,10 @@ import com.example.tramut.ui.theme.Background
 import com.google.firebase.firestore.DocumentId
 import kotlin.String
 
-@Preview(showBackground = true)
-@Composable
-fun ReviewSubmission_Preview() {
-    ReviewSubmissionScreen(
-        bookings = emptyList(),
-        selectedBooking = null,
-        onBookingSelected = {},
-        comment = "",
-        onCommentChange = {},
-        selectedCategory = null,
-        onCategorySelected = {},
-        onSubmitReviewClick = {}
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewSubmissionScreen(
+    containerColor: Color,
     bookings: List<Booking>,
     selectedBooking: Booking?,
     onBookingSelected: (Booking) -> Unit,
@@ -75,7 +61,10 @@ fun ReviewSubmissionScreen(
     onCategorySelected: (String) -> Unit,
     comment: String,
     onCommentChange : (String) -> Unit,
-    onSubmitReviewClick: () -> Unit
+    onSubmitReviewClick: () -> Unit,
+    submitSuccess: Boolean,
+    onOk: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val canSubmit = selectedBooking != null &&
             !selectedCategory.isNullOrEmpty()

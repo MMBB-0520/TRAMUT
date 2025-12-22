@@ -98,8 +98,6 @@ fun BookSportScreen(
 
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
-    val roomNoViewModel: RoomViewModel = viewModel()
-    val roomList by roomNoViewModel.rooms.collectAsState()
 
     val venueState by venueViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -241,12 +239,6 @@ fun BookSportScreen(
             }
 
             selectedVenue = detectedCategory
-        }
-    }
-
-    LaunchedEffect(selectedVenue) {
-        if (selectedVenue.isNotEmpty()) {
-            roomNoViewModel.observeRooms(selectedVenue)
         }
     }
 
@@ -875,11 +867,6 @@ fun BookSportScreen(
                             return@Button
                         }
 
-                        if (roomList.isNotEmpty() && selectedRoomNo.isEmpty()) {
-                            validationErrorMessage = "Please select Room No"
-                            showValidationError = true
-                            return@Button
-                        }
 
                         // 2. 准备需要验证的成员列表 (过滤掉空行)
                         val totalMembers = numberOfPax.toIntOrNull() ?: 1
