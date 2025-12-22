@@ -95,25 +95,6 @@ class TimetableViewModel(
     private var bookingsListener: ListenerRegistration? = null
 
 
-    fun autoAssignFacilityId(category: String, date: String, hour: Int): String? {
-        val currentFacilities = uiState.value.facilitiesList.filter {
-            it.category.equals(category, ignoreCase = true)
-        }
-        val currentBookings = uiState.value.allBookings
-
-        val availableFacility = currentFacilities.find { facility ->
-            val isOccupied = currentBookings.any { b ->
-                // ADD .trim() to prevent spacing issues
-                b.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true) &&
-                        b.date == date &&
-                        hour in b.hoursList &&
-                        b.status != "Cancelled"
-            }
-            !isOccupied
-        }
-        return availableFacility?.id
-    }
-
     // Updates allBookings in real-time
     fun loadBookingsForDate(dateString: String) {
         db.collection("bookings")
@@ -141,18 +122,18 @@ class TimetableViewModel(
 
 
     fun getSlotStatus(facility: Facility, hour: Int): String {
-        // 1. Get the current list of bookings for THIS date
+        // 1. Get the current list of bookings for this date
         val currentBookings = _allBookings.value
 
-        // 2. Look for a match
+        // 2. Look for a match that is NOT cancelled
         val isBooked = currentBookings.any { booking ->
-            // Use .trim() and .lowercase() to prevent "Badminton " matching "Badminton" failure
             val venueMatch = booking.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
-
-            // Ensure the hour (Int) is actually in the hoursList
             val timeMatch = booking.hoursList.contains(hour)
 
-            venueMatch && timeMatch
+            // CRITICAL FIX: Only mark as booked if the status is NOT "Cancelled"
+            val isActive = booking.status != "Cancelled"
+
+            venueMatch && timeMatch && isActive
         }
 
         return if (isBooked) "Booked" else "Available"

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -62,6 +63,7 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Announcement
 import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.AdminAddFacilityScreen
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
@@ -69,6 +71,8 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
@@ -103,6 +107,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.collections.map
 
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -566,6 +571,134 @@ fun TopBarScreen(
                 }
             )
         }
+        AppScreen.UserSetting -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Settings",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.ChangePwd -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Change Password",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.AboutApp -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    App Info",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.Privacy -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box {
+                        Text(
+                            text = "    Privacy Policy",
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF512DA8),
+                    titleContentColor = Color.White
+                )
+            )
+        }
+        AppScreen.UserReview -> {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Review",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { addReview() } ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E2BD8)
+                )
+            )
+        }
         else -> {}
     }
 }
@@ -602,7 +735,6 @@ fun FBSApp(
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
     var password by remember { mutableStateOf("") }
-
 
     val studentIdValid by loginViewModel.studentIdValid.collectAsState()
     val staffIdValid by loginViewModel.staffIdValid.collectAsState()
@@ -993,7 +1125,6 @@ fun FBSApp(
                     )
                 }
 
-
                 // Forgot Password Screen
                 composable(route = AppScreen.ForgotPassword1.name) {
                     var email by rememberSaveable { mutableStateOf("") }
@@ -1130,13 +1261,16 @@ fun FBSApp(
                         userId = currentUser?.loginId ?: "",
 
                         onCITCABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Cyber Centre Discussion Room/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Cyber Centre/Select Venue/$today")
                         },
                         onLibraryABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Library Discussion Room/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Library/Select Venue/$today")
                         },
                         onSportsABClick = {
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/Sports Facilities/")
+                            val today = java.time.LocalDate.now().toString()
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/Sport Facilities/Select Venue/$today")
                         },
 
                         onCITCTTClick = {
@@ -1184,22 +1318,24 @@ fun FBSApp(
                     }
                 }
 
-                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(route = AppScreen.StudentBookingSport.name + "/{facilityType}/{venue}/{date}",
+                    arguments = listOf(
+                        navArgument("facilityType") { type = NavType.StringType },
+                        navArgument("venue") { type = NavType.StringType },
+                        navArgument("date") { type = NavType.StringType }
+                    )
                 ) { backStackEntry ->
 
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
                     val date = backStackEntry.arguments?.getString("date") ?: ""
-                    val facilityType = when {
-                        venue.contains("Cyber Centre", ignoreCase = true) -> "Cyber Centre"
-                        venue.contains("Library", ignoreCase = true) -> "Library"
-                        else -> "Sports"
-                    }
+                    val facilityType = backStackEntry.arguments?.getString("facilityType") ?: "Sport Facilities"
 
                     val isStaffLoggedIn by loginViewModel.isStaffLoggedIn.collectAsState()
 
                     BookSportScreen(
                         facilityType = facilityType,
                         selectedDateFromPrevious = date,
+                        selectedVenueFromPrevious = venue,
                         onBackFacilityPage = {
                             navController.navigate(AppScreen.StudentBooking.name) {
                                 popUpTo(AppScreen.StudentBooking.name) { inclusive = true }
@@ -1275,35 +1411,38 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.CITCTimetable.name) {
+                    val facilityType = "Cyber Centre"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityType/$encodedVenue/$encodedDate")
                         }
                     )
                 }
 
                 composable(route = AppScreen.LibraryTimetable.name) {
+                    val facilityType = "Library"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityType/$encodedVenue/$encodedDate")
                         }
                     )
                 }
 
 
                 composable(route = AppScreen.SportsTimetable.name) {
+                    val facilityType = "Sport"
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Sports Facilities",
                         onBookNow = { selectedVenue, selectedDate ->
                             val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
                             val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityType/$encodedVenue/$encodedDate")
                         }
                     )
                 }

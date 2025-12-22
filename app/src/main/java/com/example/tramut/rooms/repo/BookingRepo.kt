@@ -22,11 +22,11 @@ class BookingRepo {
         }
     }
 
-    // 2. Fetch facilities (If you don't have a separate FacilityRepo)
-    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
+    suspend fun getFacilitiesByCategoryAndCapacity(category: String, minCapacity: Int): List<Facility> {
         return try {
             firestore.collection("facilities")
                 .whereEqualTo("category", category)
+                .whereGreaterThanOrEqualTo("capacity", minCapacity) // Filter by size
                 .get()
                 .await()
                 .toObjects(Facility::class.java)

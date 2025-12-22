@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.R.attr.enabled
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,8 @@ import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +36,7 @@ import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
+import com.example.tramut.userInterface.adminTheme.Facility.LineTextField
 import com.example.tramut.viewModel.VenueViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -40,7 +44,6 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.launch
-import com.example.tramut.userInterface.studentTheme.FacilityData
 import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,46 +51,61 @@ import com.example.tramut.viewModel.MyBookingViewModel
 fun BookSportScreen(
     facilityType: String,
     selectedDateFromPrevious: String = "",
+    selectedVenueFromPrevious: String = "",
     onBackFacilityPage: () -> Unit,
     onSubmit: (String, String, String, String, Int, List<Member>, String, String) -> Unit,
     isStaff: Boolean = false,
     userRepository: UsersRepo
 ) {
     val containerColor = if (isStaff) StaffRed else StudentBlue
-    var termsAccepted by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showTimeErrorDialog by remember { mutableStateOf(false) }
     var timeErrorMessage by remember { mutableStateOf("") }
+    var showFieldsErrorDialog by remember { mutableStateOf(false) }
 
-    // 新增验证相关状态
+    var termsAccepted by remember { mutableStateOf(false) }
     var showValidationError by remember { mutableStateOf(false) }
     var validationErrorMessage by remember { mutableStateOf("") }
     var isVerifying by remember { mutableStateOf(false) }
     var validationSuccess by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
 
+
+    val members = remember { mutableStateListOf<Member>() }
     var numberOfPax by remember { mutableStateOf("1") }
+    var selectedDate by remember { mutableStateOf("") }
+    var selectedVenue by remember { mutableStateOf("") }
+    var selectedRoomNo by remember { mutableStateOf("") }
+    var selectedStartTime by remember { mutableStateOf("") }
+    var selectedEndTime by remember { mutableStateOf("") }
+    var originalRoomNo by remember { mutableStateOf("") }
 
-    // check num member
-    val members = remember(numberOfPax) {
-        val pax = numberOfPax.toIntOrNull() ?: 1
-        // pax 1-15
-        val validPax = pax.coerceIn(1, 15)
-        if (validPax != pax) {
-            numberOfPax = validPax.toString()
+    LaunchedEffect(numberOfPax) {
+        val count = numberOfPax.toIntOrNull() ?: 1
+        val targetCount = count.coerceIn(1, 15)
+
+        if (members.size < targetCount) {
+            repeat(targetCount - members.size) {
+                members.add(Member("", ""))
+            }
+        } else if (members.size > targetCount) {
+            repeat(members.size - targetCount) {
+                members.removeAt(members.size - 1)
+            }
         }
-        MutableList(validPax) { Member(id = "", name = "") }
     }
 
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
+
     val venueState by venueViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     // facilityType -> department 映射
-    val department = when (facilityType) {
-        "Library" -> "Library"
-        "Cyber Centre", "CITC" -> "CITC"
+    val department = when {
+        facilityType.contains("Library", ignoreCase = true) -> "Library"
+        facilityType.contains("CITC", ignoreCase = true) || facilityType.contains("Cyber", ignoreCase = true) -> "CITC"
         else -> "Sport Facilities"
     }
 
@@ -178,12 +196,51 @@ fun BookSportScreen(
         }
     }
 
-    var selectedDate by remember { mutableStateOf("") }
 
-    // 如果从上一页传入了日期，设置它
-    LaunchedEffect(selectedDateFromPrevious) {
-        if (selectedDateFromPrevious.isNotEmpty() && selectedDate.isEmpty()) {
-            selectedDate = selectedDateFromPrevious
+    LaunchedEffect(selectedDateFromPrevious, selectedVenueFromPrevious) {
+
+        if (selectedDateFromPrevious.isNotEmpty()) {
+            selectedDate = selectedDateFromPrevious.replace("+", " ")
+        }
+
+        if (selectedVenueFromPrevious.isNotEmpty()) {
+
+            val cleanedVenue = selectedVenueFromPrevious.replace("+", " ")
+
+            val parts = cleanedVenue.split(" - ", limit = 2)
+            val venuePart = parts.getOrNull(0) ?: ""
+            val roomPart = parts.getOrNull(1) ?: ""
+
+            originalRoomNo = roomPart
+            selectedRoomNo = roomPart
+
+            val detectedCategory = when {
+                cleanedVenue.contains("Snooker", ignoreCase = true) -> "Snooker"
+                cleanedVenue.contains("Badminton", ignoreCase = true) -> "Badminton"
+                cleanedVenue.contains("Squash", ignoreCase = true) -> "Squash"
+                cleanedVenue.contains("Gym", ignoreCase = true) -> "Gym"
+                cleanedVenue.contains("Swimming Pool", ignoreCase = true) -> "Swimming Pool"
+                cleanedVenue.contains("Pickleball", ignoreCase = true) -> "Pickleball"
+                cleanedVenue.contains("Table Tennis", ignoreCase = true) -> "Table Tennis"
+                cleanedVenue.contains("Tennis", ignoreCase = true) -> "Tennis"
+                cleanedVenue.contains("Futsal", ignoreCase = true) -> "Futsal"
+                cleanedVenue.startsWith("Guest", ignoreCase = true)-> "Guest/Karaoke Room"
+
+                cleanedVenue.startsWith("CC00", ignoreCase = true)-> "Discussion Room （1PC）"
+                cleanedVenue.startsWith("CC1", ignoreCase = true)-> "Discussion Room （2PC）"
+                cleanedVenue.startsWith("CC01", ignoreCase = true)-> "Discussion Room with Projector（2PC）"
+                cleanedVenue.contains("A", ignoreCase = true) -> "Discussion Room"
+                cleanedVenue.contains("B", ignoreCase = true) ||
+                        cleanedVenue.contains("G", ignoreCase = true)  -> "Discusion Room with PC"
+                cleanedVenue.contains("Q", ignoreCase = true)-> "Individual Study Room"
+                cleanedVenue.contains("Discussion", ignoreCase = true) -> {
+                    if (cleanedVenue.contains("PC")) "Discussion Room with PC" else "Discussion Room"
+                }
+                cleanedVenue.contains("Study Room", ignoreCase = true) -> "Individual Study Room"
+                else -> cleanedVenue
+            }
+
+            selectedVenue = detectedCategory
         }
     }
 
@@ -233,14 +290,12 @@ fun BookSportScreen(
         return Pair(true, "")
     }
 
-    var selectedStartTime by remember { mutableStateOf("") }
     val timeList = listOf(
         "08:00 AM", "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
         "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
         "6:00 PM", "7:00 PM", "8:00 PM", "9:00 PM"
     )
 
-    var selectedEndTime by remember { mutableStateOf("") }
     val endTimeList = listOf(
         "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
         "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM",
@@ -272,8 +327,6 @@ fun BookSportScreen(
             showTimeErrorDialog = true
         }
     }
-
-    var selectedVenue by remember { mutableStateOf("") }
 
     // 验证成员函数
     fun validateMembers(): Boolean {
@@ -619,51 +672,65 @@ fun BookSportScreen(
 
                                 for (index in 0 until membersToShow) {
                                     val memberIndex = index + 1
-                                    val member = members[memberIndex]
 
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Member ${index + 1}",
-                                                fontSize = 12.sp,
-                                                color = Color.Gray,
-                                                modifier = Modifier.padding(bottom = 4.dp)
-                                            )
-                                            LineTextField(
-                                                value = member.id,
-                                                onValueChange = { newId ->
-                                                    if (memberIndex < members.size) {
-                                                        // 更新对象属性
-                                                        members[memberIndex] = members[memberIndex].copy(id = newId)
-                                                    }
-                                                },
-                                                label = "ID"
-                                            )
+                                    if (memberIndex < members.size) {
+                                        val member = members[memberIndex]
+
+                                        val idStatus = when {
+                                            member.id.isEmpty() -> null
+                                            member.id.length == 7 -> true
+                                            else -> false
                                         }
 
-                                        Spacer(Modifier.width(16.dp))
+                                        val nameStatus = when {
+                                            member.name.isEmpty() -> null
+                                            member.name.length >= 2 -> true
+                                            else -> false
+                                        }
 
-                                        Column(Modifier.weight(1f)) {
-                                            Text(
-                                                text = "Name",
-                                                fontSize = 12.sp,
-                                                color = Color.Gray,
-                                                modifier = Modifier.padding(bottom = 4.dp)
-                                            )
-                                            LineTextField(
-                                                value = member.name,
-                                                onValueChange = { newName ->
-                                                    if (memberIndex < members.size) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Member ${index + 1}",
+                                                    fontSize = 12.sp,
+                                                    color = Color.Gray,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+                                                LineTextField(
+                                                    value = member.id,
+                                                    onValueChange = { newId ->
+                                                        members[memberIndex] = members[memberIndex].copy(id = newId)
+                                                    },
+                                                    label = "Student ID",
+                                                    placeholder = "e.g. 2201234",
+                                                    isValid = idStatus
+                                                )
+                                            }
+
+                                            Spacer(Modifier.width(16.dp))
+
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Name",
+                                                    fontSize = 12.sp,
+                                                    color = Color.Gray,
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
+                                                LineTextField(
+                                                    value = member.name,
+                                                    onValueChange = { newName ->
                                                         members[memberIndex] = members[memberIndex].copy(name = newName)
-                                                    }
-                                                },
-                                                label = "Name"
-                                            )
+                                                    },
+                                                    label = "Full Name",
+                                                    placeholder = "Enter name",
+                                                    isValid = if (member.name.isEmpty()) null else member.name.length >= 2
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -783,40 +850,51 @@ fun BookSportScreen(
                     onClick = {
                         if (!termsAccepted) return@Button
 
-                        // 先验证时间
-                        val (isValid, errorMessage) = validateTimes(selectedStartTime, selectedEndTime)
-                        if (!isValid) {
-                            timeErrorMessage = errorMessage
-                            showTimeErrorDialog = true
-                            return@Button
-                        }
+                        // 1. 必填项非空检查 (Date, Time, Venue, Pax)
+                        val isBasicFieldsMissing = selectedDate.isEmpty() ||
+                                selectedStartTime.isEmpty() ||
+                                selectedEndTime.isEmpty() ||
+                                selectedVenue.isEmpty() ||
+                                (showMemberDetails && numberOfPax.isEmpty())
 
-                        // 验证基本表单字段
-                        if (selectedDate.isEmpty() || selectedStartTime.isEmpty() ||
-                            selectedEndTime.isEmpty() || selectedVenue.isEmpty()) {
+                        if (isBasicFieldsMissing) {
                             validationErrorMessage = "Please fill in all required fields (*)"
                             showValidationError = true
                             return@Button
                         }
 
-                        if (showMemberDetails && !validateMembers()) {
+                        // 2. (for Cyber Centre / Library)
+                        if (showMemberDetails) {
+                            val totalPax = numberOfPax.toIntOrNull() ?: 1
+                            if (totalPax > 1) {
+                                val requiredMemberCount = totalPax - 1
+                                val filledMembers = members.subList(1, totalPax).filter {
+                                    it.id.isNotBlank() && it.name.isNotBlank()
+                                }
+
+                                if (filledMembers.size < requiredMemberCount) {
+                                    validationErrorMessage = "Please fill in all member details for $totalPax pax."
+                                    showValidationError = true
+                                    return@Button
+                                }
+                            }
+                        }
+
+                        val (isValidTime, timeMsg) = validateTimes(selectedStartTime, selectedEndTime)
+                        if (!isValidTime) {
+                            timeErrorMessage = timeMsg
+                            showTimeErrorDialog = true
                             return@Button
                         }
 
-                        if (validationSuccess) {
-                            showSuccessDialog = true
-                            return@Button
-                        }
-
-                        val totalMembers = numberOfPax.toIntOrNull() ?: 1
-                        val membersToValidate = if (totalMembers > 1 && showMemberDetails) {
-                            members.subList(1, minOf(totalMembers, members.size))
-                                .filter { it.id.isNotBlank() }
+                        val membersToValidate = if (showMemberDetails) {
+                            members.filter { it.id.isNotBlank() && it.name.isNotBlank() }
                         } else {
                             emptyList()
                         }
 
-                        if (membersToValidate.isNotEmpty()) {
+                        // 5. 后端验证逻辑
+                        if (membersToValidate.size > 1) {
                             isVerifying = true
                             coroutineScope.launch {
                                 val result = userRepository.validateMembersWithDuplicates(membersToValidate)
@@ -824,23 +902,37 @@ fun BookSportScreen(
 
                                 when (result) {
                                     is MembersValidationResult.Success -> {
-                                        validationSuccess = true
-                                        showSuccessDialog = true
+                                        var allInfoMatched = true
+                                        val mismatchDetails = StringBuilder()
+
+                                        membersToValidate.forEach { inputMember ->
+                                            val dbMember = result.members.find { it.id == inputMember.id }
+                                            if (dbMember != null && !dbMember.name.equals(inputMember.name, ignoreCase = true)) {
+                                                allInfoMatched = false
+                                                mismatchDetails.append("ID ${inputMember.id}: Name mismatch with records.\n")
+                                            }
+                                        }
+
+                                        if (allInfoMatched) {
+                                            validationSuccess = true
+                                            showSuccessDialog = true
+                                        } else {
+                                            validationErrorMessage = mismatchDetails.toString()
+                                            showValidationError = true
+                                        }
                                     }
                                     is MembersValidationResult.DuplicatesFound -> {
-                                        validationErrorMessage = "Duplicate student IDs found: ${result.duplicates.joinToString(", ")}"
+                                        validationErrorMessage = "Duplicate IDs: ${result.duplicates.joinToString()}"
                                         showValidationError = true
                                     }
                                     is MembersValidationResult.InvalidIds -> {
-                                        validationErrorMessage = "Invalid student IDs: ${result.invalidIds.joinToString(", ")}"
+                                        validationErrorMessage = "ID not found: ${result.invalidIds.joinToString()}"
                                         showValidationError = true
                                     }
                                     is MembersValidationResult.Error -> {
                                         validationErrorMessage = result.errorMessage
                                         showValidationError = true
                                     }
-
-                                    else -> {}
                                 }
                             }
                         } else {
@@ -850,21 +942,11 @@ fun BookSportScreen(
                     },
                     enabled = termsAccepted && !isVerifying,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = containerColor
-                    )
-                ) {
+                    colors = ButtonDefaults.buttonColors(containerColor = containerColor)
+                ){
                     if (isVerifying) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
                             Spacer(Modifier.width(8.dp))
                             Text("VERIFYING...", color = Color.White)
                         }
@@ -886,6 +968,27 @@ fun BookSportScreen(
                     confirmButton = {
                         Button(
                             onClick = { showTimeErrorDialog = false },
+                            colors = ButtonDefaults.buttonColors(containerColor = containerColor)
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            if (showFieldsErrorDialog) {
+                AlertDialog(
+                    onDismissRequest = { showFieldsErrorDialog = false },
+                    title = {
+                        Text("Required Fields Missing", color = Color.Red)
+                    },
+                    text = {
+                        Text("Please fill in all required fields (*)")
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { showFieldsErrorDialog = false },
                             colors = ButtonDefaults.buttonColors(containerColor = containerColor)
                         ) {
                             Text("OK")
@@ -965,6 +1068,7 @@ fun BookSportScreen(
                         )
 
                         onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers, level, building)
+                        // onSubmit( finalVenue, selectedDate, selectedStartTime, selectedEndTime, 1, members, facilityType, department )
 
                         coroutineScope.launch  {
                             delay(500)
@@ -983,6 +1087,109 @@ fun BookSportScreen(
                 )
             }
         }
+    }
+}
+
+
+@Composable
+fun LineTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String = "",
+    modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    singleLine: Boolean = true,
+    isValid : Boolean? = null
+) {
+    val hasValue = value.isNotEmpty()
+    var text by remember { mutableStateOf(value) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(value) {
+        text = value
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    focusRequester.requestFocus()
+                }
+        ) {
+            Column {
+                if (hasValue) {
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    BasicTextField(
+                        value = text,
+                        onValueChange = {
+                            text = it
+                            onValueChange(it)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = if (hasValue) 0.dp else 8.dp)
+                            .focusRequester(focusRequester),
+                        textStyle = LocalTextStyle.current.copy(
+                            fontSize = if (hasValue) 16.sp else 14.sp,
+                            color = if (hasValue) Color.Black else Color.Gray
+                        ),
+                        keyboardOptions = keyboardOptions,
+                        singleLine = singleLine,
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (text.isEmpty()) {
+                                    Text(
+                                        text = placeholder.ifEmpty { label },
+                                        fontSize = 14.sp,
+                                        color = Color.Gray,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                    when (isValid) {
+                        true -> Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Valid",
+                            tint = Color.Green,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        false -> Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Invalid",
+                            tint = Color.Red,
+                            modifier = Modifier.size(20.dp)
+                        )
+
+                        null -> {}
+                    }
+                }
+            }
+        }
+
+        Divider(
+            color = Color.Gray,
+            thickness = 1.dp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 
@@ -1060,85 +1267,5 @@ fun DropdownUnderlinedTextFieldSimple(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun LineTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String = "",
-    modifier: Modifier = Modifier,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    singleLine: Boolean = true
-) {
-    val hasValue = value.isNotEmpty()
-    var text by remember { mutableStateOf(value) }
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(value) {
-        text = value
-    }
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    focusRequester.requestFocus()
-                }
-        ) {
-            Column {
-                if (hasValue) {
-                    Text(
-                        text = label,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-                }
-
-                BasicTextField(
-                    value = text,
-                    onValueChange = {
-                        text = it
-                        onValueChange(it)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = if (hasValue) 0.dp else 8.dp)
-                        .focusRequester(focusRequester),
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = if (hasValue) 16.sp else 14.sp,
-                        color = if (hasValue) Color.Black else Color.Gray
-                    ),
-                    keyboardOptions = keyboardOptions,
-                    singleLine = singleLine,
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (text.isEmpty()) {
-                                Text(
-                                    text = placeholder.ifEmpty { label },
-                                    fontSize = 14.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            innerTextField()
-                        }
-                    }
-                )
-            }
-        }
-
-        Divider(
-            color = Color.Gray,
-            thickness = 1.dp,
-            modifier = Modifier.padding(top = 8.dp)
-        )
     }
 }
