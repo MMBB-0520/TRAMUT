@@ -51,6 +51,7 @@ import kotlin.String
 
 @Composable
 fun ReviewSubmissionScreen(
+    containerColor: Color,
     bookings: List<Booking>,
     selectedBooking: Booking?,
     onBookingSelected: (Booking) -> Unit,
@@ -93,7 +94,7 @@ fun ReviewSubmissionScreen(
 
             InfoField(
                 label = "Venue / Room No.",
-                value = "${selectedBooking?.venue ?: ""}, ${selectedBooking?.finalVenue ?: ""}"
+                value = selectedBooking?.venue ?: ""
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -153,7 +154,7 @@ fun ReviewSubmissionScreen(
                     .padding(horizontal = 32.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1427C9)
+                    containerColor = containerColor
                 )
             ) {
                 Text(
@@ -169,7 +170,6 @@ fun ReviewSubmissionScreen(
                     onDismiss = onDismiss
                 )
             }
-
         }
 }
 @Composable
@@ -284,9 +284,12 @@ fun IssueCategoryDropdown(
     onCategorySelected: (String) -> Unit
 ) {
     val categories = listOf(
-        "Dirty Issue",
-        "Broken Facility",
-        "Safety Issue",
+        "All Issues",
+        "Damage/Broken Items",
+        "Network/Technology Issues",
+        "Plumbing/Ventilation Issues",
+        "Electrical/Lighting Issues",
+        "Cleanliness & Safety",
         "Other"
     )
 

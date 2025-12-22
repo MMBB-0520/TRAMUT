@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults.containerColor
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,7 +68,10 @@ import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
+import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
+import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
@@ -104,7 +109,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-
 class LoginViewModelFactory(private val usersRepo: UsersRepo): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
@@ -139,6 +143,7 @@ enum class AppScreen {
     AdminLoginScreen,
 
     UserScreen,
+    AdminScreen,
 
     UserSetting,
     AboutApp,
@@ -155,6 +160,8 @@ enum class AppScreen {
 
     UserReview,
     ReviewSubmission,
+    AdminViewReview,
+    UpdateReviewStatus,
 
     // Details under Home tab
     AnnouncementDetail,
@@ -177,7 +184,6 @@ enum class AppScreen {
     AddFac,
     EditFac,
     ViewTimetable,
-    AdminViewReview,
 
     // Booking
     CITCBooking,
@@ -211,13 +217,8 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     addReview: () -> Unit,
-    isStaff: Boolean
+    containerColor: Color
 ) {
-    val containerColor = when {
-        currentScreen == AppScreen.AdminLoginScreen -> Color.Black
-        isStaff -> StaffRed
-        else -> StudentBlue
-    }
 
     when(currentScreen) {
         AppScreen.StudentLoginScreen -> {
@@ -637,8 +638,10 @@ fun FBSApp(
     val currentAdminDept = adminUser?.department ?: "General"
     val currentAdminLoginId = adminUser?.login_id ?: ""
 
-    var password by remember { mutableStateOf("") }
+    var loggedInAdminDept by remember { mutableStateOf("") }
 
+
+    var password by remember { mutableStateOf("") }
 
     val studentIdValid by loginViewModel.studentIdValid.collectAsState()
     val staffIdValid by loginViewModel.staffIdValid.collectAsState()
@@ -652,7 +655,7 @@ fun FBSApp(
     val errorMessage by forgotPwdViewModel.errorMessage.collectAsState()
     val reviews by reviewViewModel.reviews.collectAsState()
     val bookings by reviewViewModel.bookings.collectAsState()
-    val containerColor = getContainerColor(isStudentLoggedIn, isStaffLoggedIn)
+    val containerColor = getContainerColor(isStudentLoggedIn,isStaffLoggedIn)
 
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -668,7 +671,7 @@ fun FBSApp(
                 currentScreen = currentScreen,
                 hasPopBack = { navController.popBackStack() },
                 addReview = { navController.navigate(AppScreen.ReviewSubmission.name) },
-                isStaff = isStaffLoggedIn
+                containerColor = containerColor
             )
         },
         bottomBar = {
@@ -839,7 +842,7 @@ fun FBSApp(
                         },
                         onChangePasswordClick = {
                             forgotPwdViewModel.changePassword(oldPassword, newPassword) {
-                                navController.navigate(AppScreen.PwdUpdated.name){
+                                navController.navigate(AppScreen.PwdUpdated.name) {
                                     popUpTo(AppScreen.ChangePwd.name)
                                     { inclusive = true }
                                 }
@@ -1024,13 +1027,32 @@ fun FBSApp(
                     route = "${AppScreen.ViewTimetable.name}/{departmentName}",
                     arguments = listOf(navArgument("departmentName") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    val departmentName = backStackEntry.arguments?.getString("departmentName") ?: "Sport"
+                    val departmentName =
+                        backStackEntry.arguments?.getString("departmentName") ?: "Sports"
 
                     // Pass to 'initialDepartment'
                     TimetableScreen(
                         initialDepartment = departmentName,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToBooking = { facilityId, hour, date ->
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$facilityId/$date/$hour")
+                        }
                     )
+                }
+
+                //review
+                composable(AppScreen.AdminViewReview.name) {
+                    if (loggedInAdminDept != "Loading...") {
+                        AdminReviewScreen(
+                            adminDepartment = loggedInAdminDept,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        // Optional: Show a progress bar while waiting for the department name
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
 
                 // Forgot Password Screen
@@ -1068,16 +1090,23 @@ fun FBSApp(
                         email = lastRequestedEmail,
                         oobCode = oobCode,
                         onOobCodeChange = {
-                            oobCode =it
+                            oobCode = it
                         },
                         onResendCodeClick = {
                             forgotPwdViewModel.resendResetEmail()
                         },
                         onContinueResetClick = {
-                            navController.navigate("${AppScreen.ResetPwd.name}?oobCode=${Uri.encode(oobCode)}") {
+                            navController.navigate(
+                                "${AppScreen.ResetPwd.name}?oobCode=${
+                                    Uri.encode(
+                                        oobCode
+                                    )
+                                }"
+                            ) {
                                 popUpTo(AppScreen.ForgotPassword3.name)
                                 { inclusive = true }
-                            }},
+                            }
+                        },
                         onChangeEmailClick = {
                             navController.navigate(AppScreen.ForgotPassword1.name) {
                                 popUpTo(AppScreen.ForgotPassword3.name)
@@ -1127,14 +1156,14 @@ fun FBSApp(
                         },
                         onSubmitClick = {
                             forgotPwdViewModel.resetPassword(oobCode, newPassword) {
-                                navController.navigate(AppScreen.PwdUpdated.name){
+                                navController.navigate(AppScreen.PwdUpdated.name) {
                                     popUpTo(AppScreen.ResetPwd.name)
                                     { inclusive = true }
                                 }
                             }
                         },
                         onCancelClick = {
-                            navController.navigate(AppScreen.HomeScreen.name){
+                            navController.navigate(AppScreen.HomeScreen.name) {
                                 popUpTo(AppScreen.ResetPwd.name)
                                 { inclusive = true }
                             }
@@ -1142,16 +1171,16 @@ fun FBSApp(
                     )
                 }
 
-                composable(route = AppScreen.PwdUpdated.name){
+                composable(route = AppScreen.PwdUpdated.name) {
                     PasswordUpdatedScreen(
                         onStudentLoginClick = {
-                            navController.navigate(AppScreen.StudentLoginScreen.name){
+                            navController.navigate(AppScreen.StudentLoginScreen.name) {
                                 popUpTo(AppScreen.PwdUpdated.name)
                                 { inclusive = true }
                             }
                         },
                         onStaffLoginClick = {
-                            navController.navigate(AppScreen.StaffLoginScreen.name){
+                            navController.navigate(AppScreen.StaffLoginScreen.name) {
                                 popUpTo(AppScreen.PwdUpdated.name)
                                 { inclusive = true }
                             }
@@ -1224,7 +1253,8 @@ fun FBSApp(
                     }
                 }
 
-                composable(route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
+                composable(
+                    route = AppScreen.StudentBookingSport.name + "/{venue}/{date}"
                 ) { backStackEntry ->
 
                     val venue = backStackEntry.arguments?.getString("venue") ?: ""
@@ -1312,7 +1342,7 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            navController.navigate("${AppScreen. StudentBookingSport.name}/$selectedVenue/$selectedDate")
+                            navController.navigate("${AppScreen.StudentBookingSport.name}/$selectedVenue/$selectedDate")
                         }
                     )
                     // Library Booking Screen
@@ -1331,8 +1361,10 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Cyber Centre Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue =
+                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate =
+                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
@@ -1342,8 +1374,10 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Library Discussion Room",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue =
+                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate =
+                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
@@ -1354,8 +1388,10 @@ fun FBSApp(
                     AvailabilityChartScreen(
                         selectedFacilityFromPrevious = "Sports Facilities",
                         onBookNow = { selectedVenue, selectedDate ->
-                            val encodedVenue = URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
-                            val encodedDate = URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
+                            val encodedVenue =
+                                URLEncoder.encode(selectedVenue, StandardCharsets.UTF_8.toString())
+                            val encodedDate =
+                                URLEncoder.encode(selectedDate, StandardCharsets.UTF_8.toString())
                             navController.navigate("${AppScreen.StudentBookingSport.name}/$encodedVenue/$encodedDate")
                         }
                     )
@@ -1498,11 +1534,12 @@ fun FBSApp(
                     val submitSuccess by reviewViewModel.submitSuccess.collectAsState()
 
                     ReviewSubmissionScreen(
+                        containerColor = containerColor,
                         bookings = bookings,
                         selectedBooking = selectedBooking,
                         onBookingSelected = {
                             selectedBooking = it
-                                            },
+                        },
                         selectedCategory = selectedCategory,
                         onCategorySelected = {
                             selectedCategory = it
@@ -1521,12 +1558,27 @@ fun FBSApp(
                         },
                         submitSuccess = submitSuccess,
                         onOk = {
+                            reviewViewModel.resetSubmitSuccess()
                             navController.popBackStack()
                         },
                         onDismiss = {
+                            reviewViewModel.resetSubmitSuccess()
                             navController.popBackStack()
                         }
                     )
+                }
+                composable(AppScreen.AdminViewReview.name) {
+                    if (currentAdminDept != "Loading...") {
+                        AdminReviewScreen(
+                            adminDepartment = currentAdminDept,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    } else {
+                        // Optional: Show a progress bar while waiting for the department name
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
 
             }

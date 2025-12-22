@@ -31,8 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
+import com.example.tramut.userInterface.studentTheme.AvailabilityChartTimetableGrid
 import com.example.tramut.viewModel.TimetableViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,43 +44,36 @@ import java.util.Calendar
 fun TimetableScreen(
     initialDepartment: String,
     onNavigateBack: () -> Unit,
+    onNavigateToBooking: (facilityId: String, hour: Int, date: String) -> Unit,
     viewModel: TimetableViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // 1. Category Options List
     val categoryOptions = remember(initialDepartment) {
-        val optionsList = when (initialDepartment) {
-            "Sport Facilities" -> listOf("All Sport Facilities", "Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
-            "Library" -> listOf("All Library Rooms", "Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "CITC" -> listOf("All CITC Facilities", "Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
-            else -> listOf("All $initialDepartment Facilities")
+        when (initialDepartment) {
+            "Sports" -> listOf("Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
+            "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
+            "Cyber Center" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            else -> listOf(initialDepartment)
         }
-        optionsList
     }
 
-    // 2. STATE HOLDER
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
+    var selectedVenue by remember { mutableStateOf("") }
 
-    // FIX 1: Reset selectedCategory when navigating between departments
-    LaunchedEffect(categoryOptions) {
-        selectedCategory = categoryOptions.first()
-    }
+    LaunchedEffect(selectedCategory, uiState.selectedDate) {
+        if (uiState.selectedDate.isNotEmpty()) {
+            // 1. Format the date so it matches "21 / Dec / 2025 (Sun)"
+            val firebaseDate = formatForFirebase(uiState.selectedDate)
 
-    // FIX 2: LOAD DATA LOGIC (Triggers the consolidated fetchTimetableData)
-    LaunchedEffect(selectedCategory) {
-        val facilityQuery = if (selectedCategory.startsWith("All")) {
-            initialDepartment
-        } else {
-            selectedCategory
+            viewModel.fetchTimetableData(
+                identifier = selectedCategory,
+                isCategory = true,
+                date = firebaseDate
+            )
+
+            viewModel.listenToBookingsForDate(firebaseDate)
         }
-        val isCategoryQuery = !selectedCategory.startsWith("All")
-
-        viewModel.fetchTimetableData(
-            identifier = facilityQuery,
-            isCategory = isCategoryQuery,
-            date = uiState.selectedDate
-        )
     }
 
     Scaffold(
@@ -100,115 +97,19 @@ fun TimetableScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                // --- 整合了第一个代码块的 Venue Type/Category Dropdown 逻辑 ---
                 Box(modifier = Modifier.weight(1f)) {
-
-                    // 使用 TimetableScreen 的状态来模拟第一个代码块的 venueState
-                    val facilityListLoading = uiState.isLoading
-                    val facilityListError = uiState.errorMessage
-                    val facilityList = categoryOptions
-
-                    if (facilityListLoading) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Loading venues...",
-                                    fontSize = 14.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.Black // 使用主题色
-                                )
-                            }
-                            // Divider (线)
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    } else if (facilityListError != null && facilityList.isEmpty()) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Red,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Failed to load venues",
-                                    fontSize = 14.sp,
-                                    color = Color.Red,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            Text(
-                                text = "Using initial department list.",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    } else if (facilityList.isEmpty()) {
-                        Column {
-                            Text(
-                                text = "Venue Type *",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Text(
-                                text = "No venues available",
-                                fontSize = 14.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                            Divider(
-                                color = Color.Gray,
-                                thickness = 1.dp
-                            )
-                        }
-                    } else {
-                        // 正常显示下拉菜单 (使用 TimetableScreen 已有的组件 DepartmentDropdownLineStyle)
-                        DepartmentDropdownLineStyle(
-                            currentSelection = selectedCategory,
-                            options = facilityList,
-                            onSelect = { selectedCategory = it }
-                        )
-                    }
+                    DepartmentDropdownLineStyle(
+                        currentSelection = selectedCategory,
+                        options = categoryOptions,
+                        onSelect = { selectedCategory = it }
+                    )
                 }
-                // --- 整合后的 Venue Type/Category Dropdown 逻辑结束 ---
-
 
                 Box(modifier = Modifier.weight(1f)) {
-                    // Date Picker (保持不变)
                     AdminDatePickerLineStyle(
                         currentDate = uiState.selectedDate,
                         onDateSelected = { newDate -> viewModel.updateDate(newDate) }
@@ -218,26 +119,19 @@ fun TimetableScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // 课程表数据的加载/错误/显示状态 (保持不变)
             if (uiState.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.Black)
                 }
-            } else if (uiState.errorMessage != null) {
-                Box(
-                    Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-                ) {
-                    Text("Error: ${uiState.errorMessage}",
-                        color = Color.Red)
-                }
-            }
-            else {
-                Column(modifier = Modifier.weight(1f)) {
-                    TimetableGrid(
+            } else {
+                TimetableGrid(
                         facilities = uiState.facilitiesList,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        selectedVenue = selectedVenue,
+                        onVenueSelected = { venueName ->
+                            selectedVenue = if (selectedVenue == venueName) "" else venueName
+                        }
                     )
-                }
 
                 Spacer(Modifier.height(10.dp))
                 Card(
@@ -245,13 +139,11 @@ fun TimetableScreen(
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(10.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         LegendItem(Color(0xFF4CAF50), "Available")
-                        LegendItem(Color(0xFF2196F3), "Booked")
+                        LegendItem(Color(0xFF2196F3), "Full") // Changed "Booked" to "Full"
                         LegendItem(Color(0xFFF44336), "Maint.")
                         LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
@@ -261,11 +153,59 @@ fun TimetableScreen(
     }
 }
 
-// --- HELPER COMPONENT: The Grid (Unchanged) ---
+fun formatForFirebase(dateStr: String): String {
+    return try {
+        // Input from picker: "2025-12-21"
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        // Output for Firestore: "21 / Dec / 2025 (Sun)"
+        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val date = inputFormat.parse(dateStr)
+        date?.let { outputFormat.format(it) } ?: dateStr
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
+fun formatDateForDisplay(dateStr: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val date = inputFormat.parse(dateStr)
+        date?.let { outputFormat.format(it) } ?: dateStr
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
+fun saveBooking(venueName: String, rawDate: String, selectedHours: List<Int>) {
+    val db = FirebaseFirestore.getInstance()
+
+    // CRITICAL: Convert "2025-12-23" to "23 / Dec / 2025 (Tue)"
+    val firestoreDate = formatDateForDisplay(rawDate)
+
+    val bookingData = hashMapOf(
+        "finalVenue" to venueName.trim(),
+        "date" to firestoreDate,
+        "hoursList" to selectedHours,
+        "status" to "Booked"
+    )
+
+    db.collection("bookings")
+        .add(bookingData)
+        .addOnSuccessListener {
+            println("SUCCESS: Booking created for $venueName on $firestoreDate")
+        }
+        .addOnFailureListener { e ->
+            println("ERROR: Failed to save booking: ${e.message}")
+        }
+}
 @Composable
 fun TimetableGrid(
     facilities: List<Facility>,
-    viewModel: TimetableViewModel
+    viewModel: TimetableViewModel,
+    selectedVenue: String,
+    onVenueSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val venueColWidth = 130.dp
     val timeColWidth = 60.dp
@@ -275,7 +215,7 @@ fun TimetableGrid(
     val verticalScroll = rememberScrollState()
     val horizontalScroll = rememberScrollState()
 
-    Column {
+    Column(modifier = modifier) {
         // Header Row
         Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
             Box(
@@ -315,14 +255,24 @@ fun TimetableGrid(
                 .fillMaxHeight()
         ) {
             facilities.forEach { facility ->
+                val isSelected = selectedVenue == facility.name
+
                 Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
-                    // Facility Name Column
+                    // Facility Name Column - Clickable
                     Box(
                         modifier = Modifier
                             .width(venueColWidth)
                             .height(rowHeight)
-                            .background(MaterialTheme.colorScheme.background)
-                            .border(1.dp, borderColor),
+                            .background(
+                                if (isSelected) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.background
+                            )
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) Color(0xFF0D47A1) else borderColor
+                            )
+                            .clickable {
+                                onVenueSelected(facility.name)
+                            },
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
@@ -332,13 +282,13 @@ fun TimetableGrid(
                             fontSize = 10.sp,
                             lineHeight = 11.sp,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (isSelected) Color(0xFF0D47A1) else Color.Black
                         )
                     }
 
                     // Status Cells
                     (8..22).forEach { hour ->
-                        // Calling getSlotStatus with the current facility and hour
                         val status = viewModel.getSlotStatus(facility, hour)
                         val cellColor = when (status) {
                             "Available" -> Color(0xFF4CAF50) // Green
@@ -353,7 +303,12 @@ fun TimetableGrid(
                                 .height(rowHeight)
                                 .background(cellColor)
                                 .border(0.5.dp, Color.White)
-                            // 如果需要点击预订，可以在这里添加 clickable 修饰符
+                                .clickable {
+                                    // Only allow selection if the slot is available
+                                    if (status == "Available") {
+                                        onVenueSelected(facility.name)
+                                    }
+                                }
                         )
                     }
                 }
@@ -362,7 +317,6 @@ fun TimetableGrid(
     }
 }
 
-// --- DROPDOWN COMPONENT (Unchanged) ---
 @Composable
 fun DepartmentDropdownLineStyle(
     currentSelection: String,

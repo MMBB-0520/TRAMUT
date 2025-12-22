@@ -88,12 +88,11 @@ fun AdminAnnouncementScreen(
                 items(items = announcements, key = { it.id }) { item ->
                     SwipeableAnnouncementItem(
                         item = item,
+                        isConfirming = showDeleteConfirmationDialog && announcementIdToDelete == item.id,
                         onClick = { onNavigateToDetail(item.id) },
                         onEdit = { onNavigateToEdit(item.id) },
                         onDelete = {
-                            // 1. Store the ID of the item to be deleted
                             announcementIdToDelete = item.id
-                            // 2. Show the confirmation dialog
                             showDeleteConfirmationDialog = true
                         }
                     )
@@ -138,8 +137,7 @@ fun AdminAnnouncementScreen(
                     onClick = {
                         // When user clicks 'Cancel':
                         showDeleteConfirmationDialog = false
-                        announcementIdToDelete = null // Clear ID
-                        // The SwipeableAnnouncementItem's LaunchedEffect handles the snap-back
+                        announcementIdToDelete = null
                     }
                 ) { Text("Cancel") }
             }

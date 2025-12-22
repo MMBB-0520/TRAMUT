@@ -9,11 +9,14 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import kotlin.jvm.java
 
+
 class FacilityRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val facilitiesCollection = db.collection("facilities")
     private val bookingsCollection = db.collection("bookings")
+    private val firestore = FirebaseFirestore.getInstance()
+    private val collection = firestore.collection("facilities")
 
     fun getFacilityById(facilityId: String, onResult: (Facility?) -> Unit) {
         facilitiesCollection.document(facilityId).get()
@@ -24,6 +27,31 @@ class FacilityRepository {
             }
             .addOnFailureListener { onResult(null) }
     }
+
+    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
+        return try {
+            collection
+                .whereEqualTo("category", category)
+                .get()
+                .await()
+                .toObjects(Facility::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getFacilitiesByLocation(location: String): List<Facility> {
+        return try {
+            collection
+                .whereEqualTo("location", location)
+                .get()
+                .await()
+                .toObjects(Facility::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 
     fun getFacilitiesFlow(department: String): Flow<List<Facility>> = callbackFlow {
 

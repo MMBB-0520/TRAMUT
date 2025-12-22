@@ -46,6 +46,7 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
 
+
     // 🚨 移除版本号，让它们自动使用 BOM 提供的兼容最新版本
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx")       // <--- 关键：使用最新的 Auth KTX

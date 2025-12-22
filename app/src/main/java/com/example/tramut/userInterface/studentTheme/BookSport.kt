@@ -82,6 +82,7 @@ fun BookSportScreen(
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
     val venueState by venueViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // facilityType -> department 映射
     val department = when (facilityType) {
@@ -168,7 +169,7 @@ fun BookSportScreen(
     // book for 3 days
     val dateList = remember {
         val calendar = Calendar.getInstance()
-        val formatter = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
         List(3) { i ->
             calendar.time = Date() // set to today
@@ -287,6 +288,7 @@ fun BookSportScreen(
         }
 
         if (membersToValidate.isEmpty()) return true
+
 
         // 检查重复ID
         val loginIds = membersToValidate.map { it.id }
@@ -927,11 +929,42 @@ fun BookSportScreen(
                         val building = bookingViewModel.getBuildingForVenue(selectedVenue)
                         showSuccessDialog = false
                         val pax = numberOfPax.toIntOrNull() ?: 1
-                        val currentMembers = if (pax > 1 && showMemberDetails) {
-                            members.subList(1, minOf(pax, members.size)).toList()
+
+                        val currentMembers = if (pax > 1 && members.size > 1) {
+                            members.drop(1).take(pax - 1)
                         } else {
                             emptyList()
                         }
+                        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+                        val currentUserId = auth.currentUser?.uid ?: ""
+
+                        bookingViewModel.manualAutoAssignAndSave(
+                            category = selectedVenue,
+                            date = selectedDate,
+                            startTime = selectedStartTime,
+                            endTime = selectedEndTime,
+                            userId = currentUserId,
+                            pax = pax,
+                            members = currentMembers,
+                            level = level,
+                            building = building,
+                            onResult = { success, message ->
+                                if (success) {
+                                    // 4. Handle Success
+                                    showSuccessDialog = false
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        onBackFacilityPage()
+                                    }
+                                } else {
+                                    // 5. Handle Failure (e.g., No courts available)
+                                    // You might want to show a different error dialog or a Toast here
+                                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                                    showSuccessDialog = false
+                                }
+                            }
+                        )
+
                         onSubmit(selectedVenue, selectedDate, selectedStartTime, selectedEndTime, pax, currentMembers, level, building)
 
                         coroutineScope.launch  {

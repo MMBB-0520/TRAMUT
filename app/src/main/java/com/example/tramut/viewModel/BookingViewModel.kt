@@ -2,7 +2,12 @@ package com.example.tramut.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.rooms.entity.Member
+import com.example.tramut.rooms.repo.BookingRepo
+import com.example.tramut.rooms.repo.TimetableRepository
+import com.example.tramut.userInterface.studentTheme.formatDateForDisplay
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +50,20 @@ class MyBookingViewModel : ViewModel() {
     fun SCode(): String {
         return "S${generate9UniqueDigits()}"
     }
+
+    private val _allBookings = MutableStateFlow<List<Booking>>(emptyList())
+    val allBookings: StateFlow<List<Booking>> = _allBookings
+
+    fun fetchAllBookingsByDate(date: String) {
+        firestore.collection("bookings")
+            .whereEqualTo("date", date) // Get everyone's bookings for this day
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    _allBookings.value = snapshot.toObjects(Booking::class.java)
+                }
+            }
+    }
+
     fun startListening(userId: String) {
         _isLoading.value = true
 
@@ -76,6 +95,93 @@ class MyBookingViewModel : ViewModel() {
                 }
             }
     }
+
+    private fun parseTo24Hour(timeStr: String): Int {
+        // Expected format: "04:00 PM" or "16:00"
+        val isPM = timeStr.uppercase().contains("PM")
+        val hourPart = timeStr.split(":")[0].trim().toIntOrNull() ?: 0
+
+        return when {
+            isPM && hourPart < 12 -> hourPart + 12
+            !isPM && hourPart == 12 -> 0
+            isPM && hourPart == 12 -> 12
+            else -> hourPart
+        }
+    }
+
+    fun manualAutoAssignAndSave(
+        category: String,
+        date: String,
+        startTime: String,
+        endTime: String,
+        userId: String,
+        pax: Int,
+        members: List<Member>,
+        level: String,
+        building: String,
+        onResult: (Boolean, String) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val firestoreDate = formatDateForDisplay(date)
+            val startH = parseTo24Hour(startTime)
+            val endH = parseTo24Hour(endTime)
+            val requestedHours = (startH until endH).toList()
+
+            // CHANGE THIS LINE: Use the new repo function with pax
+            val facilities = repo.getFacilitiesByCategoryAndCapacity(category, pax)
+            val existingBookings = repo.getBookingsByDate(firestoreDate)
+
+            // Find the first facility in the size-filtered list that is not overlapped
+            val availableFacility = facilities.find { facility ->
+                val bookingsForThisFacility = existingBookings.filter {
+                    it.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
+                }
+                val isOverlap = bookingsForThisFacility.any { b ->
+                    b.hoursList.any { it in requestedHours } && b.status != "Cancelled"
+                }
+                !isOverlap
+            }
+
+            if (availableFacility != null) {
+                val newBooking = Booking(
+                    bookingId = firestore.collection("bookings").document().id,
+                    userId = userId,
+                    timeslotId = "", // ADDED: Provide empty string if not used
+                    facility = category,
+                    venue = category,
+                    level = level,
+                    building = building,
+                    duration = "$startTime - $endTime",
+                    startTime = startTime,
+                    endTime = endTime,
+                    checkIn = "",  // ADDED: Missing field
+                    checkOut = "", // ADDED: Missing field
+                    bookingNo = LCode(),
+                    members = members,
+                    status = "Confirmed",
+                    date = firestoreDate, // Using the formatted date for Blue status
+                    finalVenue = availableFacility.name,
+                    hoursList = requestedHours,
+                    pax = pax
+                )
+
+                // 5. Save and Return Result
+                val success = repo.saveBooking(newBooking)
+                if (success) {
+                    onResult(true, "Assigned to ${availableFacility.name}")
+                } else {
+                    onResult(false, "Failed to save booking.")
+                }
+            } else {
+                onResult(false, "No available courts for this slot.")
+            }
+        }
+    }
+
+
+
+    private val repo = BookingRepo()
+
 
     // 取消预订的方法
     suspend fun cancelBooking(bookingNo: String): Boolean {

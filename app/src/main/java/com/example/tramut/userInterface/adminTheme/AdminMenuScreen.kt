@@ -66,7 +66,7 @@ fun AdminMainScreen(
                         .background(Color.LightGray, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = BlueMain)
+                    CircularProgressIndicator(color = Color.Black)
                 }
             } else {
                 AdminProfileCard(
@@ -166,7 +166,7 @@ fun AdminProfileCard(name: String, dept: String, email: String) {
             ){
                 Text(
                     text = (name).take(1).uppercase(),
-                    color = StaffRed,
+                    color = Color.Black,
                     fontWeight = FontWeight.Bold,
                     fontSize = 30.sp,
                     modifier = Modifier.align(Alignment.Center)

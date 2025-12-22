@@ -1,5 +1,7 @@
 package com.example.tramut.rooms.entity
 
+import com.google.firebase.firestore.PropertyName
+
 
 data class Booking(
     val bookingId: String = "",
@@ -9,16 +11,20 @@ data class Booking(
     val venue: String = "",
     val level: String = "",
     val building: String = "",
-    val date: String = "",
     val duration: String = "",
     val startTime: String = "",
     val endTime: String = "",
     val checkIn: String = "",
     val checkOut: String = "",
     val bookingNo: String = "",
-    val status: String = "Booked",
-    val finalVenue: String = "",
-    val members: List<Member> = emptyList()
+    val members: List<Member> = emptyList(),
+
+    val pax: Int=1,
+
+    @get:PropertyName("status") @set:PropertyName("status") var status: String = "Booked",
+    @get:PropertyName("date") @set:PropertyName("date") var date: String = "",
+    @get:PropertyName("finalVenue") @set:PropertyName("finalVenue") var finalVenue: String = "",
+    @get:PropertyName("hoursList") @set:PropertyName("hoursList") var hoursList: List<Int> = emptyList()
 )
 
 data class Member(
