@@ -69,8 +69,6 @@ import com.example.tramut.userInterface.HomeScreen
 import com.example.tramut.userInterface.TimetableScreen
 import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
 import com.example.tramut.userInterface.adminTheme.Facility.EditFacilityScreen
-import com.example.tramut.userInterface.adminTheme.AdminReviewScreen
-import com.example.tramut.userInterface.loginTheme.AdminLoginScreen
 import com.example.tramut.userInterface.check.CheckInConfirmationScreen
 import com.example.tramut.userInterface.check.CheckOutBarcodeScannerScreen
 import com.example.tramut.userInterface.check.CheckOutConfirmationScreen
@@ -158,7 +156,6 @@ enum class AppScreen {
     UserReview,
     ReviewSubmission,
     AdminViewReview,
-    UpdateReviewStatus,
 
     // Details under Home tab
     AnnouncementDetail,
@@ -214,7 +211,8 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     addReview: () -> Unit,
-    containerColor: Color
+    containerColor: Color,
+    selectedTabIndex: Int
 ) {
 
     when(currentScreen) {
@@ -284,16 +282,18 @@ fun TopBarScreen(
             )
         }
         AppScreen.StudentBooking -> {
+            val title = when (selectedTabIndex) {
+                1 -> "My Bookings"
+                else -> "Facility Booking"
+            }
+
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = hasPopBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-
+                            tint = Color.White
                         )
                     }
                 },
@@ -303,15 +303,15 @@ fun TopBarScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Facility Booking",
+                            text = title,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 24.sp
+                            fontSize = 24.sp,
+                            color = Color.White
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
-                    titleContentColor = Color.White
+                    containerColor = containerColor
                 )
             )
         }
@@ -341,41 +341,6 @@ fun TopBarScreen(
                 )
             )
         }
-        AppScreen.StudentMyBooking -> {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(
-                        onClick = hasPopBack,
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "My Bookings",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
-            )
-        }
-
         AppScreen.StudentBookingDetails -> {
             TopAppBar(
                 navigationIcon = {
@@ -629,6 +594,7 @@ fun FBSApp(
         factory = ForgotPwdViewModelFactory(usersRepo)
     )
     val reviewViewModel: ReviewViewModel = viewModel()
+    val bookingViewModel: MyBookingViewModel = viewModel()
 
     val adminsViewModel: AdminsViewModel = viewModel()
     val adminUser = adminsViewModel.adminUser.value
@@ -651,7 +617,7 @@ fun FBSApp(
     val reviews by reviewViewModel.reviews.collectAsState()
     val bookings by reviewViewModel.bookings.collectAsState()
     val containerColor = getContainerColor(isStudentLoggedIn, isStaffLoggedIn)
-
+    val selectedTabIndex by bookingViewModel.selectedTabIndex.collectAsState()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = try {
@@ -666,7 +632,8 @@ fun FBSApp(
                 currentScreen = currentScreen,
                 hasPopBack = { navController.popBackStack() },
                 addReview = { navController.navigate(AppScreen.ReviewSubmission.name) },
-                containerColor = containerColor
+                containerColor = containerColor,
+                selectedTabIndex = selectedTabIndex
             )
         },
         bottomBar = {
@@ -901,11 +868,12 @@ fun FBSApp(
                         email = currentUser?.email ?: "",
                         onLogoutClick = { logOutConfirm = true },
                         onMyBookingClick = {
-                            navController.navigate(
-                                "${AppScreen.StudentMyBooking.name}/${currentUser?.loginId}"
-                            )
-                        },
+                            bookingViewModel.setTab(1)
+                            navController.navigate(AppScreen.StudentBooking.name)
+
+                                           },
                         onFacilityBookingClick = {
+                            bookingViewModel.setTab(0)
                             navController.navigate(AppScreen.StudentBooking.name)
                         },
                         onFeedbackClick = {
@@ -1153,13 +1121,11 @@ fun FBSApp(
                     )
                 }
 
-
                 composable(route = AppScreen.StudentBooking.name) {
-                    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-
                     FacilityBookScreen(
                         selectedTabIndex = selectedTabIndex,
-                        onTabSelected = { selectedTabIndex = it },
+                        onTab0Selected = { bookingViewModel.setTab(0) },
+                        onTab1Selected = { bookingViewModel.setTab(1) },
                         navController = navController,
                         userId = currentUser?.loginId ?: "",
 
@@ -1278,19 +1244,6 @@ fun FBSApp(
                     )
                 }
 
-                composable(
-                    route = "${AppScreen.StudentMyBooking.name}/{userId}",
-                    arguments = listOf(navArgument("userId") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                    val viewModel: MyBookingViewModel = viewModel()
-
-                    MyBookingScreen(
-                        navController = navController,
-                        viewModel = viewModel,
-                        userId = userId
-                    )
-                }
 
 
 
