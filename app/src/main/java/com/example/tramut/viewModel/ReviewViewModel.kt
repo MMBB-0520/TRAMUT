@@ -36,7 +36,7 @@ class ReviewViewModel : ViewModel(){
             "bookingId" to booking.bookingId,
             "bookingDate" to booking.date,
             "venue" to booking.venue,
-            "venueType" to booking.venue,
+            "venueType" to booking.finalVenue,
             "loginId" to userId,
             "issueCategory" to category,
             "comment" to description,
@@ -89,6 +89,7 @@ class ReviewViewModel : ViewModel(){
         FirebaseFirestore.getInstance()
             .collection("bookings")
             .whereEqualTo("userId", userId)
+            .whereEqualTo("status", "Completed")
             .get()
             .addOnSuccessListener { snapshot ->
                 val list = snapshot.documents.mapNotNull { doc ->
@@ -99,7 +100,7 @@ class ReviewViewModel : ViewModel(){
                             facility = doc.getString("facility") ?: "",
                             date = doc.getString("date") ?: "",
                             venue = doc.getString("venue") ?: "",
-                            // members 留空，不拿它，这样就不会因为类型不匹配崩溃
+                            finalVenue = doc.getString("finalVenue") ?: "",
                         )
                     } catch (e: Exception) {
                         Log.e("Review", "解析单个文档失败: ${e.message}")

@@ -98,6 +98,7 @@ import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.UserMenuScreen
+import com.example.tramut.userInterface.studentTheme.UserReviewGuidelinesScreen
 import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
@@ -159,6 +160,7 @@ enum class AppScreen {
 
     UserReview,
     ReviewSubmission,
+    UserReviewGuidelines,
     AdminViewReview,
 
     // Details under Home tab
@@ -215,6 +217,7 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     addReview: () -> Unit,
+    reviewGuidelines: () -> Unit,
     containerColor: Color,
     selectedTabIndex: Int
 ) {
@@ -519,7 +522,7 @@ fun TopBarScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Review",
+                            text = "Add Review",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 24.sp
                         )
@@ -530,7 +533,7 @@ fun TopBarScreen(
                     titleContentColor = Color.White
                 ),
                 actions = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { reviewGuidelines() }) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
@@ -538,6 +541,34 @@ fun TopBarScreen(
                         )
                     }
                 }
+            )
+        }
+        AppScreen.UserReviewGuidelines -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review Guidelines",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                )
             )
         }
         else -> {}
@@ -605,6 +636,7 @@ fun FBSApp(
                 currentScreen = currentScreen,
                 hasPopBack = { navController.popBackStack() },
                 addReview = { navController.navigate(AppScreen.ReviewSubmission.name) },
+                reviewGuidelines = { navController.navigate(AppScreen.UserReviewGuidelines.name) },
                 containerColor = containerColor,
                 selectedTabIndex = selectedTabIndex
             )
@@ -1438,6 +1470,9 @@ fun FBSApp(
                         },
                         comment = comment,
                         onCommentChange = {
+                            if (selectedCategory == "Other"){
+                                comment = it
+                            }
                             comment = it
                         },
                         onSubmitReviewClick = {
@@ -1458,6 +1493,9 @@ fun FBSApp(
                             navController.popBackStack()
                         }
                     )
+                }
+                composable(route = AppScreen.UserReviewGuidelines.name){
+                    UserReviewGuidelinesScreen()
                 }
                 composable(AppScreen.AdminViewReview.name) {
                     if (currentAdminDept != "Loading...") {
