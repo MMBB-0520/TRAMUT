@@ -81,7 +81,7 @@ fun ForgetPasswordScreen1 (
             onValueChange = onEmailInputChange,
             placeholder = {
                 Text(
-                text = "Registered Email",
+                    text = "Registered Email",
                     fontSize = 15.sp,
                     color = Color.Gray
                 ) },

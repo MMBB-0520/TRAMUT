@@ -237,7 +237,7 @@ fun SmallPasswordField(
                 .fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             textStyle = TextStyle(
-                fontSize = 16.sp, 
+                fontSize = 16.sp,
                 color = Color.Black
             )
         )

@@ -162,7 +162,7 @@ fun ForgetPasswordScreen2 (
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(

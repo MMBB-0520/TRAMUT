@@ -1,5 +1,8 @@
 package com.example.tramut.viewModel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
@@ -7,13 +10,16 @@ import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.BookingRepo
 import com.example.tramut.rooms.repo.TimetableRepository
-import com.example.tramut.userInterface.studentTheme.formatDateForDisplay
+import com.example.tramut.userInterface.formatDateForDisplay
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class MyBookingViewModel : ViewModel() {
 
@@ -32,6 +38,12 @@ class MyBookingViewModel : ViewModel() {
 
     private var listenerRegistration: ListenerRegistration? = null
 
+    private val _selectedTabIndex = MutableStateFlow(0)
+    val selectedTabIndex: StateFlow<Int> = _selectedTabIndex
+
+    fun setTab(index: Int) {
+        _selectedTabIndex.value = index
+    }
 
     fun generate9UniqueDigits(): String {
         return (0..9)
@@ -237,6 +249,7 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration?.remove()
         listenerRegistration = null
     }
+
 
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()

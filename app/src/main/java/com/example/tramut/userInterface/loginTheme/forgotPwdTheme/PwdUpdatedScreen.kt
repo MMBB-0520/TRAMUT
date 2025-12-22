@@ -81,16 +81,16 @@ fun PasswordUpdatedScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-                onClick = onStaffLoginClick,
-        modifier = Modifier
-            .width(287.dp)
-            .height(43.dp)
-            .align(Alignment.CenterHorizontally),
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = StaffRed)
+            onClick = onStaffLoginClick,
+            modifier = Modifier
+                .width(287.dp)
+                .height(43.dp)
+                .align(Alignment.CenterHorizontally),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = StaffRed)
         ) {
-        Text(text = "Login as Staff", color = Color.White, fontSize = 14.sp)
-    }
+            Text(text = "Login as Staff", color = Color.White, fontSize = 14.sp)
+        }
     }
 }
 

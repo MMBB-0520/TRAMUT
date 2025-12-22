@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 
@@ -31,7 +32,8 @@ import androidx.navigation.NavHostController
 @Composable
 fun FacilityBookScreen(
     selectedTabIndex: Int,
-    onTabSelected: (Int) -> Unit,
+    onTab1Selected: () -> Unit,
+    onTab0Selected: () -> Unit,
     navController: NavHostController,
     userId: String,
     onCITCABClick: () -> Unit,
@@ -48,20 +50,25 @@ fun FacilityBookScreen(
         TabRow(selectedTabIndex = selectedTabIndex) {
             Tab(
                 selected = selectedTabIndex == 0,
-                onClick = { onTabSelected(0) },
+                onClick = { onTab0Selected() },
                 text = { Text("Facility Booking") }
             )
             Tab(
                 selected = selectedTabIndex == 1,
-                onClick = { onTabSelected(1) },
+                onClick = { onTab1Selected() },
                 text = { Text("My Bookings") }
             )
         }
         when (selectedTabIndex) {
             0 -> {
-                FacilityItemUI("Cyber Centre Discussion Room", onCITCABClick, onCITCTTClick)
-                FacilityItemUI("Library Discussion Room", onLibraryABClick, onLibraryTTClick)
-                FacilityItemUI("Sports Facilities", onSportsABClick, onSportsTTClick)
+                FacBookingScreen(
+                    onCITCABClick = onCITCABClick,
+                    onLibraryABClick = onLibraryABClick,
+                    onSportsABClick = onSportsABClick,
+                    onCITCTTClick = onCITCTTClick,
+                    onLibraryTTClick = onLibraryTTClick,
+                    onSportsTTClick = onSportsTTClick
+                )
             }
             1 -> {
                 MyBookingScreen(userId = userId, navController = navController)
@@ -69,6 +76,27 @@ fun FacilityBookScreen(
         }
     }
 }
+@Composable
+fun FacBookingScreen(
+    onCITCABClick: () -> Unit,
+    onLibraryABClick: () -> Unit,
+    onSportsABClick: () -> Unit,
+    onCITCTTClick: () -> Unit,
+    onLibraryTTClick: () -> Unit,
+    onSportsTTClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize()
+    ) {
+        FacilityItemUI("Cyber Centre Discussion Room", onCITCABClick, onCITCTTClick)
+        FacilityItemUI("Library Discussion Room", onLibraryABClick, onLibraryTTClick)
+        FacilityItemUI("Sports Facilities", onSportsABClick, onSportsTTClick)
+    }
+
+}
+
 
 @Composable
 fun FacilityItemUI(name: String, onAddBookingClick: () -> Unit, onViewTTClick: () -> Unit) {

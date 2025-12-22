@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,12 +37,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tramut.AppScreen
 import com.example.tramut.rooms.entity.Booking
+import com.example.tramut.ui.theme.StaffRed
+import com.example.tramut.ui.theme.StudentBlue
 import com.example.tramut.viewModel.MyBookingViewModel
 
 enum class BookingTab {
     UPCOMING, PENDING, CANCELLED, ALL
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyBookingScreen(
     navController: NavController,
@@ -68,89 +73,94 @@ fun MyBookingScreen(
         viewModel.startListening(userId)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // 标签页选择器 - 没有标题
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            BookingTab.values().forEach { tab ->
-                BookingTabButton(
-                    tab = tab,
-                    isSelected = selectedTab == tab,
-                    onClick = { selectedTab = tab }
-                )
-            }
-        }
-
-        // 根据选择的状态过滤预订
-        val filteredBookings = when (selectedTab) {
-            BookingTab.UPCOMING -> bookingList.filter {
-                it.status.equals("Booked", ignoreCase = true) ||
-                        it.status.equals("Valid", ignoreCase = true) ||
-                        it.status.equals("confirmed", ignoreCase = true)
-            }
-            BookingTab.PENDING -> bookingList.filter {
-                it.status.equals("Pending", ignoreCase = true) ||
-                        it.status.equals("waiting", ignoreCase = true)
-            }
-            BookingTab.CANCELLED -> bookingList.filter {
-                it.status.equals("Cancelled", ignoreCase = true) ||
-                        it.status.equals("canceled", ignoreCase = true)
-            }
-            BookingTab.ALL -> bookingList
-        }
-
-        // 内容显示
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)        ) {
+            // 标签页选择器 - 没有标题
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                BookingTab.entries.forEach { tab ->
+                    BookingTabButton(
+                        tab = tab,
+                        isSelected = selectedTab == tab,
+                        onClick = { selectedTab = tab }
+                    )
                 }
             }
-            filteredBookings.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val emptyMessage = when (selectedTab) {
-                        BookingTab.UPCOMING -> "No upcoming bookings"
-                        BookingTab.PENDING -> "No pending bookings"
-                        BookingTab.CANCELLED -> "No cancelled bookings"
-                        BookingTab.ALL -> "No bookings found"
+
+            // 根据选择的状态过滤预订
+            val filteredBookings = when (selectedTab) {
+                BookingTab.UPCOMING -> bookingList.filter {
+                    it.status.equals("Booked", ignoreCase = true) ||
+                            it.status.equals("Valid", ignoreCase = true) ||
+                            it.status.equals("confirmed", ignoreCase = true)
+                }
+
+                BookingTab.PENDING -> bookingList.filter {
+                    it.status.equals("Pending", ignoreCase = true) ||
+                            it.status.equals("waiting", ignoreCase = true)
+                }
+
+                BookingTab.CANCELLED -> bookingList.filter {
+                    it.status.equals("Cancelled", ignoreCase = true) ||
+                            it.status.equals("canceled", ignoreCase = true)
+                }
+
+                BookingTab.ALL -> bookingList
+            }
+
+            // 内容显示
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
-                    Text(emptyMessage, color = Color.Gray)
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredBookings) { booking ->
-                        MyBookingItem(
-                            booking = booking,
-                            onClick = {
-                                navController.navigate("${AppScreen.StudentBookingDetails.name}/${booking.bookingId}")
-                            }
-                        )
+
+                filteredBookings.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val emptyMessage = when (selectedTab) {
+                            BookingTab.UPCOMING -> "No upcoming bookings"
+                            BookingTab.PENDING -> "No pending bookings"
+                            BookingTab.CANCELLED -> "No cancelled bookings"
+                            BookingTab.ALL -> "No bookings found"
+                        }
+                        Text(emptyMessage, color = Color.Gray)
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filteredBookings) { booking ->
+                            MyBookingItem(
+                                booking = booking,
+                                onClick = {
+                                    navController.navigate("${AppScreen.StudentBookingDetails.name}/${booking.bookingId}")
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}
+
 
 @Composable
 fun BookingTabButton(
@@ -211,26 +221,23 @@ fun MyBookingItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
+                val displayTitle = if (booking.venue.contains(" - ")) {
+                    booking.venue.substringBefore(" - ")
+                } else {
+                    booking.venue
+                }
+
                 Text(
-                    text = booking.facility.ifBlank { "Facility" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    text = displayTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 StatusBadge(status = booking.status)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // 场所名称
-            Text(
-                text = booking.venue.ifBlank { "Unknown Venue" },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             // 日期和时间
             Column {
@@ -296,9 +303,9 @@ fun MyBookingItem(
             Spacer(modifier = Modifier.height(4.dp))
 
             // 预订编号
-            if (booking.bookingNo.isNotBlank()) {
+            if (booking.bookingId.isNotBlank()) {
                 Text(
-                    text = "Booking #${booking.bookingNo}",
+                    text = "Booking #${booking.bookingId}",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
