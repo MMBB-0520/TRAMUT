@@ -89,7 +89,7 @@ fun AvailabilityChartScreen(
                 "Discussion Room with Projector (2 PCs)"
             )
 
-            else -> listOf("All $selectedFacilityFromPrevious")
+            else -> listOf("All $selectedFacilityFromPrevious Facilities")
         }
     }
 
@@ -126,6 +126,35 @@ fun AvailabilityChartScreen(
             selectedDate = dateList[0]
         }
     }
+
+    val canBook = selectedDate.isNotEmpty() && selectedVenue.isNotEmpty()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Book Now Button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Button(
+                onClick = {
+                    onBookNow(selectedVenue, selectedDate)
+                },
+                enabled =true,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0D47A1),
+                    disabledContainerColor = Color(0xFFB0BEC5)
+                )
+            ) {
+                Text("Book Now")
+            }
+
+        }
 
     val canBook = selectedDate.isNotEmpty() && selectedVenue.isNotEmpty()
 
@@ -287,7 +316,7 @@ fun AvailabilityChartScreen(
                     ) {
                         LegendItem(Color(0xFF4CAF50), "Available")
                         LegendItem(Color(0xFF2196F3), "Booked")
-                        LegendItem(Color(0xFFF44336), "Special")
+                        LegendItem(Color(0xFFF44336), "Maint.")
                         LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
                 }
@@ -400,12 +429,6 @@ fun AvailabilityChartTimetableGrid(
                                 .height(rowHeight)
                                 .background(cellColor)
                                 .border(0.5.dp, Color.White)
-                                .clickable {
-                                    // Only allow selection if the slot is available
-                                    if (status == "Available") {
-                                        onVenueSelected(facility.name)
-                                    }
-                                }
                         )
                     }
                 }
@@ -496,6 +519,18 @@ private fun formatForFirebase(dateStr: String): String {
         // Input format from your dateList: "2025-12-23"
         val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
+        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val date = inputFormat.parse(dateStr)
+        date?.let { outputFormat.format(it) } ?: dateStr
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
+// Helper function to format date for display (yyyy-MM-dd -> dd / MMM / yyyy (EEE))
+fun formatDateForDisplay(dateStr: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
         val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
         val date = inputFormat.parse(dateStr)
         date?.let { outputFormat.format(it) } ?: dateStr

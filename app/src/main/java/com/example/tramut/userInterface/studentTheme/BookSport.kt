@@ -98,6 +98,7 @@ fun BookSportScreen(
 
     // 使用 ViewModel 获取场地列表
     val venueViewModel: VenueViewModel = viewModel()
+    val bookingViewModel: MyBookingViewModel = viewModel()
 
     val venueState by venueViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -105,8 +106,8 @@ fun BookSportScreen(
     // facilityType -> department 映射
     val department = when {
         facilityType.contains("Library", ignoreCase = true) -> "Library"
-        facilityType.contains("CITC", ignoreCase = true) || facilityType.contains("Cyber", ignoreCase = true) -> "CITC"
-        else -> "Sport Facilities"
+        facilityType.contains("Cyber", ignoreCase = true) -> "Cyber Centre"
+        else -> "Sports"
     }
 
     val venueList = remember(department) {
@@ -164,7 +165,7 @@ fun BookSportScreen(
             )
         )
         else -> Quadruple(
-            "Sports",
+            "Sports Facilities",
             listOf(
                 "The booked facilities will be forfeited after 15 minutes if no-show, except for futsal court.",
                 "Check-in/Check-out at the Counter. All users/participants must present their ID cards at the counter upon using sports facilities.",
@@ -193,6 +194,54 @@ fun BookSportScreen(
             calendar.time = Date() // set to today
             calendar.add(Calendar.DAY_OF_YEAR, i)
             formatter.format(calendar.time)
+        }
+    }
+
+
+    LaunchedEffect(selectedDateFromPrevious, selectedVenueFromPrevious) {
+
+        if (selectedDateFromPrevious.isNotEmpty()) {
+            selectedDate = selectedDateFromPrevious.replace("+", " ")
+        }
+
+        if (selectedVenueFromPrevious.isNotEmpty()) {
+
+            val cleanedVenue = selectedVenueFromPrevious.replace("+", " ")
+
+            val parts = cleanedVenue.split(" - ", limit = 2)
+            val venuePart = parts.getOrNull(0) ?: ""
+            val roomPart = parts.getOrNull(1) ?: ""
+
+            originalRoomNo = roomPart
+            selectedRoomNo = roomPart
+
+            val detectedCategory = when {
+                cleanedVenue.contains("Snooker", ignoreCase = true) -> "Snooker"
+                cleanedVenue.contains("Badminton", ignoreCase = true) -> "Badminton"
+                cleanedVenue.contains("Squash", ignoreCase = true) -> "Squash"
+                cleanedVenue.contains("Gym", ignoreCase = true) -> "Gym"
+                cleanedVenue.contains("Swimming Pool", ignoreCase = true) -> "Swimming Pool"
+                cleanedVenue.contains("Pickleball", ignoreCase = true) -> "Pickleball"
+                cleanedVenue.contains("Table Tennis", ignoreCase = true) -> "Table Tennis"
+                cleanedVenue.contains("Tennis", ignoreCase = true) -> "Tennis"
+                cleanedVenue.contains("Futsal", ignoreCase = true) -> "Futsal"
+                cleanedVenue.startsWith("Guest", ignoreCase = true)-> "Guest/Karaoke Room"
+
+                cleanedVenue.startsWith("CC00", ignoreCase = true)-> "Discussion Room （1PC）"
+                cleanedVenue.startsWith("CC1", ignoreCase = true)-> "Discussion Room （2PC）"
+                cleanedVenue.startsWith("CC01", ignoreCase = true)-> "Discussion Room with Projector（2PC）"
+                cleanedVenue.contains("A", ignoreCase = true) -> "Discussion Room"
+                cleanedVenue.contains("B", ignoreCase = true) ||
+                        cleanedVenue.contains("G", ignoreCase = true)  -> "Discusion Room with PC"
+                cleanedVenue.contains("Q", ignoreCase = true)-> "Individual Study Room"
+                cleanedVenue.contains("Discussion", ignoreCase = true) -> {
+                    if (cleanedVenue.contains("PC")) "Discussion Room with PC" else "Discussion Room"
+                }
+                cleanedVenue.contains("Study Room", ignoreCase = true) -> "Individual Study Room"
+                else -> cleanedVenue
+            }
+
+            selectedVenue = detectedCategory
         }
     }
 
@@ -802,7 +851,6 @@ fun BookSportScreen(
                     onClick = {
                         if (!termsAccepted) return@Button
 
-                        // 1. 必填项非空检查 (Date, Time, Venue, Pax)
                         val isBasicFieldsMissing = selectedDate.isEmpty() ||
                                 selectedStartTime.isEmpty() ||
                                 selectedEndTime.isEmpty() ||
@@ -815,7 +863,7 @@ fun BookSportScreen(
                             return@Button
                         }
 
-                        // 2. (for Cyber Centre / Library)
+                        // for Cyber Centre / Library
                         if (showMemberDetails) {
                             val totalPax = numberOfPax.toIntOrNull() ?: 1
                             if (totalPax > 1) {
@@ -825,14 +873,18 @@ fun BookSportScreen(
                                 }
 
                                 if (filledMembers.size < requiredMemberCount) {
-                                    validationErrorMessage = "Please fill in all member details for $totalPax pax."
+                                    validationErrorMessage =
+                                        "Please fill in all member details for $totalPax pax."
                                     showValidationError = true
                                     return@Button
                                 }
                             }
                         }
 
-                        val (isValidTime, timeMsg) = validateTimes(selectedStartTime, selectedEndTime)
+                        val (isValidTime, timeMsg) = validateTimes(
+                            selectedStartTime,
+                            selectedEndTime
+                        )
                         if (!isValidTime) {
                             timeErrorMessage = timeMsg
                             showTimeErrorDialog = true
@@ -845,12 +897,11 @@ fun BookSportScreen(
                             emptyList()
                         }
 
-                        // 5. 后端验证逻辑
-                        if (membersToValidate.size > 1) {
-                            isVerifying = true
-                            coroutineScope.launch {
-                                val result = userRepository.validateMembersWithDuplicates(membersToValidate)
-                                isVerifying = false
+                        isVerifying = true
+                        coroutineScope.launch {
+                            if (membersToValidate.size > 1) {
+                                val result =
+                                    userRepository.validateMembersWithDuplicates(membersToValidate)
 
                                 when (result) {
                                     is MembersValidationResult.Success -> {
@@ -858,47 +909,120 @@ fun BookSportScreen(
                                         val mismatchDetails = StringBuilder()
 
                                         membersToValidate.forEach { inputMember ->
-                                            val dbMember = result.members.find { it.id == inputMember.id }
-                                            if (dbMember != null && !dbMember.name.equals(inputMember.name, ignoreCase = true)) {
+                                            val dbMember =
+                                                result.members.find { it.id == inputMember.id }
+                                            if (dbMember != null && !dbMember.name.equals(
+                                                    inputMember.name,
+                                                    ignoreCase = true
+                                                )
+                                            ) {
                                                 allInfoMatched = false
                                                 mismatchDetails.append("ID ${inputMember.id}: Name mismatch with records.\n")
                                             }
                                         }
 
                                         if (allInfoMatched) {
-                                            validationSuccess = true
-                                            showSuccessDialog = true
+                                            val pax = numberOfPax.toIntOrNull() ?: 1
+                                            val currentMembers =
+                                                if (pax > 1 && members.size > 1) members.drop(1)
+                                                    .take(pax - 1) else emptyList()
+                                            val currentUserId =
+                                                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                                                    ?: ""
+
+                                            bookingViewModel.manualAutoAssignAndSave(
+                                                category = selectedVenue,
+                                                date = selectedDate,
+                                                startTime = selectedStartTime,
+                                                endTime = selectedEndTime,
+                                                userId = currentUserId,
+                                                pax = pax,
+                                                members = currentMembers,
+                                                level = bookingViewModel.getLevelForVenue(
+                                                    selectedVenue
+                                                ),
+                                                building = bookingViewModel.getBuildingForVenue(
+                                                    selectedVenue
+                                                ),
+                                                onResult = { success, message ->
+                                                    isVerifying = false
+                                                    if (success) {
+                                                        validationSuccess = true
+                                                        showSuccessDialog = true
+                                                    } else {
+                                                        validationErrorMessage = message
+                                                        showValidationError = true
+                                                    }
+                                                }
+                                            )
                                         } else {
+                                            isVerifying = false
                                             validationErrorMessage = mismatchDetails.toString()
                                             showValidationError = true
                                         }
                                     }
+
                                     is MembersValidationResult.DuplicatesFound -> {
-                                        validationErrorMessage = "Duplicate IDs: ${result.duplicates.joinToString()}"
+                                        isVerifying = false
+                                        validationErrorMessage =
+                                            "Duplicate IDs: ${result.duplicates.joinToString()}"
                                         showValidationError = true
                                     }
+
                                     is MembersValidationResult.InvalidIds -> {
-                                        validationErrorMessage = "ID not found: ${result.invalidIds.joinToString()}"
+                                        isVerifying = false
+                                        validationErrorMessage =
+                                            "ID not found: ${result.invalidIds.joinToString()}"
                                         showValidationError = true
                                     }
+
                                     is MembersValidationResult.Error -> {
+                                        isVerifying = false
                                         validationErrorMessage = result.errorMessage
                                         showValidationError = true
                                     }
                                 }
+                            } else {
+                                val pax = numberOfPax.toIntOrNull() ?: 1
+                                val currentUserId =
+                                    com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                                        ?: ""
+
+                                bookingViewModel.manualAutoAssignAndSave(
+                                    category = selectedVenue,
+                                    date = selectedDate,
+                                    startTime = selectedStartTime,
+                                    endTime = selectedEndTime,
+                                    userId = currentUserId,
+                                    pax = pax,
+                                    members = emptyList(),
+                                    level = bookingViewModel.getLevelForVenue(selectedVenue),
+                                    building = bookingViewModel.getBuildingForVenue(selectedVenue),
+                                    onResult = { success, message ->
+                                        isVerifying = false
+                                        if (success) {
+                                            validationSuccess = true
+                                            showSuccessDialog = true
+                                        } else {
+                                            validationErrorMessage = message
+                                            showValidationError = true
+                                        }
+                                    }
+                                )
                             }
-                        } else {
-                            validationSuccess = true
-                            showSuccessDialog = true
                         }
                     },
                     enabled = termsAccepted && !isVerifying,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = containerColor)
-                ){
+                ) {
                     if (isVerifying) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
                             Spacer(Modifier.width(8.dp))
                             Text("VERIFYING...", color = Color.White)
                         }

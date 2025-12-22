@@ -40,7 +40,7 @@ class TimetableViewModel(
     private var facilityListener: ListenerRegistration? = null
 
     init {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val sdf = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
         val today = sdf.format(Calendar.getInstance().time)
         _uiState.update { it.copy(selectedDate = today) }
     }
@@ -75,6 +75,7 @@ class TimetableViewModel(
                     isLoading = false
                 )
 
+                // Start listening for real-time bookings on this date
                 listenToBookingsForDate(date)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
