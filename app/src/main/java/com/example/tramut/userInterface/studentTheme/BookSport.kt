@@ -226,11 +226,13 @@ fun BookSportScreen(
                 cleanedVenue.contains("Futsal", ignoreCase = true) -> "Futsal"
                 cleanedVenue.startsWith("Guest", ignoreCase = true)-> "Guest/Karaoke Room"
 
-                cleanedVenue.startsWith("CC", ignoreCase = true)-> "Cyber Centre Discussion Room"
-                cleanedVenue.contains("A", ignoreCase = true) ||
-                        cleanedVenue.contains("B", ignoreCase = true) ||
-                        cleanedVenue.contains("G", ignoreCase = true) ||
-                        cleanedVenue.contains("Q", ignoreCase = true)-> "Library Discussion Room"
+                cleanedVenue.startsWith("CC00", ignoreCase = true)-> "Discussion Room （1PC）"
+                cleanedVenue.startsWith("CC1", ignoreCase = true)-> "Discussion Room （2PC）"
+                cleanedVenue.startsWith("CC01", ignoreCase = true)-> "Discussion Room with Projector（2PC）"
+                cleanedVenue.contains("A", ignoreCase = true) -> "Discussion Room"
+                cleanedVenue.contains("B", ignoreCase = true) ||
+                        cleanedVenue.contains("G", ignoreCase = true)  -> "Discusion Room with PC"
+                cleanedVenue.contains("Q", ignoreCase = true)-> "Individual Study Room"
                 cleanedVenue.contains("Discussion", ignoreCase = true) -> {
                     if (cleanedVenue.contains("PC")) "Discussion Room with PC" else "Discussion Room"
                 }
@@ -694,7 +696,7 @@ fun BookSportScreen(
                                         ) {
                                             Column(Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "Member $memberIndex",
+                                                    text = "Member ${index + 1}",
                                                     fontSize = 12.sp,
                                                     color = Color.Gray,
                                                     modifier = Modifier.padding(bottom = 4.dp)
@@ -702,15 +704,11 @@ fun BookSportScreen(
                                                 LineTextField(
                                                     value = member.id,
                                                     onValueChange = { newId ->
-                                                        if (newId.length == 7 && newId.all { it.isDigit() }) {
-                                                            if (memberIndex < members.size) {
-                                                                members[memberIndex] =
-                                                                    member.copy(id = newId)
-                                                            }
-                                                        }
+                                                        members[memberIndex] = members[memberIndex].copy(id = newId)
                                                     },
                                                     label = "Student ID",
-                                                    placeholder = "e.g. 2405234"
+                                                    placeholder = "e.g. 2201234",
+                                                    isValid = idStatus
                                                 )
                                             }
 
@@ -726,11 +724,11 @@ fun BookSportScreen(
                                                 LineTextField(
                                                     value = member.name,
                                                     onValueChange = { newName ->
-                                                        members[memberIndex] =
-                                                            member.copy(name = newName)
+                                                        members[memberIndex] = members[memberIndex].copy(name = newName)
                                                     },
-                                                    label = "Name",
-                                                    placeholder = "Enter name"
+                                                    label = "Full Name",
+                                                    placeholder = "Enter name",
+                                                    isValid = if (member.name.isEmpty()) null else member.name.length >= 2
                                                 )
                                             }
                                         }
@@ -852,31 +850,51 @@ fun BookSportScreen(
                     onClick = {
                         if (!termsAccepted) return@Button
 
-                        // 1. 基本验证 (时间、必填项)
-                        val (isValid, errorMessage) = validateTimes(selectedStartTime, selectedEndTime)
-                        if (!isValid) {
-                            timeErrorMessage = errorMessage
-                            showTimeErrorDialog = true
-                            return@Button
-                        }
+                        // 1. 必填项非空检查 (Date, Time, Venue, Pax)
+                        val isBasicFieldsMissing = selectedDate.isEmpty() ||
+                                selectedStartTime.isEmpty() ||
+                                selectedEndTime.isEmpty() ||
+                                selectedVenue.isEmpty() ||
+                                (showMemberDetails && numberOfPax.isEmpty())
 
-                        if (selectedDate.isEmpty() || selectedStartTime.isEmpty() ||
-                            selectedEndTime.isEmpty() || selectedVenue.isEmpty()) {
+                        if (isBasicFieldsMissing) {
                             validationErrorMessage = "Please fill in all required fields (*)"
                             showValidationError = true
                             return@Button
                         }
 
+                        // 2. (for Cyber Centre / Library)
+                        if (showMemberDetails) {
+                            val totalPax = numberOfPax.toIntOrNull() ?: 1
+                            if (totalPax > 1) {
+                                val requiredMemberCount = totalPax - 1
+                                val filledMembers = members.subList(1, totalPax).filter {
+                                    it.id.isNotBlank() && it.name.isNotBlank()
+                                }
 
-                        // 2. 准备需要验证的成员列表 (过滤掉空行)
-                        val totalMembers = numberOfPax.toIntOrNull() ?: 1
-                        val membersToValidate = if (totalMembers > 1 && showMemberDetails) {
-                            members.filter { it.id.isNotBlank() || it.name.isNotBlank() }
+                                if (filledMembers.size < requiredMemberCount) {
+                                    validationErrorMessage = "Please fill in all member details for $totalPax pax."
+                                    showValidationError = true
+                                    return@Button
+                                }
+                            }
+                        }
+
+                        val (isValidTime, timeMsg) = validateTimes(selectedStartTime, selectedEndTime)
+                        if (!isValidTime) {
+                            timeErrorMessage = timeMsg
+                            showTimeErrorDialog = true
+                            return@Button
+                        }
+
+                        val membersToValidate = if (showMemberDetails) {
+                            members.filter { it.id.isNotBlank() && it.name.isNotBlank() }
                         } else {
                             emptyList()
                         }
 
-                        if (membersToValidate.isNotEmpty()) {
+                        // 5. 后端验证逻辑
+                        if (membersToValidate.size > 1) {
                             isVerifying = true
                             coroutineScope.launch {
                                 val result = userRepository.validateMembersWithDuplicates(membersToValidate)
@@ -889,12 +907,9 @@ fun BookSportScreen(
 
                                         membersToValidate.forEach { inputMember ->
                                             val dbMember = result.members.find { it.id == inputMember.id }
-
-                                            if (dbMember != null) {
-                                                if (!dbMember.name.equals(inputMember.name, ignoreCase = true)) {
-                                                    allInfoMatched = false
-                                                    mismatchDetails.append("Member ID ${inputMember.id}: Name does not match system records.\n")
-                                                }
+                                            if (dbMember != null && !dbMember.name.equals(inputMember.name, ignoreCase = true)) {
+                                                allInfoMatched = false
+                                                mismatchDetails.append("ID ${inputMember.id}: Name mismatch with records.\n")
                                             }
                                         }
 
@@ -904,42 +919,31 @@ fun BookSportScreen(
                                         } else {
                                             validationErrorMessage = mismatchDetails.toString()
                                             showValidationError = true
-                                            validationSuccess = false
                                         }
                                     }
                                     is MembersValidationResult.DuplicatesFound -> {
-                                        validationErrorMessage = "Duplicate student IDs: ${result.duplicates.joinToString(", ")}"
+                                        validationErrorMessage = "Duplicate IDs: ${result.duplicates.joinToString()}"
                                         showValidationError = true
                                     }
                                     is MembersValidationResult.InvalidIds -> {
-                                        validationErrorMessage = "Student ID not found: ${result.invalidIds.joinToString(", ")}"
+                                        validationErrorMessage = "ID not found: ${result.invalidIds.joinToString()}"
                                         showValidationError = true
                                     }
                                     is MembersValidationResult.Error -> {
                                         validationErrorMessage = result.errorMessage
                                         showValidationError = true
                                     }
-                                    else -> {}
                                 }
                             }
                         } else {
                             validationSuccess = true
                             showSuccessDialog = true
                         }
-
-                        val finalVenue = if (selectedRoomNo.isNotEmpty()) {
-                            "$selectedVenue - $selectedRoomNo"
-                        } else {
-                            selectedVenue
-                        }
-
                     },
                     enabled = termsAccepted && !isVerifying,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = containerColor
-                    )
-                ) {
+                    colors = ButtonDefaults.buttonColors(containerColor = containerColor)
+                ){
                     if (isVerifying) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)

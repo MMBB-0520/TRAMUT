@@ -44,6 +44,26 @@ fun BookingInfoScreen(
         derivedStateOf { viewModel.getBuildingForVenue(booking.venue) }
     }
 
+    val facilityCode = remember(booking.bookingId) {
+        val category = booking.facility
+
+        when {
+            category.contains("Badminton", ignoreCase = true) ||
+                    category.contains("Snooker", ignoreCase = true) ||
+                    category.contains("Squash", ignoreCase = true) ||
+                    category.contains("Gym", ignoreCase = true) ||
+                    category.contains("Pool", ignoreCase = true) ||
+                    category.contains("Tennis", ignoreCase = true) ||
+                    category.contains("Futsal", ignoreCase = true) ||
+                    category.contains("Guest", ignoreCase = true) ||
+                    category.contains("ball", ignoreCase = true) -> SCode()
+
+                    category.contains("CC", ignoreCase = true) -> CCode()
+
+            else -> LCode()
+        }
+    }
+
     // 监听UI状态变化 (保持不变)
     LaunchedEffect(uiState) {
         when (uiState) {
@@ -107,7 +127,7 @@ fun BookingInfoScreen(
 
             Divider(color = Color.LightGray)
 
-            BookingDetailRow("Facility", booking.facility)
+            BookingDetailRow("Facility", facilityCode)
             BookingDetailRow("Booking No.", booking.bookingNo)
             BookingDetailRow("Date", booking.date)
             BookingDetailRow("Duration", booking.duration)
@@ -208,3 +228,8 @@ fun BookingDetailRow(label: String, value: String) {
         Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
     }
 }
+
+fun generate9UniqueDigits(): String = (1..9).map { (0..9).random() }.joinToString("")
+fun LCode(): String = "L${generate9UniqueDigits()}"
+fun CCode(): String = "C${generate9UniqueDigits()}"
+fun SCode(): String = "S${generate9UniqueDigits()}"
