@@ -66,7 +66,7 @@ fun AvailabilityChartScreen(
     // Reuse category options logic
     val categoryOptions = remember(selectedFacilityFromPrevious) {
         when (selectedFacilityFromPrevious) {
-            "Sport Facilities", "Sports Facilities" -> listOf(
+            "Sports", "Sports Facilities" -> listOf(
                 "Badminton",
                 "Squash",
                 "Gym",
@@ -85,7 +85,7 @@ fun AvailabilityChartScreen(
                 "Individual Study Room"
             )
 
-            "CITC", "Cyber Centre Discussion Room" -> listOf(
+            "Cyber Centre", "Cyber Centre Discussion Room" -> listOf(
                 "Discussion Room (1 PC)",
                 "Discussion Room (2 PCs)",
                 "Discussion Room with Projector (2 PCs)"
@@ -148,7 +148,7 @@ fun AvailabilityChartScreen(
                 onClick = {
                     onBookNow(selectedVenue, selectedDate)
                 },
-                enabled = canBook,
+                enabled =true,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0D47A1),
                     disabledContainerColor = Color(0xFFB0BEC5)
@@ -407,12 +407,6 @@ fun AvailabilityChartTimetableGrid(
                                 .height(rowHeight)
                                 .background(cellColor)
                                 .border(0.5.dp, Color.White)
-                                .clickable {
-                                    // Only allow selection if the slot is available
-                                    if (status == "Available") {
-                                        onVenueSelected(facility.name)
-                                    }
-                                }
                         )
                     }
                 }
@@ -497,21 +491,6 @@ fun UnderlinedFloatingLabelDropdown(
         }
     }
 }
-
-private fun formatForFirebase(dateStr: String): String {
-    return try {
-        // Input format from your dateList: "2025-12-23"
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-        // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
-        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = inputFormat.parse(dateStr)
-        date?.let { outputFormat.format(it) } ?: dateStr
-    } catch (e: Exception) {
-        dateStr
-    }
-}
-
-
 
 // Department Dropdown (reused from TimetableScreen)
 @Composable

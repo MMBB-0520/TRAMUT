@@ -125,8 +125,8 @@ fun BookingInfoScreen(
 
             Divider(color = Color.LightGray)
 
-            BookingDetailRow("Facility", facilityCode)
-            BookingDetailRow("Booking No.", booking.bookingNo)
+            BookingDetailRow("Facility", booking.facility)
+            BookingDetailRow("Booking No.", facilityCode)
             BookingDetailRow("Date", booking.date)
             BookingDetailRow("Duration", booking.duration)
             BookingDetailRow("Venue", booking.venue)
