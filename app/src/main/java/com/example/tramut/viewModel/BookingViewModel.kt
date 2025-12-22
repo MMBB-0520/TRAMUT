@@ -1,5 +1,8 @@
 package com.example.tramut.viewModel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
@@ -34,6 +37,13 @@ class MyBookingViewModel : ViewModel() {
     val uiState: StateFlow<BookingUIState> = _uiState
 
     private var listenerRegistration: ListenerRegistration? = null
+
+    private val _selectedTabIndex = MutableStateFlow(0)
+    val selectedTabIndex: StateFlow<Int> = _selectedTabIndex
+
+    fun setTab(index: Int) {
+        _selectedTabIndex.value = index
+    }
 
     fun generate9UniqueDigits(): String {
         return (0..9)
