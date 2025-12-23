@@ -61,22 +61,41 @@ fun TimetableScreen(
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var selectedVenue by remember { mutableStateOf("") }
 
+//    LaunchedEffect(selectedCategory, uiState.selectedDate) {
+//        if (uiState.selectedDate.isNotEmpty()) {
+//            // 1. Format the date so it matches "21 / Dec / 2025 (Sun)"
+//            val firebaseDate = formatForFirebase(uiState.selectedDate)
+//
+//            viewModel.fetchTimetableData(
+//                identifier = selectedCategory,
+//                isCategory = true,
+//                date = firebaseDate
+//            )
+//
+//            viewModel.listenToBookingsForDate(firebaseDate)
+//        }
+//    }
+
+
     LaunchedEffect(selectedCategory, uiState.selectedDate) {
         if (uiState.selectedDate.isNotEmpty()) {
-            // 1. Format the date so it matches "21 / Dec / 2025 (Sun)"
-            val firebaseDate = formatForFirebase(uiState.selectedDate)
+            // 1. Convert the picker date (e.g., 2025-12-23)
+            // to the Firebase format (e.g., 23 / Dec / 2025 (Tue))
+            val formattedDate = formatForFirebase(uiState.selectedDate)
 
+            // 2. Launch the data fetching
             viewModel.fetchTimetableData(
                 identifier = selectedCategory,
                 isCategory = true,
-                date = firebaseDate
+                date = formattedDate
             )
 
-            viewModel.listenToBookingsForDate(firebaseDate)
+            // 3. Launch the real-time listener for bookings
+            viewModel.loadBookingsForDate(formattedDate)
+
+            Log.d("LAUNCH", "Fetching for category: $selectedCategory and date: $formattedDate")
         }
     }
-
-
 
     Scaffold(
         topBar = {

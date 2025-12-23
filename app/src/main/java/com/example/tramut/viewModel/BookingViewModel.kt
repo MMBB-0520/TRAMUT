@@ -188,7 +188,7 @@ class MyBookingViewModel : ViewModel() {
                     checkOut = "",
                     bookingNo = LCode(),
                     members = members,
-                    status = "Completed",
+                    status = "Booked",
                     date = firestoreDate,
                     finalVenue = availableFacility.name,
                     hoursList = requestedHours,
