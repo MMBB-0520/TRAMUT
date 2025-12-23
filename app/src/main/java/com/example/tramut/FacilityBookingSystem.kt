@@ -1,5 +1,6 @@
 package com.example.tramut
 
+import android.R.attr.title
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -286,6 +287,11 @@ fun TopBarScreen(
             )
         }
         AppScreen.StudentBooking -> {
+            val title = when (selectedTabIndex) {
+                1 -> "My Bookings"
+                else -> "Facility Booking"
+            }
+
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = hasPopBack) {
@@ -314,6 +320,7 @@ fun TopBarScreen(
                 )
             )
         }
+
         AppScreen.CITCTimetable,
         AppScreen.LibraryTimetable,
         AppScreen.SportsTimetable-> {
@@ -1669,19 +1676,6 @@ fun FBSApp(
                             navController.popBackStack()
                         }
                     )
-                }
-                composable(AppScreen.AdminViewReview.name) {
-                    if (currentAdminDept != "Loading...") {
-                        AdminReviewScreen(
-                            adminDepartment = currentAdminDept,
-                            onNavigateBack = { navController.popBackStack() }
-                        )
-                    } else {
-                        // Optional: Show a progress bar while waiting for the department name
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    }
                 }
 
             }

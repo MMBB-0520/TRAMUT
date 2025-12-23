@@ -94,10 +94,6 @@ fun ReviewSubmissionScreen(
                 value = selectedBooking?.date ?: ""
             )
 
-            InfoField(
-                label = "Venue / Room No.",
-                value = "${selectedBooking?.venue ?: ""}, ${selectedBooking?.finalVenue ?: ""}"
-            )
 
             Spacer(modifier = Modifier.height(12.dp))
             IssueCategoryDropdown(

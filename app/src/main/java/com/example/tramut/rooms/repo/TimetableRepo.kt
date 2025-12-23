@@ -59,18 +59,6 @@ class TimetableRepository {
         }
     }
 
-    // --- FUNCTION 1: FOR SPORTS ---
-    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
-        return try {
-            val snapshot = facilitiesCollection
-                .whereEqualTo("category", category)
-                .get()
-                .await()
-            snapshot.documents.mapNotNull { it.toObject(Facility::class.java)?.copy(id = it.id) }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
 
     suspend fun getFacilitiesByCategory(category: String, pax: Int? = null): List<Facility> {
         return try {

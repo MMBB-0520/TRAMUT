@@ -18,12 +18,12 @@ data class Booking(
     val checkOut: String = "",
     val bookingNo: String = "",
     val members: List<Member> = emptyList(),
-
+    val finalVenue: String = "",
     val pax: Int=1,
 
     @get:PropertyName("status") @set:PropertyName("status") var status: String = "Booked",
     @get:PropertyName("date") @set:PropertyName("date") var date: String = "",
-    @get:PropertyName("finalVenue") @set:PropertyName("finalVenue") var finalVenue: String = "",
+
     @get:PropertyName("hoursList") @set:PropertyName("hoursList") var hoursList: List<Int> = emptyList()
 )
 

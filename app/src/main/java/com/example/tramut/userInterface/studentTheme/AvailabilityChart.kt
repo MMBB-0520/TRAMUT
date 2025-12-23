@@ -42,8 +42,10 @@ fun AvailabilityChartScreen(
     onBookNow: (String, String) -> Unit = { _, _ -> },
     onBackFacility: () -> Unit = {}
 ) {
+    // Reuse the date logic
     val today = java.time.LocalDate.now()
 
+    // Generate next 3 days for display
     val dateList = remember {
         val calendar = Calendar.getInstance()
         val formatter = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
@@ -146,35 +148,6 @@ fun AvailabilityChartScreen(
                     onBookNow(selectedVenue, selectedDate)
                 },
                 enabled =true,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0D47A1),
-                    disabledContainerColor = Color(0xFFB0BEC5)
-                )
-            ) {
-                Text("Book Now")
-            }
-
-        }
-
-    val canBook = selectedDate.isNotEmpty() && selectedVenue.isNotEmpty()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Book Now Button
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Button(
-                onClick = {
-                    onBookNow(selectedVenue, selectedDate)
-                },
-                enabled = canBook,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0D47A1),
                     disabledContainerColor = Color(0xFFB0BEC5)
@@ -513,33 +486,6 @@ fun UnderlinedFloatingLabelDropdown(
         }
     }
 }
-
-private fun formatForFirebase(dateStr: String): String {
-    return try {
-        // Input format from your dateList: "2025-12-23"
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-        // Output format in your Firestore: "23 / Dec / 2025 (Tue)"
-        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = inputFormat.parse(dateStr)
-        date?.let { outputFormat.format(it) } ?: dateStr
-    } catch (e: Exception) {
-        dateStr
-    }
-}
-
-// Helper function to format date for display (yyyy-MM-dd -> dd / MMM / yyyy (EEE))
-fun formatDateForDisplay(dateStr: String): String {
-    return try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-        val outputFormat = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
-        val date = inputFormat.parse(dateStr)
-        date?.let { outputFormat.format(it) } ?: dateStr
-    } catch (e: Exception) {
-        dateStr
-    }
-}
-
-
 
 // Department Dropdown (reused from TimetableScreen)
 @Composable

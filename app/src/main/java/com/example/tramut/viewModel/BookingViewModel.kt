@@ -1,25 +1,20 @@
 package com.example.tramut.viewModel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.BookingRepo
 import com.example.tramut.rooms.repo.TimetableRepository
 import com.example.tramut.userInterface.formatDateForDisplay
-import com.google.firebase.Firebase
-import com.example.tramut.userInterface.formatDateForDisplay
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 class MyBookingViewModel : ViewModel() {
 
@@ -45,6 +40,7 @@ class MyBookingViewModel : ViewModel() {
         _selectedTabIndex.value = index
     }
 
+
     fun generate9UniqueDigits(): String {
         return (0..9)
             .map { (0..9).random() }
@@ -64,19 +60,29 @@ class MyBookingViewModel : ViewModel() {
     }
 
     private val _allBookings = MutableStateFlow<List<Booking>>(emptyList())
-    val allBookings: StateFlow<List<Booking>> = _allBookings
+
+    val allBookings: StateFlow<List<Booking>> = _allBookings.asStateFlow()
+    private var dateListenerRegistration: ListenerRegistration? = null
 
     fun fetchAllBookingsByDate(date: String) {
-        firestore.collection("bookings")
-            .whereEqualTo("date", date) // Get everyone's bookings for this day
-            .addSnapshotListener { snapshot, _ ->
+        dateListenerRegistration?.remove()
+
+        val firestoreDate = formatDateForDisplay(date)
+
+        dateListenerRegistration = firestore.collection("bookings")
+            .whereEqualTo("date", firestoreDate)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("Firestore", "Listen failed", error)
+                    return@addSnapshotListener
+                }
+
                 if (snapshot != null) {
-                    _allBookings.value = snapshot.toObjects(Booking::class.java)
+                    val bookingsList = snapshot.toObjects(Booking::class.java)
+                    _allBookings.value = bookingsList
                 }
             }
     }
-
-
     fun startListening(userId: String) {
         _isLoading.value = true
 
@@ -133,35 +139,45 @@ class MyBookingViewModel : ViewModel() {
         level: String,
         building: String,
         onResult: (Boolean, String) -> Unit,
+
     ) {
         viewModelScope.launch {
+            // 1. FORMAT THE DATE (Crucial for the Blue Color update)
             val firestoreDate = formatDateForDisplay(date)
+
             val startH = parseTo24Hour(startTime)
             val endH = parseTo24Hour(endTime)
+            if (startH >= endH) {
+                onResult(false, "Invalid time range")
+                return@launch
+            }
             val requestedHours = (startH until endH).toList()
 
-            // CHANGE THIS LINE: Use the new repo function with pax
-            val facilities = repo.getFacilitiesByCategoryAndCapacity(category, pax)
+            // 2. Fetch data using the formatted date
+            //val departmentName = getDepartmentFromVenue(category)
             val existingBookings = repo.getBookingsByDate(firestoreDate)
-            val department = getDepartmentFromVenue(category)
 
-            // Find the first facility in the size-filtered list that is not overlapped
-            val availableFacility = facilities.find { facility ->
+            val facility = repo.getFacilitiesByCategory(category)
+
+            // 3. Search logic (Finding an available court)
+            val availableFacility = facility.find { facility ->
                 val bookingsForThisFacility = existingBookings.filter {
-                    it.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true)
+                    it.finalVenue.trim().equals(facility.name.trim(), ignoreCase = true) &&
+                            it.status != "Cancelled"
                 }
                 val isOverlap = bookingsForThisFacility.any { b ->
-                    b.hoursList.any { it in requestedHours } && b.status != "Cancelled"
+                    b.hoursList.any { it in requestedHours }
                 }
                 !isOverlap
             }
 
+            // 4. CREATE THE OBJECT (Fixed with all 19 fields)
             if (availableFacility != null) {
                 val newBooking = Booking(
                     bookingId = firestore.collection("bookings").document().id,
                     userId = userId,
                     timeslotId = "",
-                    facility = department,
+                    facility = category,
                     venue = category,
                     level = level,
                     building = building,
@@ -172,7 +188,7 @@ class MyBookingViewModel : ViewModel() {
                     checkOut = "",
                     bookingNo = LCode(),
                     members = members,
-                    status = "Confirmed",
+                    status = "Completed",
                     date = firestoreDate,
                     finalVenue = availableFacility.name,
                     hoursList = requestedHours,
@@ -192,29 +208,33 @@ class MyBookingViewModel : ViewModel() {
         }
     }
 
-    fun getDepartmentFromVenue(venue: String): String {
-        // 1. Define your data lists exactly as you provided them
-        val sportsCategories = setOf(
-            "Badminton", "Squash", "Gym", "Guest/Karaoke Room",
-            "Swimming Pool", "Snooker", "Pickleball", "Table Tennis",
-            "Tennis", "Futsal"
-        )
+    private fun getDepartmentFromVenue(venue: String): String {
+        val venueLower = venue.lowercase()
+        return when {
+            // Sports Complex category
+            venueLower.contains("squash") ||
+                    venueLower.contains("gym") ||
+                    venueLower.contains("swimming pool") ||
+                    venueLower.contains("snooker") ||
+                    venueLower.contains("pickleball") ||
+                    venueLower.contains("table tennis") ||
+                    venueLower.contains("tennis") ||
+                    venueLower.contains("futsal") ||
+                    venueLower.contains("guest/karaoke") -> "Sports"
 
-        val libraryCategories = setOf(
-            "Discussion Room", "Discussion Room with PC", "Individual Study Room"
-        )
+            // Library category
+            venueLower.contains("individual study") ||
+                    venueLower.contains("discussion room with pc") ||
+                    venueLower.contains("discussion room") -> "Library"
 
-        val cyberCategories = setOf(
-            "Discussion Room (1 PC)", "Discussion Room (2 PCs)",
-            "Discussion Room with Projector (2 PCs)"
-        )
+            // Cyber Centre category
+            venueLower.contains("discussion room (1 pc)") ||
+                    venueLower.contains("discussion room (2 pcs)") ||
+                    venueLower.contains("discussion room (2 pcs)") ||
+                    venueLower.contains("discussion room (2 pcs)[hdmi]")||
+                    venueLower.contains("cyber") -> "Cyber Centre"
 
-        // 2. Check which "bucket" the venue belongs to
-        return when (venue) {
-            in sportsCategories -> "Sports"
-            in libraryCategories -> "Library"
-            in cyberCategories -> "Cyber Centre"
-            else -> "General"
+            else -> "Not specified"
         }
     }
 
@@ -276,7 +296,6 @@ class MyBookingViewModel : ViewModel() {
         listenerRegistration = null
     }
 
-
     fun getLevelForVenue(venue: String): String {
         val venueLower = venue.lowercase()
         return when {
@@ -296,17 +315,18 @@ class MyBookingViewModel : ViewModel() {
 
             venueLower.contains("library") -> {
                 when {
-                    venueLower.contains("discussion") -> "1A"
+                    venueLower.contains("discussion room with pc") ||
+                            venueLower.contains("discussion room")  -> "1A"
                     else -> "1"  // 主图书馆在1楼
                 }
             }
 
             venueLower.contains("individual study") -> "2A"
 
-            venueLower.contains("citc") ||
-                    venueLower.contains("cyber") ||
-                    venueLower.contains("pc") ||
-                    venueLower.contains("projector") -> "Second Floor"
+            venueLower.contains("discussion room (1 pc)") ||
+                    venueLower.contains("discussion room (2 pcs)") ||
+                    venueLower.contains("discussion room (2 pcs)") ||
+                    venueLower.contains("discussion room (2 pcs)[hdmi]") -> "Second Floor"
 
             venueLower.contains("discussion") -> {
                 when {
@@ -338,7 +358,9 @@ class MyBookingViewModel : ViewModel() {
 
 
             venueLower.contains("library") -> "Library"
-            venueLower.contains("individual study") -> "Library"
+            venueLower.contains("individual study") ||
+                    venueLower.contains("discussion room with pc") ||
+                    venueLower.contains("discussion room")-> "Library"
 
 
             venueLower.contains("citc") ||
@@ -347,7 +369,10 @@ class MyBookingViewModel : ViewModel() {
             venueLower.contains("discussion") -> {
                 when {
                     venueLower.contains("library") -> "Library"
-                    venueLower.contains("cyber") -> "Cyber Centre"
+                    venueLower.contains("discussion room (1 pc)") ||
+                            venueLower.contains("discussion room (2 pcs)") ||
+                            venueLower.contains("discussion room (2 pcs)") ||
+                            venueLower.contains("discussion room (2 pcs)[hdmi]") -> "Cyber Centre"
                     else -> "General Building"
                 }
             }
@@ -356,8 +381,6 @@ class MyBookingViewModel : ViewModel() {
             else -> "Not specified"
         }
     }
-
-
     override fun onCleared() {
         super.onCleared()
         stopListening()
