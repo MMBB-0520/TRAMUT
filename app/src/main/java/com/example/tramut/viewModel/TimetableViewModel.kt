@@ -40,7 +40,7 @@ class TimetableViewModel(
     private var facilityListener: ListenerRegistration? = null
 
     init {
-        val sdf = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
+        val sdf = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
         val today = sdf.format(Calendar.getInstance().time)
         _uiState.update { it.copy(selectedDate = today) }
     }
@@ -61,48 +61,64 @@ class TimetableViewModel(
     // 2. FIX THE ERROR: Ensure this function accepts these 3 parameters
     fun fetchTimetableData(identifier: String, isCategory: Boolean, date: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.update { it.copy(isLoading = true) }
             try {
-                // Fetch the list of facilities (The Venue names on the left of the chart)
                 val facilities = if (isCategory) {
                     facilityRepo.getFacilitiesByCategory(identifier)
                 } else {
                     facilityRepo.getFacilitiesByLocation(identifier)
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    facilitiesList = facilities,
-                    isLoading = false
-                )
+                _uiState.update { it.copy(facilitiesList = facilities, isLoading = false) }
 
-                // Start listening for real-time bookings on this date
-                listenToBookingsForDate(date)
+                // CRITICAL: Call the listener here every time the category changes
+                loadBookingsForDate(date)
+
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
             }
         }
     }
 
-    fun listenToBookingsForDate(date: String) {
-        Log.d("TIMETABLE_DEBUG", "Listening for: $date")
-        firestore.collection("bookings")
-            .whereEqualTo("date", date)
-            .addSnapshotListener { snapshot, _ ->
-                val bookings = snapshot?.toObjects(Booking::class.java) ?: emptyList()
-                Log.d("TIMETABLE_DEBUG", "Found ${bookings.size} bookings")
-                _allBookings.value = bookings
-            }
+    // Helper to match the format used in your saveBooking logic
+    // 1. Update the Helper Function to match Firebase order
+    fun formatForFirebase(dateStr: String): String {
+        return try {
+            // Input from picker: "2025-12-24"
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+
+            // MATCH THIS TO FIREBASE: "2025 / Dec / 24 (Wed)"
+            val outputFormat = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
+
+            val date = inputFormat.parse(dateStr)
+            date?.let { outputFormat.format(it) } ?: dateStr
+        } catch (e: Exception) {
+            dateStr
+        }
     }
-    private var bookingsListener: ListenerRegistration? = null
+
+    // 2. Update the Init Block so it starts with the correct format
+    init {
+        val sdf = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
+        val today = sdf.format(Calendar.getInstance().time)
+        _uiState.update { it.copy(selectedDate = today) }
+    }
+
+    // 3. Update updateDate to use the new helper
+    fun updateDate(newDate: String) {
+        val formattedDate = formatForFirebase(newDate) // Now returns "2025 / Dec / 24 (Wed)"
+        _uiState.update { it.copy(selectedDate = formattedDate) }
+        loadBookingsForDate(formattedDate)
+    }
 
 
     fun loadBookingsForDate(dateString: String) {
-        // 1. Remove/Stop the previous listener if it exists
         bookingsListener?.remove()
 
-        // 2. Start the new real-time listener
+        _uiState.update { it.copy(isLoading = true) }
+
         bookingsListener = db.collection("bookings")
-            .whereEqualTo("date", dateString)
+            .whereEqualTo("date", dateString) // dateString is now "21 / Dec / 2025 (Sun)"
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Log.e("Timetable", "Listen failed.", error)
@@ -110,16 +126,57 @@ class TimetableViewModel(
                 }
 
                 if (snapshot != null) {
-                    // Convert documents to Booking objects
                     val bookings = snapshot.toObjects(Booking::class.java)
 
-                    // 3. Update the UI state so the screen re-draws
+                    // Update the state with the new bookings
                     _uiState.update { it.copy(allBookings = bookings, isLoading = false) }
 
                     Log.d("Timetable", "Received ${bookings.size} bookings for $dateString")
                 }
             }
     }
+
+    fun listenToBookingsForDate(date: String) {
+        db.collection("bookings")
+            .whereEqualTo("date", date)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val newBookings = snapshot.toObjects(Booking::class.java)
+
+                    // Update the UI State - THIS triggers the screen to refresh
+                    _uiState.update { it.copy(allBookings = newBookings) }
+
+                    Log.d("TT", "UI updated with ${newBookings.size} bookings")
+                }
+            }
+    }
+    private var bookingsListener: ListenerRegistration? = null
+
+
+//    fun loadBookingsForDate(dateString: String) {
+//        // 1. Remove/Stop the previous listener if it exists
+//        bookingsListener?.remove()
+//
+//        // 2. Start the new real-time listener
+//        bookingsListener = db.collection("bookings")
+//            .whereEqualTo("date", dateString)
+//            .addSnapshotListener { snapshot, error ->
+//                if (error != null) {
+//                    Log.e("Timetable", "Listen failed.", error)
+//                    return@addSnapshotListener
+//                }
+//
+//                if (snapshot != null) {
+//                    // Convert documents to Booking objects
+//                    val bookings = snapshot.toObjects(Booking::class.java)
+//
+//                    // 3. Update the UI state so the screen re-draws
+//                    _uiState.update { it.copy(allBookings = bookings, isLoading = false) }
+//
+//                    Log.d("Timetable", "Received ${bookings.size} bookings for $dateString")
+//                }
+//            }
+//    }
 
     fun listenToBookings(date: String) {
         db.collection("bookings")
@@ -170,8 +227,8 @@ class TimetableViewModel(
         return "Available"
     }
 
-    fun updateDate(newDate: String) {
-        _uiState.update { it.copy(selectedDate = newDate) }
-        loadBookingsForDate(newDate)
-    }
+//    fun updateDate(newDate: String) {
+//        _uiState.update { it.copy(selectedDate = newDate) }
+//        loadBookingsForDate(newDate)
+//    }
 }

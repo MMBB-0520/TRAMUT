@@ -1,6 +1,7 @@
 package com.example.tramut.userInterface.studentTheme
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -102,24 +103,44 @@ fun AvailabilityChartScreen(
         selectedCategory = categoryOptions.first()
     }
 
-    LaunchedEffect(selectedCategory, selectedDate) {
-        val facilityQuery = if (selectedCategory.startsWith("All")) {
-            selectedFacilityFromPrevious
-        } else {
-            selectedCategory
+//    LaunchedEffect(selectedCategory, selectedDate) {
+//        val facilityQuery = if (selectedCategory.startsWith("All")) {
+//            selectedFacilityFromPrevious
+//        } else {
+//            selectedCategory
+//        }
+//        val isCategoryQuery = !selectedCategory.startsWith("All")
+//        val firebaseFormattedDate = formatForFirebase(selectedDate)
+//
+//        // 1. Load the list of courts/rooms
+//        viewModel.fetchTimetableData(
+//            identifier = facilityQuery,
+//            isCategory = isCategoryQuery,
+//            date = firebaseFormattedDate
+//        )
+//
+//        // 2. Start watching for Blue squares (Bookings)
+//        viewModel.listenToBookingsForDate(firebaseFormattedDate)
+//    }
+
+    LaunchedEffect(selectedCategory, uiState.selectedDate) {
+        if (uiState.selectedDate.isNotEmpty()) {
+            // 1. Convert the picker date (e.g., 2025-12-23)
+            // to the Firebase format (e.g., 23 / Dec / 2025 (Tue))
+            val formattedDate = formatForFirebase(uiState.selectedDate)
+
+            // 2. Launch the data fetching
+            viewModel.fetchTimetableData(
+                identifier = selectedCategory,
+                isCategory = true,
+                date = formattedDate
+            )
+
+            // 3. Launch the real-time listener for bookings
+            viewModel.loadBookingsForDate(formattedDate)
+
+            Log.d("LAUNCH", "Fetching for category: $selectedCategory and date: $formattedDate")
         }
-        val isCategoryQuery = !selectedCategory.startsWith("All")
-        val firebaseFormattedDate = formatForFirebase(selectedDate)
-
-        // 1. Load the list of courts/rooms
-        viewModel.fetchTimetableData(
-            identifier = facilityQuery,
-            isCategory = isCategoryQuery,
-            date = firebaseFormattedDate
-        )
-
-        // 2. Start watching for Blue squares (Bookings)
-        viewModel.listenToBookingsForDate(firebaseFormattedDate)
     }
 
     // Initialize with first date
