@@ -104,8 +104,10 @@ class MyBookingViewModel : ViewModel() {
 
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(Booking::class.java)?.copy(
-                            bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
+                        val b = doc.toObject(Booking::class.java)
+                        b?.copy(
+                            bookingId = doc.id,
+                            bookingNo = doc.getString("bookingNo") ?: doc.id
                         )
                     }
                     _bookingList.value = bookings
@@ -140,7 +142,7 @@ class MyBookingViewModel : ViewModel() {
         building: String,
         onResult: (Boolean, String) -> Unit,
 
-    ) {
+        ) {
         viewModelScope.launch {
             // 1. FORMAT THE DATE (Crucial for the Blue Color update)
             val firestoreDate = formatDateForDisplay(date)
@@ -248,7 +250,7 @@ class MyBookingViewModel : ViewModel() {
 
             // 使用 bookingNo 字段查找
             val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingId", bookingNo)  // 改为 bookingNo
+                .whereEqualTo(/* field = */ "bookingId", /* value = */ bookingNo)  // 改为 bookingNo
                 .limit(1)
                 .get()
                 .await()
@@ -381,6 +383,24 @@ class MyBookingViewModel : ViewModel() {
             else -> "Not specified"
         }
     }
+
+    // mybooking column delete
+    fun deleteBooking(bookingId: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = BookingUIState.Loading
+                firestore.collection("bookings")
+                    .document(bookingId)
+                    .delete()
+                    .await()
+
+                _bookingList.value = _bookingList.value.filter { it.bookingId != bookingId }
+            } catch (e: Exception) {
+                _uiState.value = BookingUIState.Error(e.message ?: "Delete failed")
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         stopListening()
