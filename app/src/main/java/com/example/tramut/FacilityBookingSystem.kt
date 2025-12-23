@@ -64,6 +64,7 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.Adm
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
+import com.example.tramut.rooms.entity.Review
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
@@ -1447,6 +1448,33 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.UserReview.name) {
+                    var cancelConfirm by rememberSaveable { mutableStateOf(false) }
+                    var reviewToCancel by remember { mutableStateOf<Review?>(null) }
+
+                    if (cancelConfirm && reviewToCancel != null) {
+                        AlertDialog(
+                            onDismissRequest = { cancelConfirm = false },
+                            title = { Text("Confirm Cancel") },
+                            text = { Text("Are you sure you want to cancel this review?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    cancelConfirm = false
+                                    reviewToCancel?.let { reviewViewModel.cancelReview(it) }
+                                    reviewToCancel = null
+                                }) {
+                                    Text("Yes")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {
+                                    cancelConfirm = false
+                                    reviewToCancel = null
+                                }) { Text("No") }
+                            },
+                            properties = DialogProperties(dismissOnClickOutside = false)
+                        )
+                    }
+
                     LaunchedEffect(Unit) {
                         reviewViewModel.fetchMyReviews(currentUser?.loginId)
                     }
@@ -1456,7 +1484,11 @@ fun FBSApp(
                         selectedTab = selectedTab,
                         onTabSelected = { selectedTab = it },
                         filteredReviews = filteredReviews,
-                        containColor = containerColor
+                        containColor = containerColor,
+                        onCancelClick = { item ->
+                            reviewToCancel = item
+                            cancelConfirm = true
+                        }
                     )
                 }
 

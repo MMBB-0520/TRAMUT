@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +38,8 @@ fun ReviewScreen(
     filteredReviews: List<Review>,
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    containColor: Color
+    containColor: Color,
+    onCancelClick: (Review) -> Unit
 ) {
 
     Column(
@@ -66,7 +68,10 @@ fun ReviewScreen(
 
         LazyColumn {
             items(filteredReviews) { item ->
-                ReviewCard(item,containColor)
+                ReviewCard(
+                    item = item,
+                    containColor = containColor,
+                    onCancelClick = { onCancelClick(item)})
             }
         }
     }
@@ -124,12 +129,20 @@ fun TabItem(
 @Composable
 fun ReviewCard(
     item: Review,
-    containColor: Color
+    containColor: Color,
+    onCancelClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .then(
+                if (item.status != "Solved") {
+                    Modifier.clickable { onCancelClick() }
+                } else {
+                    Modifier
+                }
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -181,7 +194,7 @@ fun ReviewCard(
 
             // Bottom section: Department and Comment
             Text(
-                text = "Department: ${item.department}",
+                text = "To ${item.department} Department: ",
                 fontSize = 11.sp,
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold

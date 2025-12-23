@@ -12,6 +12,6 @@ data class Review(
     val loginId: String = "",
     val issueCategory: String = "",
     val comment: String = "",
-    val status: String = "Unresolved",
+    val status: String = "Unsolved",
     val department: String = "" //facilityType
 )
