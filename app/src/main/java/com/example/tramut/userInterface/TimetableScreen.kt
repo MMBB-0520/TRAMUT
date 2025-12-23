@@ -53,7 +53,7 @@ fun TimetableScreen(
         when (initialDepartment) {
             "Sports" -> listOf("Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
             "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "Cyber Center" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            "Cyber Centre" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
             else -> listOf(initialDepartment)
         }
     }
@@ -61,18 +61,39 @@ fun TimetableScreen(
     var selectedCategory by remember { mutableStateOf(categoryOptions.first()) }
     var selectedVenue by remember { mutableStateOf("") }
 
+//    LaunchedEffect(selectedCategory, uiState.selectedDate) {
+//        if (uiState.selectedDate.isNotEmpty()) {
+//            // 1. Format the date so it matches "21 / Dec / 2025 (Sun)"
+//            val firebaseDate = formatForFirebase(uiState.selectedDate)
+//
+//            viewModel.fetchTimetableData(
+//                identifier = selectedCategory,
+//                isCategory = true,
+//                date = firebaseDate
+//            )
+//
+//            viewModel.listenToBookingsForDate(firebaseDate)
+//        }
+//    }
+
+
     LaunchedEffect(selectedCategory, uiState.selectedDate) {
         if (uiState.selectedDate.isNotEmpty()) {
-            // 1. Format the date so it matches "21 / Dec / 2025 (Sun)"
-            val firebaseDate = formatForFirebase(uiState.selectedDate)
+            // 1. Convert the picker date (e.g., 2025-12-23)
+            // to the Firebase format (e.g., 23 / Dec / 2025 (Tue))
+            val formattedDate = formatForFirebase(uiState.selectedDate)
 
+            // 2. Launch the data fetching
             viewModel.fetchTimetableData(
                 identifier = selectedCategory,
                 isCategory = true,
-                date = firebaseDate
+                date = formattedDate
             )
 
-            viewModel.listenToBookingsForDate(firebaseDate)
+            // 3. Launch the real-time listener for bookings
+            viewModel.loadBookingsForDate(formattedDate)
+
+            Log.d("LAUNCH", "Fetching for category: $selectedCategory and date: $formattedDate")
         }
     }
 
@@ -93,6 +114,7 @@ fun TimetableScreen(
         Column(
             modifier = Modifier
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
@@ -142,8 +164,8 @@ fun TimetableScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         LegendItem(Color(0xFF4CAF50), "Available")
-                        LegendItem(Color(0xFF2196F3), "Full") // Changed "Booked" to "Full"
-                        LegendItem(Color(0xFFF44336), "Maint.")
+                        LegendItem(Color(0xFF2196F3), "Full")
+                        LegendItem(Color(0xFFF44336), "Special")
                         LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
                 }
@@ -221,7 +243,7 @@ fun TimetableGrid(
                 modifier = Modifier
                     .width(venueColWidth)
                     .height(rowHeight)
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -234,7 +256,7 @@ fun TimetableGrid(
                     modifier = Modifier
                         .width(timeColWidth)
                         .height(rowHeight)
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.background)
                         .border(1.dp, borderColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -263,7 +285,7 @@ fun TimetableGrid(
                             .width(venueColWidth)
                             .height(rowHeight)
                             .background(
-                                if (isSelected) Color(0xFFE3F2FD) else Color.White
+                                if (isSelected) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.background
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
@@ -364,7 +386,7 @@ fun DepartmentDropdownLineStyle(
             modifier = Modifier
                 .width(dropdownWidth.value)
                 .heightIn(max = 200.dp)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(

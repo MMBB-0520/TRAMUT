@@ -1,50 +1,82 @@
 package com.example.tramut.userInterface.studentTheme
 
-import android.R.attr.enabled
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextIndent
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tramut.rooms.entity.Member
 import com.example.tramut.rooms.repo.MembersValidationResult
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
-import com.example.tramut.userInterface.adminTheme.Facility.LineTextField
+import com.example.tramut.viewModel.MyBookingViewModel
 import com.example.tramut.viewModel.VenueViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlinx.coroutines.launch
-import com.example.tramut.viewModel.MyBookingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -184,11 +216,11 @@ fun BookSportScreen(
             emptyList()
         )
     }
+    val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
     // book for 3 days
     val dateList = remember {
         val calendar = Calendar.getInstance()
-        val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
         List(3) { i ->
             calendar.time = Date() // set to today
@@ -198,10 +230,24 @@ fun BookSportScreen(
     }
 
 
-    LaunchedEffect(selectedDateFromPrevious, selectedVenueFromPrevious) {
-
+    LaunchedEffect(selectedDateFromPrevious) {
         if (selectedDateFromPrevious.isNotEmpty()) {
-            selectedDate = selectedDateFromPrevious.replace("+", " ")
+
+            // ① 先保留你这句（不能删）
+            val cleaned = selectedDateFromPrevious.replace("+", " ")
+
+            // ② 再转成你 dateList 用的格式
+            try {
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+                val outputFormat =
+                    SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
+
+                val parsedDate = inputFormat.parse(cleaned)
+
+                selectedDate = outputFormat.format(parsedDate!!)
+            } catch (e: Exception) {
+                selectedDate = cleaned // 兜底
+            }
         }
 
         if (selectedVenueFromPrevious.isNotEmpty()) {
@@ -396,6 +442,7 @@ fun BookSportScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
@@ -745,7 +792,7 @@ fun BookSportScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFEFEFEF), shape = RoundedCornerShape(8.dp))
+                        .background(color = MaterialTheme.colorScheme.background, shape = RoundedCornerShape(8.dp))
                         .padding(12.dp)
                 ) {
                     Column {
@@ -825,7 +872,7 @@ fun BookSportScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -848,222 +895,116 @@ fun BookSportScreen(
                 }
 
                 Button(
-
                     onClick = {
-
                         if (!termsAccepted) return@Button
 
-
-
-// 1. 必填项非空检查 (Date, Time, Venue, Pax)
-
+                        // 1. 必填项非空检查 (Date, Time, Venue, Pax)
                         val isBasicFieldsMissing = selectedDate.isEmpty() ||
-
                                 selectedStartTime.isEmpty() ||
-
                                 selectedEndTime.isEmpty() ||
-
                                 selectedVenue.isEmpty() ||
-
                                 (showMemberDetails && numberOfPax.isEmpty())
 
-
-
                         if (isBasicFieldsMissing) {
-
                             validationErrorMessage = "Please fill in all required fields (*)"
-
                             showValidationError = true
-
                             return@Button
-
                         }
 
-
-
-// 2. (for Cyber Centre / Library)
-
+                        // 2. (for Cyber Centre / Library)
                         if (showMemberDetails) {
-
                             val totalPax = numberOfPax.toIntOrNull() ?: 1
-
                             if (totalPax > 1) {
-
                                 val requiredMemberCount = totalPax - 1
-
                                 val filledMembers = members.subList(1, totalPax).filter {
-
                                     it.id.isNotBlank() && it.name.isNotBlank()
-
                                 }
-
-
 
                                 if (filledMembers.size < requiredMemberCount) {
-
                                     validationErrorMessage = "Please fill in all member details for $totalPax pax."
-
                                     showValidationError = true
-
                                     return@Button
-
                                 }
-
                             }
-
                         }
-
-
 
                         val (isValidTime, timeMsg) = validateTimes(selectedStartTime, selectedEndTime)
-
                         if (!isValidTime) {
-
                             timeErrorMessage = timeMsg
-
                             showTimeErrorDialog = true
-
                             return@Button
-
                         }
-
-
 
                         val membersToValidate = if (showMemberDetails) {
-
                             members.filter { it.id.isNotBlank() && it.name.isNotBlank() }
-
                         } else {
-
                             emptyList()
-
                         }
 
-
-
-// 5. 后端验证逻辑
-
+                        // 5. 后端验证逻辑
                         if (membersToValidate.size > 1) {
-
                             isVerifying = true
-
                             coroutineScope.launch {
-
                                 val result = userRepository.validateMembersWithDuplicates(membersToValidate)
-
                                 isVerifying = false
 
-
-
                                 when (result) {
-
                                     is MembersValidationResult.Success -> {
-
                                         var allInfoMatched = true
-
                                         val mismatchDetails = StringBuilder()
 
-
-
                                         membersToValidate.forEach { inputMember ->
-
                                             val dbMember = result.members.find { it.id == inputMember.id }
-
                                             if (dbMember != null && !dbMember.name.equals(inputMember.name, ignoreCase = true)) {
-
                                                 allInfoMatched = false
-
                                                 mismatchDetails.append("ID ${inputMember.id}: Name mismatch with records.\n")
-
                                             }
-
                                         }
-
-
 
                                         if (allInfoMatched) {
-
                                             validationSuccess = true
-
                                             showSuccessDialog = true
-
                                         } else {
-
                                             validationErrorMessage = mismatchDetails.toString()
-
                                             showValidationError = true
-
                                         }
-
                                     }
-
                                     is MembersValidationResult.DuplicatesFound -> {
-
                                         validationErrorMessage = "Duplicate IDs: ${result.duplicates.joinToString()}"
-
                                         showValidationError = true
-
                                     }
-
                                     is MembersValidationResult.InvalidIds -> {
-
                                         validationErrorMessage = "ID not found: ${result.invalidIds.joinToString()}"
-
                                         showValidationError = true
-
                                     }
-
                                     is MembersValidationResult.Error -> {
-
                                         validationErrorMessage = result.errorMessage
-
                                         showValidationError = true
-
                                     }
-
                                 }
-
                             }
-
                         } else {
-
                             validationSuccess = true
-
                             showSuccessDialog = true
-
                         }
-
                     },
-
                     enabled = termsAccepted && !isVerifying,
-
                     modifier = Modifier.fillMaxWidth(),
-
                     colors = ButtonDefaults.buttonColors(containerColor = containerColor)
-
                 ){
-
                     if (isVerifying) {
-
                         Row(verticalAlignment = Alignment.CenterVertically) {
-
                             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color.White)
-
                             Spacer(Modifier.width(8.dp))
-
                             Text("VERIFYING...", color = Color.White)
-
                         }
-
                     } else {
-
                         Text("SUBMIT", color = Color.White)
-
                     }
-
                 }
-
             }
+
+
 
             if (showTimeErrorDialog) {
                 AlertDialog(
@@ -1252,7 +1193,7 @@ fun LineTextField(
                             .focusRequester(focusRequester),
                         textStyle = LocalTextStyle.current.copy(
                             fontSize = if (hasValue) 16.sp else 14.sp,
-                            color = if (hasValue) Color.Black else Color.Gray
+                            color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray
                         ),
                         keyboardOptions = keyboardOptions,
                         singleLine = singleLine,
@@ -1343,7 +1284,7 @@ fun DropdownUnderlinedTextFieldSimple(
                         text = if (hasValue) value else label,
                         fontSize = if (hasValue) 16.sp else 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = if (hasValue) Color.Black else Color.Gray,
+                        color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
@@ -1364,7 +1305,7 @@ fun DropdownUnderlinedTextFieldSimple(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
         ) {
             items.forEach { item ->
                 DropdownMenuItem(

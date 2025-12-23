@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,12 +38,14 @@ fun ReviewScreen(
     filteredReviews: List<Review>,
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    containColor: Color
+    containColor: Color,
+    onCancelClick: (Review) -> Unit
 ) {
 
     Column(
         modifier = Modifier
-            .background(Background)
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
 
@@ -55,14 +60,18 @@ fun ReviewScreen(
         Text(
             text = selectedTab,
             fontWeight = FontWeight.Bold,
-            fontSize = 18.sp
+            fontSize = 18.sp,
+            modifier = Modifier.padding(start = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn {
             items(filteredReviews) { item ->
-                ReviewCard(item,containColor)
+                ReviewCard(
+                    item = item,
+                    containColor = containColor,
+                    onCancelClick = { onCancelClick(item)})
             }
         }
     }
@@ -77,7 +86,7 @@ fun ReviewTabs(
 
     Row(
         modifier = Modifier
-            .background(Color(0xFFEDEDED), RoundedCornerShape(20.dp))
+            .background((MaterialTheme.colorScheme.background), RoundedCornerShape(20.dp))
             .padding(4.dp)
     ) {
         tabs.forEach { tab ->
@@ -110,7 +119,7 @@ fun TabItem(
     ) {
         Text(
             text = text,
-            color = if (selected) Color.White else Color.Black,
+            color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
             fontSize = 12.sp
         )
     }
@@ -120,14 +129,22 @@ fun TabItem(
 @Composable
 fun ReviewCard(
     item: Review,
-    containColor: Color
+    containColor: Color,
+    onCancelClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .then(
+                if (item.status != "Solved") {
+                    Modifier.clickable { onCancelClick() }
+                } else {
+                    Modifier
+                }
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF2F2F2)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(2.dp),
         shape = RoundedCornerShape(12.dp)
@@ -177,7 +194,7 @@ fun ReviewCard(
 
             // Bottom section: Department and Comment
             Text(
-                text = "Department: ${item.department}",
+                text = "To ${item.department} Department: ",
                 fontSize = 11.sp,
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold

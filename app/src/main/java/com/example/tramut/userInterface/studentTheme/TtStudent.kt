@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,7 +42,7 @@ fun TimetableGrid(
                 modifier = Modifier
                     .width(venueColWidth)
                     .height(rowHeight)
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {

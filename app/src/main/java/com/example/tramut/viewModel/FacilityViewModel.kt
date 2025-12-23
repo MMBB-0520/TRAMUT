@@ -77,46 +77,53 @@ class FacilityViewModel : ViewModel() {
         dailyBreakHours: List<Int> = emptyList(),
         onResult: (Boolean, String?) -> Unit
     ) {
-        val capacityListToSave = formCapacity.value
-            .split(',', ' ')
-            .mapNotNull { it.trim().toLongOrNull() }
-            .distinct()
-            .toList()
+        viewModelScope.launch {
+            // 1. Validation: Check if name is blank
+            if (formName.value.isBlank()) {
+                onResult(false, "Facility name cannot be empty")
+                return@launch
+            }
 
-        val finalCapacity = if (capacityListToSave.isEmpty()) listOf(1L) else capacityListToSave
+            // 2. DUPLICATE CHECK: Call the repo
+            val isDuplicate = repository.isNameDuplicate(formName.value)
+            if (isDuplicate) {
+                // This message will appear in your Toast in the UI
+                onResult(false, "A facility with the name '${formName.value}' already exists!")
+                return@launch
+            }
 
-        val category = formCategory.value
-        val roomNo = formName.value
+            // 3. Prepare Capacity (Conversion logic)
+            val capacityListToSave = formCapacity.value
+                .split(',', ' ')
+                .mapNotNull { it.trim().toLongOrNull() }
+                .distinct()
 
-        if (category.isBlank() || roomNo.isBlank()) {
-            onResult(false, "Missing category or room name")
-            return
+            val finalCapacity = if (capacityListToSave.isEmpty()) listOf(1L) else capacityListToSave
+
+            // 4. Create the Object (Using = instead of 'to')
+            val newFacility = Facility(
+                id = "",
+                name = formName.value.trim(),
+                category = formCategory.value,
+                department = department,
+                startTime = formStartTime.value,
+                endTime = formEndTime.value,
+                status = "Available",
+                capacity = finalCapacity,
+                dailyBreakHours = dailyBreakHours,
+                specialClosures = specialClosures
+            )
+
+            // 5. Save
+            repository.addFacility(newFacility)
+                .onSuccess {
+                    clearForm() // Resets the UI fields
+                    onResult(true, null)
+                }
+                .onFailure { e ->
+                    onResult(false, e.message ?: "Unknown Error")
+                }
         }
-
-        val facilityData = hashMapOf(
-            "name" to formName.value,
-            "category" to formCategory.value,
-            "department" to department,
-            "startTime" to formStartTime.value,
-            "endTime" to formEndTime.value,
-            "status" to "Available",
-            "capacity" to finalCapacity,
-            "dailyBreakHours" to dailyBreakHours,
-            "specialClosures" to specialClosures
-        )
-
-        Firebase.firestore
-            .collection("facilities")
-            .document(category)
-            .collection("rooms")
-            .add(facilityData)
-            .addOnSuccessListener {
-                clearForm()
-                onResult(true, null)
-            }
-            .addOnFailureListener { e ->
-                onResult(false, e.message ?: "Unknown Error")
-            }
     }
 
     // 5. UPDATE FACILITY

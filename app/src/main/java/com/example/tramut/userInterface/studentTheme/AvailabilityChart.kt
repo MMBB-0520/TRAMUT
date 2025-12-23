@@ -1,6 +1,7 @@
 package com.example.tramut.userInterface.studentTheme
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -102,24 +103,44 @@ fun AvailabilityChartScreen(
         selectedCategory = categoryOptions.first()
     }
 
-    LaunchedEffect(selectedCategory, selectedDate) {
-        val facilityQuery = if (selectedCategory.startsWith("All")) {
-            selectedFacilityFromPrevious
-        } else {
-            selectedCategory
+//    LaunchedEffect(selectedCategory, selectedDate) {
+//        val facilityQuery = if (selectedCategory.startsWith("All")) {
+//            selectedFacilityFromPrevious
+//        } else {
+//            selectedCategory
+//        }
+//        val isCategoryQuery = !selectedCategory.startsWith("All")
+//        val firebaseFormattedDate = formatForFirebase(selectedDate)
+//
+//        // 1. Load the list of courts/rooms
+//        viewModel.fetchTimetableData(
+//            identifier = facilityQuery,
+//            isCategory = isCategoryQuery,
+//            date = firebaseFormattedDate
+//        )
+//
+//        // 2. Start watching for Blue squares (Bookings)
+//        viewModel.listenToBookingsForDate(firebaseFormattedDate)
+//    }
+
+    LaunchedEffect(selectedCategory, uiState.selectedDate) {
+        if (uiState.selectedDate.isNotEmpty()) {
+            // 1. Convert the picker date (e.g., 2025-12-23)
+            // to the Firebase format (e.g., 23 / Dec / 2025 (Tue))
+            val formattedDate = formatForFirebase(uiState.selectedDate)
+
+            // 2. Launch the data fetching
+            viewModel.fetchTimetableData(
+                identifier = selectedCategory,
+                isCategory = true,
+                date = formattedDate
+            )
+
+            // 3. Launch the real-time listener for bookings
+            viewModel.loadBookingsForDate(formattedDate)
+
+            Log.d("LAUNCH", "Fetching for category: $selectedCategory and date: $formattedDate")
         }
-        val isCategoryQuery = !selectedCategory.startsWith("All")
-        val firebaseFormattedDate = formatForFirebase(selectedDate)
-
-        // 1. Load the list of courts/rooms
-        viewModel.fetchTimetableData(
-            identifier = facilityQuery,
-            isCategory = isCategoryQuery,
-            date = firebaseFormattedDate
-        )
-
-        // 2. Start watching for Blue squares (Bookings)
-        viewModel.listenToBookingsForDate(firebaseFormattedDate)
     }
 
     // Initialize with first date
@@ -133,6 +154,7 @@ fun AvailabilityChartScreen(
 
     Column(
         modifier = Modifier
+            .background(MaterialTheme.colorScheme.background)
             .fillMaxSize()
             .padding(16.dp)
     ) {
@@ -162,6 +184,7 @@ fun AvailabilityChartScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(vertical = 8.dp)
         ) {
             UnderlinedFloatingLabelDropdown(
@@ -182,6 +205,7 @@ fun AvailabilityChartScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(vertical = 8.dp)
             ) {
                 DepartmentDropdownLineStyle(
@@ -201,6 +225,7 @@ fun AvailabilityChartScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(bottom = 8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFFE3F2FD)
@@ -232,7 +257,7 @@ fun AvailabilityChartScreen(
         Column(modifier = Modifier.weight(1f)) {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -314,14 +339,14 @@ fun AvailabilityChartTimetableGrid(
     val verticalScroll = rememberScrollState()
     val horizontalScroll = rememberScrollState()
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         // Header Row
         Row(modifier = Modifier.horizontalScroll(horizontalScroll)) {
             Box(
                 modifier = Modifier
                     .width(venueColWidth)
                     .height(rowHeight)
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.background)
                     .border(1.dp, borderColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -334,7 +359,7 @@ fun AvailabilityChartTimetableGrid(
                     modifier = Modifier
                         .width(timeColWidth)
                         .height(rowHeight)
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.background)
                         .border(1.dp, borderColor),
                     contentAlignment = Alignment.Center
                 ) {
@@ -351,6 +376,7 @@ fun AvailabilityChartTimetableGrid(
         Column(
             modifier = Modifier
                 .verticalScroll(verticalScroll)
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxHeight()
         ) {
             facilities.forEach { facility ->
@@ -363,7 +389,7 @@ fun AvailabilityChartTimetableGrid(
                             .width(venueColWidth)
                             .height(rowHeight)
                             .background(
-                                if (isSelected) Color(0xFFE3F2FD) else Color.White
+                                if (isSelected) Color(0xFFE3F2FD) else MaterialTheme.colorScheme.background
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
@@ -382,7 +408,7 @@ fun AvailabilityChartTimetableGrid(
                             lineHeight = 11.sp,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            color = if (isSelected) Color(0xFF0D47A1) else Color.Black
+                            color = if (isSelected) Color(0xFF0D47A1) else MaterialTheme.colorScheme.onBackground
                         )
                     }
 
@@ -446,7 +472,7 @@ fun UnderlinedFloatingLabelDropdown(
                         text = if (hasValue) formatDateForDisplay(value) else label,
                         fontSize = if (hasValue) 16.sp else 14.sp,
                         fontWeight = FontWeight.Normal,
-                        color = if (hasValue) Color.Black else Color.Gray,
+                        color = if (hasValue) MaterialTheme.colorScheme.onBackground else Color.Gray,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
@@ -467,7 +493,7 @@ fun UnderlinedFloatingLabelDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
         ) {
             items.forEach { item ->
                 DropdownMenuItem(
@@ -536,7 +562,7 @@ fun DepartmentDropdownLineStyle(
             modifier = Modifier
                 .width(dropdownWidth.value)
                 .heightIn(max = 200.dp)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             options.forEach { option ->
                 DropdownMenuItem(

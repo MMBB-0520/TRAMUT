@@ -1,6 +1,5 @@
 package com.example.tramut.userInterface.studentTheme
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tramut.ui.theme.Background
 import com.example.tramut.ui.theme.StaffRed
+
 
 @Composable
 fun UserMenuScreen(
@@ -49,10 +50,11 @@ fun UserMenuScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(20.dp)
     ) {
         Spacer(modifier = Modifier.height(52.dp))
+
 
         Box(
             modifier = Modifier
@@ -61,6 +63,7 @@ fun UserMenuScreen(
                 .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+
 
                 Box(
                     modifier = Modifier
@@ -76,7 +79,9 @@ fun UserMenuScreen(
                     )
                 }
 
+
                 Spacer(modifier = Modifier.width(18.dp))
+
 
                 Column {
                     Text(name,
@@ -94,24 +99,32 @@ fun UserMenuScreen(
             }
         }
 
+
         Spacer(modifier = Modifier.height(49.dp))
+
+
 
 
         MenuButton("My Booking", onClick = onMyBookingClick)
         Spacer(modifier = Modifier.height(40.dp))
 
+
         MenuButton("Facility Booking", onClick = onFacilityBookingClick)
         Spacer(modifier = Modifier.height(40.dp))
+
 
         MenuButton("Feedback / Review", onClick = onFeedbackClick)
         Spacer(modifier = Modifier.height(40.dp))
 
+
         MenuButton("Settings", onClick = onSettingsClick)
         Spacer(modifier = Modifier.height(40.dp))
+
 
         LogoutButton(onClick = onLogoutClick)
     }
 }
+
 
 @Composable
 fun MenuButton(title: String, onClick: () -> Unit) {
@@ -126,10 +139,11 @@ fun MenuButton(title: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = title, fontSize = 14.sp, color = Color.Black)
+        Text(text = title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground,)
         Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
     }
 }
+
 
 @Composable
 fun LogoutButton(onClick: () -> Unit) {
@@ -149,6 +163,7 @@ fun LogoutButton(onClick: () -> Unit) {
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
@@ -164,3 +179,4 @@ fun HomeScreenPreview() {
         onLogoutClick = {}
     )
 }
+

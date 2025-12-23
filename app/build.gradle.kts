@@ -64,8 +64,10 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation(libs.firebase.database)
     implementation(libs.androidx.compose.foundation)
+   
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
+    implementation("androidx.compose.material:material-icons-extended:1.x.x")
 
     implementation("androidx.compose.ui:ui:1.5.4")
     implementation("androidx.compose.foundation:foundation:1.5.4")

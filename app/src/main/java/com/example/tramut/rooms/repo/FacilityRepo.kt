@@ -28,6 +28,18 @@ class FacilityRepository {
             .addOnFailureListener { onResult(null) }
     }
 
+    suspend fun isNameDuplicate(name: String): Boolean {
+        return try {
+            val result = facilitiesCollection
+                .whereEqualTo("name", name.trim())
+                .get()
+                .await()
+            !result.isEmpty // Returns true if it already exists
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun getFacilitiesByCategory(category: String): List<Facility> {
         return try {
             collection

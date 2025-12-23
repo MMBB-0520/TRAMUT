@@ -24,6 +24,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -63,7 +64,7 @@ fun LineStaticInput(text: String, onClick: () -> Unit = {}, icon: ImageVector? =
     Box(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(top = 16.dp, bottom = 8.dp)) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = text, fontSize = 16.sp, color = if (text.startsWith("Select") || text.startsWith("Pick")) Color.Gray else Color.Black)
+                Text(text = text, fontSize = 16.sp, color = if (text.startsWith("Select") || text.startsWith("Pick")) Color.Gray else MaterialTheme.colorScheme.onBackground)
                 if (icon != null) Icon(icon, null, tint = Color.Gray)
             }
             Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Color.Gray)
@@ -97,6 +98,7 @@ fun AddSuccessDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(vertical = 8.dp)
             ) {
                 Box(
@@ -281,7 +283,7 @@ fun FacilityDropdownSelector(
             onDismissRequest = { expanded = false },
             modifier = Modifier
                 .width(dropdownWidth)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
                 .heightIn(max = 300.dp)
         ) {
             options.forEach { facility ->

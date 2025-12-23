@@ -64,6 +64,7 @@ import com.example.myfacilitybookingsystem.userInterface.adminTheme.Facility.Adm
 import com.example.myfacilitybookingsystem.viewModel.AdminsViewModel
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.rooms.entity.Member
+import com.example.tramut.rooms.entity.Review
 import com.example.tramut.rooms.repo.UsersRepo
 import com.example.tramut.ui.theme.StaffRed
 import com.example.tramut.ui.theme.StudentBlue
@@ -90,6 +91,8 @@ import com.example.tramut.userInterface.settings.AboutAppScreen
 import com.example.tramut.userInterface.settings.ChangePasswordScreen
 import com.example.tramut.userInterface.settings.PrivacyPolicyScreen
 import com.example.tramut.userInterface.settings.SettingsScreen
+import com.example.tramut.userInterface.settings.ThemeSelectionScreen
+import com.example.tramut.userInterface.settings.ThemeViewModel
 import com.example.tramut.userInterface.studentTheme.AvailabilityChartScreen
 import com.example.tramut.userInterface.studentTheme.BookSportScreen
 import com.example.tramut.userInterface.studentTheme.BookingInfoScreen
@@ -98,6 +101,7 @@ import com.example.tramut.userInterface.studentTheme.MyBookingScreen
 import com.example.tramut.userInterface.studentTheme.ReviewScreen
 import com.example.tramut.userInterface.studentTheme.ReviewSubmissionScreen
 import com.example.tramut.userInterface.studentTheme.UserMenuScreen
+import com.example.tramut.userInterface.studentTheme.UserReviewGuidelinesScreen
 import com.example.tramut.userInterface.studentTheme.getContainerColor
 import com.example.tramut.viewModel.ForgotPwdViewModel
 import com.example.tramut.viewModel.LoginViewModel
@@ -159,6 +163,7 @@ enum class AppScreen {
 
     UserReview,
     ReviewSubmission,
+    UserReviewGuidelines,
     AdminViewReview,
 
     // Details under Home tab
@@ -215,6 +220,7 @@ fun TopBarScreen(
     currentScreen: AppScreen,
     hasPopBack: () -> Unit,
     addReview: () -> Unit,
+    reviewGuidelines: () -> Unit,
     containerColor: Color,
     selectedTabIndex: Int
 ) {
@@ -519,7 +525,7 @@ fun TopBarScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Review",
+                            text = "Add Review",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 24.sp
                         )
@@ -530,7 +536,7 @@ fun TopBarScreen(
                     titleContentColor = Color.White
                 ),
                 actions = {
-                    IconButton(onClick = { }) {
+                    IconButton(onClick = { reviewGuidelines() }) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
@@ -538,6 +544,34 @@ fun TopBarScreen(
                         )
                     }
                 }
+            )
+        }
+        AppScreen.UserReviewGuidelines -> {
+            TopAppBar(
+                navigationIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.padding(start = 8.dp).clickable { hasPopBack() }
+                    )
+                },
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Review Guidelines",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 24.sp
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = containerColor,
+                    titleContentColor = Color.White
+                )
             )
         }
         else -> {}
@@ -549,7 +583,8 @@ fun TopBarScreen(
 @Composable
 fun FBSApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    themeViewModel: ThemeViewModel
 ) {
 
     val context = LocalContext.current
@@ -605,6 +640,7 @@ fun FBSApp(
                 currentScreen = currentScreen,
                 hasPopBack = { navController.popBackStack() },
                 addReview = { navController.navigate(AppScreen.ReviewSubmission.name) },
+                reviewGuidelines = { navController.navigate(AppScreen.UserReviewGuidelines.name) },
                 containerColor = containerColor,
                 selectedTabIndex = selectedTabIndex
             )
@@ -723,6 +759,7 @@ fun FBSApp(
                             navController.navigate(AppScreen.ChangePwd.name)
                         },
                         onThemeClick = {
+                            navController.navigate(AppScreen.Theme.name)
                         },
                         onPrivacyClick = {
                             navController.navigate(AppScreen.Privacy.name)
@@ -730,6 +767,13 @@ fun FBSApp(
                         onAboutClick = {
                             navController.navigate(AppScreen.AboutApp.name)
                         }
+                    )
+                }
+
+                composable(route = AppScreen.Theme.name) {
+                    ThemeSelectionScreen(
+                        viewModel = themeViewModel,
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 
@@ -931,6 +975,7 @@ fun FBSApp(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
 
 
                 // 6. ADD FACILITY
@@ -1403,6 +1448,33 @@ fun FBSApp(
                 }
 
                 composable(route = AppScreen.UserReview.name) {
+                    var cancelConfirm by rememberSaveable { mutableStateOf(false) }
+                    var reviewToCancel by remember { mutableStateOf<Review?>(null) }
+
+                    if (cancelConfirm && reviewToCancel != null) {
+                        AlertDialog(
+                            onDismissRequest = { cancelConfirm = false },
+                            title = { Text("Confirm Cancel") },
+                            text = { Text("Are you sure you want to cancel this review?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    cancelConfirm = false
+                                    reviewToCancel?.let { reviewViewModel.cancelReview(it) }
+                                    reviewToCancel = null
+                                }) {
+                                    Text("Yes")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {
+                                    cancelConfirm = false
+                                    reviewToCancel = null
+                                }) { Text("No") }
+                            },
+                            properties = DialogProperties(dismissOnClickOutside = false)
+                        )
+                    }
+
                     LaunchedEffect(Unit) {
                         reviewViewModel.fetchMyReviews(currentUser?.loginId)
                     }
@@ -1412,7 +1484,11 @@ fun FBSApp(
                         selectedTab = selectedTab,
                         onTabSelected = { selectedTab = it },
                         filteredReviews = filteredReviews,
-                        containColor = containerColor
+                        containColor = containerColor,
+                        onCancelClick = { item ->
+                            reviewToCancel = item
+                            cancelConfirm = true
+                        }
                     )
                 }
 
@@ -1438,6 +1514,9 @@ fun FBSApp(
                         },
                         comment = comment,
                         onCommentChange = {
+                            if (selectedCategory == "Other"){
+                                comment = it
+                            }
                             comment = it
                         },
                         onSubmitReviewClick = {
@@ -1458,6 +1537,9 @@ fun FBSApp(
                             navController.popBackStack()
                         }
                     )
+                }
+                composable(route = AppScreen.UserReviewGuidelines.name){
+                    UserReviewGuidelinesScreen()
                 }
                 composable(AppScreen.AdminViewReview.name) {
                     if (currentAdminDept != "Loading...") {

@@ -86,7 +86,7 @@ fun BookingInfoScreen(
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.background)
                     }
                 },
                 title = {
@@ -105,7 +105,7 @@ fun BookingInfoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -113,7 +113,7 @@ fun BookingInfoScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.background, shape = RoundedCornerShape(8.dp))
                     .padding(16.dp)
             ) {
                 Text(

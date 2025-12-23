@@ -21,6 +21,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -62,7 +64,7 @@ fun StaffLoginScreen(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Image(
@@ -82,7 +84,7 @@ fun StaffLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Person,
                     contentDescription = "ID Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 when (idValid) {
@@ -114,7 +116,7 @@ fun StaffLoginScreen(
             leadingIcon = {
                 Icon(Icons.Outlined.Lock,
                     contentDescription = "Lock Icon",
-                    tint = Color.Black)
+                    tint = MaterialTheme.colorScheme.onBackground)
             },
             trailingIcon = {
                 val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibility_off

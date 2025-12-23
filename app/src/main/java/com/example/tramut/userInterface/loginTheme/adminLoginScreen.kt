@@ -77,7 +77,7 @@ fun AdminLoginScreen(
     var showPassword by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxWidth().background(Background).padding(16.dp)
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(16.dp)
     ) {
         Image(
             painter = painterResource(id = R.drawable.tarumt),
@@ -90,7 +90,7 @@ fun AdminLoginScreen(
             label = { Text("Admin ID") },
             value = adminId,
             onValueChange = onAdminIdChange,
-            leadingIcon = { Icon(Icons.Outlined.Person, "ID Icon", tint = Color.Black) },
+            leadingIcon = { Icon(Icons.Outlined.Person, "ID Icon", tint = MaterialTheme.colorScheme.onBackground) },
             trailingIcon = {
                 when (idValid) {
                     true -> Icon(Icons.Default.Check, "Valid", tint = Color.Green)
@@ -109,7 +109,7 @@ fun AdminLoginScreen(
             label = { Text("Password") },
             value = password,
             onValueChange = onPasswordChange,
-            leadingIcon = { Icon(Icons.Outlined.Lock, "Lock Icon", tint = Color.Black) },
+            leadingIcon = { Icon(Icons.Outlined.Lock, "Lock Icon", tint = MaterialTheme.colorScheme.onBackground) },
             trailingIcon = {
                 val iconRes = if (showPassword) R.drawable.ic_visibility else R.drawable.ic_visibility_off
                 IconButton(onClick = { showPassword = !showPassword }) {

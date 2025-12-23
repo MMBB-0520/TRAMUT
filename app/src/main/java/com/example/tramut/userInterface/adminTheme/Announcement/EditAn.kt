@@ -44,10 +44,36 @@ fun EditAnnouncementScreen(
     }
 
     // Define options based on department
-    val venueOptions = when (adminDepartment) {
-        "Sports" -> listOf("All Sport Facilities", "Badminton Court", "Squash Court", "Gym")
-        "Library" -> listOf("All Library Rooms", "Discussion Room", "Study Cube")
-        else -> listOf("General", "Auditorium", "Meeting Room")
+    val venueOptions = remember(adminDepartment) {
+        when (adminDepartment) {
+            "Sports" -> listOf(
+                "All Sport Facilities",
+                "Badminton",
+                "Squash",
+                "Gym",
+                "Guest/Karaoke Room",
+                "Swimming Pool",
+                "Snooker",
+                "Pickleball",
+                "Table Tennis",
+                "Tennis",
+                "Futsal"
+            )
+            "Library" -> listOf(
+                "All Library Rooms",
+                "Discussion Room",
+                "Discussion Room with PC",
+                "Individual Study Room"
+            )
+            "Cyber Center" -> listOf(
+                "All CITC Facilities",
+                "Discussion Room (1 PC)",
+                "Discussion Room (2 PCs)",
+                "Discussion Room with Projector (2 PCs)",
+                "Discussion Room with Projector (2 PCs)[HDMI]"
+            )
+            else -> listOf("All Facilities for $adminDepartment")
+        }
     }
 
     Scaffold(
@@ -77,6 +103,7 @@ fun EditAnnouncementScreen(
             Column(
                 modifier = Modifier
                     .padding(padding)
+                    .background(MaterialTheme.colorScheme.background)
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {

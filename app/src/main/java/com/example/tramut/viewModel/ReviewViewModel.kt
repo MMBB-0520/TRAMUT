@@ -36,11 +36,11 @@ class ReviewViewModel : ViewModel(){
             "bookingId" to booking.bookingId,
             "bookingDate" to booking.date,
             "venue" to booking.venue,
-            "venueType" to booking.venue,
+            "venueType" to booking.finalVenue,
             "loginId" to userId,
             "issueCategory" to category,
             "comment" to description,
-            "status" to "Unresolved",
+            "status" to "Unsolved",
             "department" to booking.facility
         )
 
@@ -72,9 +72,10 @@ class ReviewViewModel : ViewModel(){
                     return@addSnapshotListener
                 }
 
-                val list = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Review::class.java)
-                } ?: emptyList()
+                val list = snapshot?.documents
+                    ?.mapNotNull { it.toObject(Review::class.java) }
+                    ?.filter { it.status != "Cancelled" }
+                    ?: emptyList()
 
                 _reviews.value = list
             }
@@ -87,32 +88,52 @@ class ReviewViewModel : ViewModel(){
         }
 
         FirebaseFirestore.getInstance()
-            .collection("bookings")
-            .whereEqualTo("userId", userId)
+            .collection("reviews")
+            .whereEqualTo("loginId", userId)
             .get()
-            .addOnSuccessListener { snapshot ->
-                val list = snapshot.documents.mapNotNull { doc ->
-                    try {
-                        // 不使用 toObject，而是手动从 map 中提取你要的字段
-                        Booking(
-                            bookingId = doc.id, // 或者 doc.getString("bookingId") ?: ""
-                            facility = doc.getString("facility") ?: "",
-                            date = doc.getString("date") ?: "",
-                            venue = doc.getString("venue") ?: "",
-                            // members 留空，不拿它，这样就不会因为类型不匹配崩溃
-                        )
-                    } catch (e: Exception) {
-                        Log.e("Review", "解析单个文档失败: ${e.message}")
-                        null
+            .addOnSuccessListener { reviewSnapshot ->
+
+                val reviewedBookingIds = reviewSnapshot.documents
+                    .filter {
+                        it.getString("status") != "Cancelled"
                     }
-                }
-                _bookings.value = list
+                    .mapNotNull { it.getString("bookingId") }
+                    .toSet()
+
+                db.collection("bookings")
+                    .whereEqualTo("userId", userId)
+                    .whereEqualTo("status", "Completed")
+                    .get()
+                    .addOnSuccessListener { bookingSnapshot ->
+
+                        val list = bookingSnapshot.documents
+                            .mapNotNull { doc ->
+                                Booking(
+                                    bookingId = doc.id,
+                                    facility = doc.getString("facility") ?: "",
+                                    date = doc.getString("date") ?: "",
+                                    venue = doc.getString("venue") ?: "",
+                                    finalVenue = doc.getString("finalVenue") ?: ""
+                                )
+                            }
+                            .filter { it.bookingId !in reviewedBookingIds }
+
+                        _bookings.value = list
+                    }
             }
             .addOnFailureListener {
                 _bookings.value = emptyList()
             }
     }
-
+    fun cancelReview(review: Review) {
+        if (review.status == "Solved" || review.status == "Pending") {
+            return
+        }
+        FirebaseFirestore.getInstance()
+            .collection("reviews")
+            .document(review.id)
+            .update("status", "Cancelled")
+    }
 
     fun updateStatus(reviewId: String, newStatus: String, onSuccess: () -> Unit) {
         Firebase.firestore.collection("reviews")

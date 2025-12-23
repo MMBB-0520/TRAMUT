@@ -37,7 +37,7 @@ fun LabeledInput(label: String, content: @Composable () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -61,7 +61,7 @@ fun TransparentTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
+            textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground),
             keyboardOptions = keyboardOptions,
             modifier = Modifier
                 .fillMaxWidth()
@@ -97,11 +97,11 @@ fun StaticInputText(
             Text(
                 text = text,
                 fontSize = 16.sp,
-                color = if (text == "Select Venue" || text.isEmpty()) Color.Gray else Color.Black,
+                color = if (text == "Select Venue" || text.isEmpty()) Color.Gray else MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
             if (icon != null) {
-                Icon(icon, null, tint = Color.Black)
+                Icon(icon, null, tint = MaterialTheme.colorScheme.onBackground)
             }
         }
         HorizontalDivider(thickness = 1.dp, color = Color.LightGray)
