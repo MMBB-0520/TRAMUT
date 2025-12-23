@@ -97,8 +97,10 @@ class MyBookingViewModel : ViewModel() {
 
                 if (snapshot != null && !snapshot.isEmpty) {
                     val bookings = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(Booking::class.java)?.copy(
-                            bookingNo = doc.getString("bookingNo") ?: doc.getString("bookingId") ?: doc.id
+                        val b = doc.toObject(Booking::class.java)
+                        b?.copy(
+                            bookingId = doc.id,
+                            bookingNo = doc.getString("bookingNo") ?: doc.id
                         )
                     }
                     _bookingList.value = bookings
@@ -202,7 +204,7 @@ class MyBookingViewModel : ViewModel() {
 
             // 使用 bookingNo 字段查找
             val querySnapshot = firestore.collection("bookings")
-                .whereEqualTo("bookingId", bookingNo)  // 改为 bookingNo
+                .whereEqualTo(/* field = */ "bookingId", /* value = */ bookingNo)  // 改为 bookingNo
                 .limit(1)
                 .get()
                 .await()
@@ -271,7 +273,7 @@ class MyBookingViewModel : ViewModel() {
             venueLower.contains("library") -> {
                 when {
                     venueLower.contains("discussion") -> "1A"
-                    else -> "1"  // 主图书馆在1楼
+                    else -> "1"
                 }
             }
 
@@ -328,6 +330,23 @@ class MyBookingViewModel : ViewModel() {
 
             // 默认
             else -> "Not specified"
+        }
+    }
+
+    // mybooking column delete
+    fun deleteBooking(bookingId: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = BookingUIState.Loading
+                firestore.collection("bookings")
+                    .document(bookingId)
+                    .delete()
+                    .await()
+
+                _bookingList.value = _bookingList.value.filter { it.bookingId != bookingId }
+            } catch (e: Exception) {
+                _uiState.value = BookingUIState.Error(e.message ?: "Delete failed")
+            }
         }
     }
 

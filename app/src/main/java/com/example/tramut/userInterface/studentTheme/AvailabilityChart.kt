@@ -48,7 +48,7 @@ fun AvailabilityChartScreen(
     // Generate next 3 days for display
     val dateList = remember {
         val calendar = Calendar.getInstance()
-        val formatter = SimpleDateFormat("dd / MMM / yyyy (EEE)", Locale.ENGLISH)
+        val formatter = SimpleDateFormat("yyyy / MMM / dd (EEE)", Locale.ENGLISH)
 
         List(3) { i ->
             calendar.time = Date()
