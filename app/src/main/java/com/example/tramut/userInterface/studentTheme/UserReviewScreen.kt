@@ -44,6 +44,7 @@ fun ReviewScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
     ) {
 
         ReviewTabs(

@@ -1,5 +1,6 @@
 package com.example.tramut.userInterface.studentTheme
 
+import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -38,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.example.tramut.rooms.entity.Booking
 import com.example.tramut.ui.theme.Background
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewSubmissionScreen(
     containerColor: Color,
@@ -62,7 +63,7 @@ fun ReviewSubmissionScreen(
 
     Column(
         modifier = Modifier
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp)
     ) {
 
@@ -126,6 +127,7 @@ fun ReviewSubmissionScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .height(180.dp),
             shape = RoundedCornerShape(6.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -283,7 +285,6 @@ fun IssueCategoryDropdown(
     onCategorySelected: (String) -> Unit
 ) {
     val categories = listOf(
-        "All Issues",
         "Damage/Broken Items",
         "Network/Technology Issues",
         "Plumbing/Ventilation Issues",
