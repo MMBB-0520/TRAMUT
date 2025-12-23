@@ -53,7 +53,7 @@ fun TimetableScreen(
         when (initialDepartment) {
             "Sports" -> listOf("Badminton", "Squash", "Gym", "Guest/Karaoke Room", "Swimming Pool", "Snooker", "Pickleball", "Table Tennis", "Tennis", "Futsal")
             "Library" -> listOf("Discussion Room", "Discussion Room with PC", "Individual Study Room")
-            "Cyber Center" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
+            "Cyber Centre" -> listOf("Discussion Room (1 PC)", "Discussion Room (2 PCs)", "Discussion Room with Projector (2 PCs)", "Discussion Room with Projector (2 PCs)[HDMI]")
             else -> listOf(initialDepartment)
         }
     }
@@ -75,6 +75,8 @@ fun TimetableScreen(
             viewModel.listenToBookingsForDate(firebaseDate)
         }
     }
+
+
 
     Scaffold(
         topBar = {
@@ -143,8 +145,8 @@ fun TimetableScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         LegendItem(Color(0xFF4CAF50), "Available")
-                        LegendItem(Color(0xFF2196F3), "Full") // Changed "Booked" to "Full"
-                        LegendItem(Color(0xFFF44336), "Maint.")
+                        LegendItem(Color(0xFF2196F3), "Full")
+                        LegendItem(Color(0xFFF44336), "Special")
                         LegendItem(Color(0xFFE0E0E0), "Closed")
                     }
                 }

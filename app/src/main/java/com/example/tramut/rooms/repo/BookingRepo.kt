@@ -1,9 +1,12 @@
 package com.example.tramut.rooms.repo
 
+import android.util.Log
 import com.example.myfacilitybookingsystem.rooms.entity.Facility
 import com.example.tramut.rooms.entity.Booking
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 // In your BookingRepo.kt file
 class BookingRepo {
@@ -22,16 +25,32 @@ class BookingRepo {
         }
     }
 
-    suspend fun getFacilitiesByCategoryAndCapacity(category: String, minCapacity: Int): List<Facility> {
+
+
+    suspend fun getFacilitiesByCategory(category: String): List<Facility> {
         return try {
             firestore.collection("facilities")
                 .whereEqualTo("category", category)
-                .whereGreaterThanOrEqualTo("capacity", minCapacity) // Filter by size
                 .get()
                 .await()
                 .toObjects(Facility::class.java)
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    fun formatDateForDisplay(dateStr: String): String {
+        return try {
+            // The format coming from your DatePicker
+            val inputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            // The format stored in your Firestore "date" field
+            val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+            val date = inputFormat.parse(dateStr)
+            if (date != null) outputFormat.format(date) else dateStr
+        } catch (e: Exception) {
+            // If it's already in the correct format or parsing fails, return original
+            dateStr
         }
     }
 
@@ -41,9 +60,10 @@ class BookingRepo {
             firestore.collection("bookings")
                 .document(booking.bookingId)
                 .set(booking)
-                .await()
-            true // If no exception, it was a success
+                .await() // This is CRITICAL for suspend functions
+            true
         } catch (e: Exception) {
+            Log.e("Repo", "Save failed: ${e.message}")
             false
         }
     }
